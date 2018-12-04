@@ -20,15 +20,15 @@ def load_niklas(path):
     Dict[F, dsm, coords]
 
     """
-    dataset = h5py.File(data_path)
+    dataset = h5py.File(path, 'r')
 
     # Pre-check dimensions.
-    assert(np.allclose(dataset['F_land'].shape[0] / (N_OBS * N_MODEL), 1.0))
-    assert(np.allclose(dataset['d_land'].shape[1] - 1, N_OBS)
+    assert(np.allclose(dataset['F_land/data'].shape[0] / (N_OBS * N_MODEL), 1.0))
+    assert(np.allclose(dataset['d_land'].shape[1] - 1, N_OBS))
 
     # The forward operator has been flattened into a list,
     # so we have to rebuild it.
-    F = np.reshape(dataset['F_land/data'], (n_obs, n_model), order = 'F')
+    F = np.reshape(dataset['F_land/data'], (N_OBS, N_MODEL), order = 'F')
     
     # Measurement vector.
     # It has one element too much compared to what F expects,
