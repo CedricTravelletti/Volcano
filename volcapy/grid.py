@@ -28,35 +28,11 @@ def buil_hash_grid(centered_grid, sigma_2, lambda_2):
     return covariance_hash
 
 
-def regularize_index(i, grid, orig_x, orig_y, orig_z,
-        dx, dy, dz):
-    """ Find index in a regular grid of spacing dx, dy, dz.
-
-    Parameters
-    ----------
-    orig_x: float
-        Origin of coordinates.
-    orig_y: float
-    orig_z: float
-    dx: float
-        Spacing between cells (regular).
-    dy: float
-    dz: float
-
-    """
-
-"""
-# Transform 2D index into 1D.
-np.ravel_multi_index((i, j), (dim_i, dim_j))
-
-# Transform 1D-index into 2D.
-np.unravel_index(ind_1d, (dim_i, dim_j))
-"""
-
-
-def build_regular_grid(xmin, xmax, dx,
-        ymin, ymax, dy,
-        zmin, zmax, dz):
+def build_regular_grid(
+        xmin, xmax,
+        ymin, ymax,
+        zmin, zmax,
+        spacings):
     """ Build a regular rectangular grid.
 
     Parameters
@@ -65,14 +41,12 @@ def build_regular_grid(xmin, xmax, dx,
         Smallest x coord in the grid.
     xmax: float
         Biggest x coord in the grid (included).
-    dx: float
-        Spacing between two cells.
     ymin: float
     ymax: float
-    dy: float
     zmin: float
     zmax: float
-    dz: float
+    spacings: (float, float, float)
+        Lenght of a cell along each dimension (dx, dy, dz).
 
     Returns
     -------
@@ -82,6 +56,7 @@ def build_regular_grid(xmin, xmax, dx,
     (int, int, int) the dimensions of the grid along x, y, z.
 
     """
+    (dx, dy, dz) = spacings
     nx = int(round((xmax - xmin) / dx) + 1)
     ny = int(round((ymax - ymin) / dy) + 1)
     nz = int(round((zmax - zmin) / dz) + 1)
@@ -95,7 +70,7 @@ def build_regular_grid(xmin, xmax, dx,
 
     return np.array(grid), (nx, ny, nz)
 
-def regularize_grid(grid, dx, dy, dz):
+def regularize_grid(grid, spacings):
     """ Given an sparse regular grid, build the smallest full regular grid
     containing it.
 
@@ -103,10 +78,8 @@ def regularize_grid(grid, dx, dy, dz):
     ----------
     grid: List[[float, float, float]]
         List of the coordinates of every point in the grid.
-    dx: float
-        (regular) spacing between the cells in the x direction.
-    dy:float
-    dz: float
+    spacings: (float, float, float)
+        Lenght of a cell along each dimension (dx, dy, dz).
 
     Returns
     -------
@@ -126,14 +99,20 @@ def regularize_grid(grid, dx, dy, dz):
     zmin = np.min(grid[:, 2])
     zmax = np.max(grid[:, 2])
 
-    return build_regular_grid(xmin, xmax, dx,
-                              ymin, ymax, dy,
-                              zmin, zmax, dz)
+    return build_regular_grid(xmin, xmax,
+                              ymin, ymax,
+                              zmin, zmax,
+                              spacings)
 
-def regularize_grid_centered(grid, dx, dy, dz):
+def regularize_grid_centered(grid, spacings):
     """ Same as above, but with origin at 0.
+
+    Parameters
+    ----------
+    spacings: (float, float, float)
+        Lenght of a cell along each dimension (dx, dy, dz).
     """
-    reg_grid, dims = regularize_grid(grid, dx, dy, dz)
+    reg_grid, dims = regularize_grid(grid, spacings)
 
     orig_x = np.min(reg_grid[:, 0])
     orig_y = np.min(reg_grid[:, 1])
@@ -144,20 +123,36 @@ def regularize_grid_centered(grid, dx, dy, dz):
     return reg_grid - [orig_x, orig_y, orig_z], dims
 
 
-def find_regular_index(v, dx, nx, dy, max_y, dz, max_z):
+def find_regular_index(v, dims, spacings):
     """ given a vector v, finds its index in a list containing
     the cells of a regular grid of spacings dx, dy, dz and with
     number of cells x: nx (included).
-    """
-    z_offset = int(v[2] / dz * (nx * ny))
-    y_offset = int(v[1] / dy * nx)
-    x_offset = int(v[0] / dx)
 
-def covariance_matrix(i, j, grid, covariance_hash):
+    Parameters
+    ----------
+    dims: (int, int, int)
+        Number of cells along each dimension (x, y, z).
+    spacings: (float, float, float)
+        Lenght of a cell along each dimension (dx, dy, dz).
+    """
+    z_offset = int(v[2] / spacings[2] * (dims[0] * dims[1]))
+    y_offset = int(v[1] / spacings[1] * dims[0])
+    x_offset = int(v[0] / spacings[0])
+
+def covariance_matrix(i, j, grid, dims, spacings, covariance_hash):
     """ Returns k(i, j), where i and j are the index of cells in grid.
+
+    Parameters
+    ----------
+    dims: (int, int, int)
+        Number of cells along each dimension (x, y, z).
+    spacings: (float, float, float)
+        Lenght of a cell along each dimension (dx, dy, dz).
     """
     # Compute normalized (first quadrant) disctance.
     dist = np.abs(grid[i] - grid[j])
 
-    ind = find_regular_index(dist, dx, dy, dz)
+    ind = find_regular_index(dist, dims, spacings)
+
+    return covariance_hash[ind]
 
