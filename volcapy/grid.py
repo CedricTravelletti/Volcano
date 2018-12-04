@@ -139,6 +139,8 @@ def find_regular_index(v, dims, spacings):
     y_offset = int(v[1] / spacings[1] * dims[0])
     x_offset = int(v[0] / spacings[0])
 
+    return x_offset + y_offset + z_offset
+
 def covariance_matrix(i, j, grid, dims, spacings, covariance_hash):
     """ Returns k(i, j), where i and j are the index of cells in grid.
 
