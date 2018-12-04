@@ -4,6 +4,8 @@
 from volcapy import loading as ld
 from volcapy import grid as gd
 
+import numpy as np
+
 from numpy.testing import assert_array_equal
 
 data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
@@ -19,9 +21,11 @@ def test_regularize_grid():
     dx = 1.0
     dy = 1.0
     dz = 0.25
+    
+    spacings = (dx, dy, dz)
 
     # How the result should look.
-    reg_grid = [
+    reg_grid = np.array([
             [0, 0, 0],
             [1, 0, 0],
             [0, 1, 0],
@@ -41,8 +45,8 @@ def test_regularize_grid():
             [0, 0, 1],
             [1, 0, 1],
             [0, 1, 1],
-            [1, 1, 1]]
+            [1, 1, 1]])
 
-    result = gd.regularize_grid(unreg_grid, dx, dy, dz)
+    result, dims = gd.regularize_grid(unreg_grid, spacings)
 
     assert_array_equal(result, reg_grid)
