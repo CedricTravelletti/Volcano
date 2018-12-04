@@ -9,23 +9,20 @@ Tricky part is the mapping (i, j) -> f(i, j).
 import numpy as np
 
 
-def buil_hash_grid(grid, sigma_2, lambda_2):
+def buil_hash_grid(centered_grid, sigma_2, lambda_2):
     """ Built a list of the pre-computed covariance kernel
     on the grid.
 
+    Parameters
+    ----------
+    centered_grid: ndarray[[float, float, float]]
+        List of lists containing grid points starting at origin.
+
     """
-    covariance_hash = np.zeros(len(grid))
+    covariance_hash = np.zeros(centered_grid.shape[0])
 
-    # Subtract coords of the origin.
-    grid = np.array(grid)
-    orig_x = np.min(grid[:, 0])
-    orig_y = np.min(grid[:, 1])
-    orig_z = np.min(grid[:, 2])
-
-    grid = grid - [orig_x, orig_y, orig_z]
-
-    for i in range(len(grid)):
-        dist = grid[i][0]**2 + grid[i][1]**2 + grid[i][2]**2
+    for i, p in enumerate(centered_grid):
+        dist = p[0]**2 + p[1]**2 + p[2]**2
         covariance_hash[i] = sigma_2 * np.exp(-dist / lambda_2)
 
     return covariance_hash
@@ -79,13 +76,15 @@ def build_regular_grid(xmin, xmax, dx,
 
     Returns
     -------
-    [float, float, float]
+    ndarray[[float, float, float]]
         Coordinates of the grid. Ordering: [x, y, z].
 
+    (int, int, int) the dimensions of the grid along x, y, z.
+
     """
-    nx = round((xmax - xmin) / dx) + 1
-    ny = round((ymax - ymin) / dy) + 1
-    nz = round((zmax - zmin) / dz) + 1
+    nx = int(round((xmax - xmin) / dx) + 1)
+    ny = int(round((ymax - ymin) / dy) + 1)
+    nz = int(round((zmax - zmin) / dz) + 1)
 
     grid = []
 
@@ -94,7 +93,7 @@ def build_regular_grid(xmin, xmax, dx,
             for i in np.linspace(xmin, xmax, nx, endpoint=True):
                 grid.append([i, j, k])
 
-    return grid
+    return np.array(grid), (nx, ny, nz)
 
 def regularize_grid(grid, dx, dy, dz):
     """ Given an sparse regular grid, build the smallest full regular grid
@@ -111,10 +110,12 @@ def regularize_grid(grid, dx, dy, dz):
 
     Returns
     -------
-    List[[float, float, float]]
+    ndarray[[float, float, float]]
         List of coordinates of the points of the full grid.
         The list is ordered, looping furst through x ,then through y, then
         through z.
+
+    (int, int, int) the dimensions of the grid along x, y, z.
 
     """
     grid = np.array(grid)
@@ -128,4 +129,35 @@ def regularize_grid(grid, dx, dy, dz):
     return build_regular_grid(xmin, xmax, dx,
                               ymin, ymax, dy,
                               zmin, zmax, dz)
+
+def regularize_grid_centered(grid, dx, dy, dz):
+    """ Same as above, but with origin at 0.
+    """
+    reg_grid, dims = regularize_grid(grid, dx, dy, dz)
+
+    orig_x = np.min(reg_grid[:, 0])
+    orig_y = np.min(reg_grid[:, 1])
+    orig_z = np.min(reg_grid[:, 2])
+
+    centered_grid = np.array(reg_grid) - [orig_x, orig_y, orig_z]
+
+    return reg_grid - [orig_x, orig_y, orig_z], dims
+
+
+def find_regular_index(v, dx, nx, dy, max_y, dz, max_z):
+    """ given a vector v, finds its index in a list containing
+    the cells of a regular grid of spacings dx, dy, dz and with
+    number of cells x: nx (included).
+    """
+    z_offset = int(v[2] / dz * (nx * ny))
+    y_offset = int(v[1] / dy * nx)
+    x_offset = int(v[0] / dx)
+
+def covariance_matrix(i, j, grid, covariance_hash):
+    """ Returns k(i, j), where i and j are the index of cells in grid.
+    """
+    # Compute normalized (first quadrant) disctance.
+    dist = np.abs(grid[i] - grid[j])
+
+    ind = find_regular_index(dist, dx, dy, dz)
 
