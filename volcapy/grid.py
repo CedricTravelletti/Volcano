@@ -157,4 +157,3 @@ def covariance_matrix(i, j, grid, dims, spacings, covariance_hash):
     ind = find_regular_index(dist, dims, spacings)
 
     return covariance_hash[ind]
-
