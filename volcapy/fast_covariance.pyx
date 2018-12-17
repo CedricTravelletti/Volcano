@@ -21,11 +21,20 @@ def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end)
 
     cdef double dist = 0.0
 
-    for i in range(row_begin, row_end + 1):
+    # Number of rows we will need to generate.
+    cdef int n_rows = row_end - row_begin + 1
+
+    cdef int row_ind = 0
+    cdef int i, j, d
+
+    for i in range(n_rows):
+        # Where we are in the big matrix.
+        row_ind = row_begin + i
+
         for j in range(dim_j):
             dist = 0.0
             for d in range(D):
-                dist += (coords[i, d] - coords[j, d])**2
+                dist += (coords[row_ind, d] - coords[j, d])**2
             out[i, j] = sigma_2 * exp(- dist / lambda_2)
 
     return out

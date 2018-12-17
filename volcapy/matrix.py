@@ -12,25 +12,30 @@ def partial_mult(f, B, row_begin, row_end):
     # Fetch the rows of A we need.
     A_part = f(row_begin, row_end)
 
-    # Dimensions of output.
-    n_rows_out = row_end - row_begin + 1
-    n_cols_out = B.shape[1]
-    # Allocate memory.
-    out = np.zeros((n_rows_out, n_cols_out))
+    return np.dot(A_part, B)
 
-    # Fill the output matrix.
-    # Warning: we only compute a group of rows of the output matrix,
-    # hence the row index 0 doesn't correspond to the first row of the output
-    # matrix, but to the first row we are computing, i.e. to row row_begin.
-    #
-    # We have to take this into account when accessing B. The partial version
-    # of A that we have already has this built-in.
-    for i in range(n_rows_out):
-        for j in range(n_cols_out):
-            t = 0.0
+def implicit_mat_mult(f, B, shape):
+    """ Performs the matrix multiplication A*B,
+    where A is defined implicitly via the function:
+    f(i, j) = A[i, j].
+
+    This is useful when the matrix A is too big to fit in memory.
+
+    Parameters
+    ----------
+    shape: (int, int)
+        Shape of the matrix A.
+
+    """
+    out = np.zeros((shape[0], B.shape[1]))
+
+    for i in range(shape[0]):
+        for j in range(B.shape[1]):
+            temp = 0
             for k in range(B.shape[0]):
-                t += A_part[i, k] * B[k, j]
-            out[i, j] = t
+                temp += f(i, k) * B[k, j]
+
+            out[i, j] = temp
+        print(i)
 
     return out
-
