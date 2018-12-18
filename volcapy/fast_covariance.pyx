@@ -1,6 +1,12 @@
 #cython: boundscheck=False, wraparound=False, nonecheck=False
 from libc.math cimport exp
 
+# GLOBALS.
+# TODO: Refactor to have build covariance call get_covariance.
+# But needs profiling.
+cdef double sigma_2 = 100.0**2
+cdef double lambda_2 = 200.0**2
+
 
 def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end):
     """ Builds the covariance matrix from row_begin to row_end, both included..
@@ -15,9 +21,6 @@ def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end)
     """
     cdef int dim_j = coords.shape[0]
     cdef int D = coords.shape[1]
-
-    cdef double sigma_2 = 100.0
-    cdef double lambda_2 = 200.0**2
 
     cdef double dist = 0.0
 
@@ -51,8 +54,6 @@ def get_cov(double[:, :] coords, int i, int j):
     """
     cdef int D = coords.shape[1]
 
-    cdef double sigma_2 = 100.0
-    cdef double lambda_2 = 200.0**2
     cdef double dist = 0.0
     cdef float out = 0.0
 
