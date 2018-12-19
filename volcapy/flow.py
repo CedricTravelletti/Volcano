@@ -96,4 +96,5 @@ B = out.T
 for i in range(n_model):
     Cm_post[i] = np.dot(A[i, :], B[:, i])
 
-np.save("Cm_post.npy", Cm_post)
+# Save the square root standard deviation).
+np.save("Cm_post.npy", np.sqrt(np.array([150**2]*fl.n_model) - Cm_post))
