@@ -8,6 +8,9 @@ from math import floor
 
 
 # Globals
+sigma_2 = 50.0**2
+lambda_2 = 2000**2
+
 dx = 50
 dy = 50
 dz = 50
@@ -29,9 +32,6 @@ n_data = F.shape[0]
 sigma_d = 0.1
 cov_d = np.diag([sigma_d] * n_data)
 
-# COVARIANCE KERNEL PARAMS
-sigma_2 = 200.0
-lambda_2 = 200.0**2
 
 # Prepare a function for returning partial rows of the covariance matrix.
 def build_partial_covariance(row_begin, row_end):
@@ -41,7 +41,8 @@ def build_partial_covariance(row_begin, row_end):
     """
     n_rows = row_end - row_begin + 1
     out = np.zeros((n_rows , n_model))
-    return ft.build_cov(coords, out, row_begin, row_end)
+    return ft.build_cov(coords, out, row_begin, row_end,
+            sigma_2, lambda_2)
 
 # TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
 # an implicitly defined one.
@@ -97,4 +98,4 @@ for i in range(n_model):
     Cm_post[i] = np.dot(A[i, :], B[:, i])
 
 # Save the square root standard deviation).
-np.save("Cm_post.npy", np.sqrt(np.array([150**2]*fl.n_model) - Cm_post))
+np.save("Cm_post.npy", np.sqrt(np.array([150**2]*n_model) - Cm_post))

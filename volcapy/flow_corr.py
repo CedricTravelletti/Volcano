@@ -32,14 +32,10 @@ n_data = F.shape[0]
 sigma_d = 0.1
 cov_d = np.diag([sigma_d] * n_data)
 
-# COVARIANCE KERNEL PARAMS
-sigma_2 = 200.0
-lambda_2 = 200.0**2
 
 # Prepare a function for returning partial rows of the covariance matrix.
 def build_partial_covariance(row_begin, row_end):
     """
-
     Warning: should cast, since returns MemoryView.
     """
     n_rows = row_end - row_begin + 1
@@ -103,4 +99,4 @@ for i in range(n_model):
     Cm_post[i] = np.dot(A[i, :], B[:, i])
 
 # Save the square root standard deviation).
-np.save("Cm_post.npy", np.sqrt(np.array([150**2]*n_model) - Cm_post))
+np.save("Cm_post.npy", np.sqrt(np.array([sigma_2]*n_model) - Cm_post))
