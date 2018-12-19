@@ -4,11 +4,12 @@ from libc.math cimport exp
 # GLOBALS.
 # TODO: Refactor to have build covariance call get_covariance.
 # But needs profiling.
-cdef double sigma_2 = 100.0**2
-cdef double lambda_2 = 200.0**2
+cdef double sigma_2 = 150**2
+cdef double lambda_2 = 500.0**2
 
 
-def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end):
+def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end,
+        double sigma_2, double lambda_2):
     """ Builds the covariance matrix from row_begin to row_end, both included..
 
     Parameters
@@ -43,7 +44,8 @@ def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end)
     return out
 
 
-def get_cov(double[:, :] coords, int i, int j):
+def get_cov(double[:, :] coords, int i, int j,
+        double sigma_2, double lambda_2):
     """ Gets the covariance between two points in model space.
     Can be used to build the covariance matrix.
 
