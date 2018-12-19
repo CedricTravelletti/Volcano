@@ -43,6 +43,8 @@ def build_partial_covariance(row_begin, row_end):
     out = np.zeros((n_rows , n_model))
     return ft.build_cov(coords, out, row_begin, row_end)
 
+# TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
+# an implicitly defined one.
 def compute_Cm_Gt(G):
     """ Compute the matrix product C_m * G^T.
     """
@@ -74,15 +76,24 @@ def compute_Cm_Gt(G):
 
 # Build prior mean.
 # The order parameters are statically compiled in fast covariance.
-m_prior = np.full(fl.n_model, 2300.0)
+m_prior = np.full(n_model, 2300.0)
 
 # Compute big matrix product and save.
-out = fl.compute_Cm_Gt(fl.F)
+out = compute_Cm_Gt(F)
 np.save('Cm_Gt.npy', out)
 
 # Use to perform inversion and save.
-temp = fl.F @ out
-inverse = np.linalg.inv(temp + fl.cov_d)
+temp = F @ out
+inverse = np.linalg.inv(temp + cov_d)
 
-m_final = m_prior + out @ inverse @ (fl.d_obs - fl.F @ m_prior)
+m_final = m_prior + out @ inverse @ (d_obs - F @ m_prior)
 np.save('m_final.npy', m_final)
+
+# Build and save the posterior covariance matrix.
+Cm_post = np.empty([n_model], dtype=out.dtype)
+A = out @ inverse
+B = out.T
+for i in range(n_model):
+    Cm_post[i] = np.dot(A[i, :], B[:, i])
+
+np.save("Cm_post.npy", Cm_post)
