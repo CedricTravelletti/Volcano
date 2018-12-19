@@ -55,12 +55,13 @@ def compute_Cm_Gt(G):
     GT = G.T
 
     # Create the list of chunks.
+    chunk_size = 1000
     chunks = []
-    for i in range(floor(n_model / 1000)):
-        chunks.append((i * 1000, i * 1000 + 999))
+    for i in range(floor(n_model / chunk_size)):
+        chunks.append((i * chunk_size, i * chunk_size + chunk_size - 1))
 
     # Last chunk cannot be fully loop.
-    chunks.append((floor(n_model / 1000.0)*1000, n_model - 1))
+    chunks.append((floor(n_model / float(chunk_size))*chunk_size, n_model - 1))
 
     # Loop in chunks of 1000.
     for row_begin, row_end in chunks:
