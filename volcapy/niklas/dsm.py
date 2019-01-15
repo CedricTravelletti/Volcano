@@ -57,3 +57,8 @@ class DSM:
         dsm = np.array(dsm)
 
         return cls(xs, ys, elevations)
+
+    def __getitem__(self, index):
+        """ Make class subscriptable.
+        """
+        return self.elevations[index]
