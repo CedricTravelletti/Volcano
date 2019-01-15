@@ -1,4 +1,4 @@
-""" Tools to perform Bayesian inversion (gaussian linear settin)
+""" Tools to perform Bayesian inversion (gaussian linear setting)
 in model or data space.
 """
 import numpy as np

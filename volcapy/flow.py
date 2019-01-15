@@ -1,6 +1,5 @@
 from volcapy import loading
-import volcapy.matrix as mt
-import volcapy.inversion as inv
+import volcapy.matrix_tools as mt
 import volcapy.fast_covariance as ft
 
 import numpy as np
@@ -8,7 +7,7 @@ from math import floor
 
 
 # Globals
-sigma_2 = 50.0**2
+sigma_2 = 100.0**2
 lambda_2 = 2000**2
 
 dx = 50
@@ -36,7 +35,6 @@ cov_d = np.diag([sigma_d] * n_data)
 # Prepare a function for returning partial rows of the covariance matrix.
 def build_partial_covariance(row_begin, row_end):
     """
-
     Warning: should cast, since returns MemoryView.
     """
     n_rows = row_end - row_begin + 1
@@ -56,12 +54,13 @@ def compute_Cm_Gt(G):
     GT = G.T
 
     # Create the list of chunks.
+    chunk_size = 1000
     chunks = []
-    for i in range(floor(n_model / 1000)):
-        chunks.append((i * 1000, i * 1000 + 999))
+    for i in range(floor(n_model / chunk_size)):
+        chunks.append((i * chunk_size, i * chunk_size + chunk_size - 1))
 
     # Last chunk cannot be fully loop.
-    chunks.append((floor(n_model / 1000.0)*1000, n_model - 1))
+    chunks.append((floor(n_model / float(chunk_size))*chunk_size, n_model - 1))
 
     # Loop in chunks of 1000.
     for row_begin, row_end in chunks:
@@ -87,15 +86,32 @@ np.save('Cm_Gt.npy', out)
 temp = F @ out
 inverse = np.linalg.inv(temp + cov_d)
 
-m_final = m_prior + out @ inverse @ (d_obs - F @ m_prior)
-np.save('m_final.npy', m_final)
+# TODO: Warning, compensating for Bouguer anomaly.
+m_posterior = m_prior + out @ inverse @ (d_obs - F @ m_prior)
+np.save('m_posterior.npy', m_posterior)
 
-# Build and save the posterior covariance matrix.
+# ----------------------------------------------
+# Build and save the diagonal of the posterior covariance matrix.
+# ----------------------------------------------
 Cm_post = np.empty([n_model], dtype=out.dtype)
 A = out @ inverse
 B = out.T
+
+# Diagonal is just given by the scalar product of the two factors.
 for i in range(n_model):
     Cm_post[i] = np.dot(A[i, :], B[:, i])
 
 # Save the square root standard deviation).
-np.save("Cm_post.npy", np.sqrt(np.array([150**2]*n_model) - Cm_post))
+np.save("Cm_post.npy", np.sqrt(np.array([sigma_2]*n_model) - Cm_post))
+
+# AMBITIOUS: Compute the whole (38GB) posterior covariance matrix.
+post_cov = np.memmap('post_cov.npy', dtype='float32', mode='w+',
+        shape=(n_model, n_model))
+
+# Compute the matrix product line by line.
+for i in range(n_model):
+    prior_cov = build_partial_covariance(i, i)
+    post_cov[i, :] = prior_cov - A[i, :] @ B
+
+# Flush to disk.
+del post_cov
