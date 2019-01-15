@@ -29,11 +29,13 @@ class Coarsener():
     def __init__(self, coarsen_x, coarsen_y, dsm):
         self.dimx = len(coarsen_x)
         self.dimy = len(coarsen_y)
-    
+
+        self.dsm = dsm
+
         # Check dimensions.
         if not (sum(coarsen_x) == dsm.dimx and sum(coarsen_y) == dsm.dimy):
             raise ValueError("Coarsening doesnt agree with dimensions of dsm.")
-    
+
         # Produce index correspondances.
         # This will be a list of lists. Each element contains a list of the
         # indices in the big grid that correspond to that element.
@@ -63,3 +65,50 @@ class Coarsener():
 
             self.inds_y += [tmp]
             count += coarsening
+
+    def get_fine_indices(self, i, j):
+        """ Get the indices (in the finer grid) of cells correspondin to cell
+        (i, j) in the coarser grid.
+
+        Parameters
+        ----------
+        i,j: int
+            Index in the coars grid.
+
+        Returns
+        -------
+        List[(int, int)]
+            List of indices in the bigger grid.
+
+        """
+        # Get the x and y index lists correspondin to the cell.
+        inds_x = self.inds_x[i]
+        inds_y = self.inds_y[j]
+
+        # Return a list of indices in the finer grid.
+        fine_indices = []
+        for x in inds_x:
+            for y in inds_y:
+                fine_indices.append((x, y))
+        return fine_indices
+
+    def get_fine_elevations(self, i, j):
+        """ Get the elevations (in the finer grid) of cells correspondin to cell
+        (i, j) in the coarser grid.
+
+        Parameters
+        ----------
+        i,j: int
+            Index in the coars grid.
+
+        Returns
+        -------
+        List[float]
+            List of elevations in the bigger grid.
+
+        """
+        fine_indices = self.get_fine_indices(i, j)
+        elevations = []
+        for cell in fine_indices:
+            elevations.append(self.dsm[cell[0], cell[1]])
+        return elevations
