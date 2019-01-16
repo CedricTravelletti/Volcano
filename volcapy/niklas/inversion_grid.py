@@ -87,6 +87,7 @@ class InversionGrid():
 
     def fill_grid(self):
         self.cells = []
+        self.topmost_indices = []
         for i, res_x in enumerate(self.coarsener.coarsen_x):
             for j,res_y in enumerate(self.coarsener.coarsen_y):
                 # Get the levels (number of floors) for that cell.
@@ -95,7 +96,15 @@ class InversionGrid():
                         current_max_zlevel]
 
                 # Loop over the floors, create the cells and append to list.
-                for z in current_zlevels:
+                # We want to retain the indices of the topmost cells,
+                # below is a clever trick to do it.
+                for z in sorted(current_zlevels):
                     x, y = self.coarsener.get_coords(i, j)
                     cell = Cell(x, y, z, res_x, res_y)
                     self.cells.append(cell)
+
+                # Trick: since we sorted the list of z-levels, the last one to
+                # get appended to the list is the one with the maximal
+                # altitude, i.e. the topmost one. We can thus get its index by
+                # looking at the length of the list.
+                self.topmost_indices.append(len(self.cells) - 1)
