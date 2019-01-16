@@ -61,4 +61,4 @@ class DSM:
     def __getitem__(self, index):
         """ Make class subscriptable.
         """
-        return (self.xs, self.ys, self.elevations[index])
+        return (self.xs[index[0]], self.ys[index[1]], self.elevations[index])
