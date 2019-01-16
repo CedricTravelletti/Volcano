@@ -30,6 +30,9 @@ class Coarsener():
         self.dimx = len(coarsen_x)
         self.dimy = len(coarsen_y)
 
+        self.coarsen_x = coarsen_x
+        self.coarsen_y = coarsen_y
+
         self.dsm = dsm
 
         # Check dimensions.
@@ -93,7 +96,7 @@ class Coarsener():
         return fine_indices
 
     def get_fine_elevations(self, i, j):
-        """ Get the elevations (in the finer grid) of cells correspondin to cell
+        """ Get the elevations (in the finer grid) of cells corresponding to cell
         (i, j) in the coarser grid.
 
         Parameters
@@ -110,5 +113,26 @@ class Coarsener():
         fine_indices = self.get_fine_indices(i, j)
         elevations = []
         for cell in fine_indices:
-            elevations.append(self.dsm[cell[0], cell[1]])
+            elevation = self.dsm[cell[0], cell[1]][2]
+            elevations.append(elevation)
         return elevations
+
+    def get_coords(self, i, j):
+        """ Get lat/long of the current cell in the coarse grid.
+        We use the mean of the coordinates of the cell in the larger grid that
+        correspond to the cell under consideration.
+        """
+        # Get the indexes of the corresponding cells in the big grid.
+        fine_indices = self.get_fine_indices(i, j)
+
+        # For each of these cells, get their x and y coordinates.
+        # Put in a list.
+        coord_x = []
+        coord_y = []
+        for ind in fine_indices:
+            coords = self.dsm[ind[0], ind[1]]
+
+            coord_x.append(coords[0])
+            coord_y.append(coords[1])
+
+        return(np.mean(coord_x), np.mean(coord_y))

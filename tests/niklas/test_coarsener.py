@@ -7,6 +7,7 @@ from volcapy.niklas import coarsener as coas
 import numpy as np
 
 from numpy.testing import assert_array_equal
+from nose.tools import assert_equal
 
 
 class TestCoarsener():
@@ -49,3 +50,12 @@ class TestCoarsener():
         """
         elevations = self.coarsener.get_fine_elevations(1, 1)
         assert_array_equal(elevations, [7,8,12,13,16,17])
+
+    def test_get_coords(self):
+        """ Get coordinates of midpoint in finer grid.
+        """
+        coords1 = self.coarsener.get_coords(0, 0)
+        assert_equal(coords1, (1, 4.5))
+
+        coords2 = self.coarsener.get_coords(1, 1)
+        assert_equal(coords2, (3, 6.5))
