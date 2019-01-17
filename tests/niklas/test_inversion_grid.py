@@ -63,3 +63,9 @@ class TestCoarsener():
             if cell.x == 5.5 and cell.y == 6.5:
                 assert_equal(cell.res_x, 20)
                 assert_equal(cell.res_y, 20)
+
+    def test_z_resolutions(self):
+        """ Check vertical resolutions are computed correctly.
+        """
+        z_res = [1, 2, 1, 1, 1, 0]
+        assert_equal(self.inversion_grid.z_resolutions, z_res)
