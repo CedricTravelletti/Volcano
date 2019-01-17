@@ -17,17 +17,18 @@ from volcapy.niklas.coarsener import Coarsener
 class Cell():
     """ Class representing a cell in the inversion grid.
     """
-    def __init__(self, x, y, z, res_x, res_y):
+    def __init__(self, x, y, z, res_x, res_y, res_z):
         self.x = x
         self.y =y
         self.z = z
         self.res_x = res_x
         self.res_y = res_y
+        self.res_z = res_z
 
     # Redefine printing method so it display useful informations.
     def __str__(self):
-        return("x: {} y: {} z: {} res_x: {} res_y: {}".format(self.x, self.y,
-                self.z, self.res_x, self.res_y))
+        return("x: {} y: {} z: {} res_x: {} res_y: {} res_z: {}".format(self.x, self.y,
+                self.z, self.res_x, self.res_y, self.res_z))
 
 from collections.abc import Sequence
 class InversionGrid(Sequence):
@@ -55,7 +56,14 @@ class InversionGrid(Sequence):
         self.dimy = self.coarsener.dimy
         self.zlevels = zlevels
 
-        self.grid_max_zlevel = self.build_max_zlevel(self.coarsener, zlevels)
+        # Create a vector giving the vertical size of each z_level.
+        # This is used to define the z_res of each cells.
+        # We put a resolution of zero to the topmost cells.
+        self.z_resolutions = self.build_z_resolutions(zlevels)
+
+        # For each cell in the horizontal plane, determine the maximal
+        # altitude.
+        self.grid_max_zlevel = self.build_max_zlevel(self.coarsener, self.zlevels)
 
         # Will be created when we call fill_grid.
         self.cells = []
@@ -112,15 +120,24 @@ class InversionGrid(Sequence):
             for j,res_y in enumerate(self.coarsener.res_y):
                 # Get the levels (number of floors) for that cell.
                 current_max_zlevel = self.grid_max_zlevel[i, j]
-                current_zlevels = [v for v in self.zlevels if v <=
+
+                # CLUMSY: Fucking vertical resolution: we have to keep the
+                # size information of each level, hence the intricate code
+                # below.
+                current_zlevels = [v for v in zip(self.zlevels,
+                        self.z_resolutions) if v[0] <=
                         current_max_zlevel]
 
                 # Loop over the floors, create the cells and append to list.
                 # We want to retain the indices of the topmost cells,
                 # below is a clever trick to do it.
-                for z in sorted(current_zlevels):
+
+                # CLUMSY: (see above remark) since we have a list of tuples, we
+                # need to specify that we want to sort according to the first
+                # entry.
+                for z in sorted(current_zlevels, key=lambda x: x[0]):
                     x, y = self.coarsener.get_coords(i, j)
-                    cell = Cell(x, y, z, res_x, res_y)
+                    cell = Cell(x, y, z[0], res_x, res_y, z[1])
                     self.cells.append(cell)
 
                 # Trick: since we sorted the list of z-levels, the last one to
@@ -131,3 +148,19 @@ class InversionGrid(Sequence):
 
         # We cast to numpy array, so that we can index also with lists.
         self.cells = np.array(self.cells)
+
+    @staticmethod
+    def build_z_resolutions(zlevels):
+        """ Create a vector giving the vertical size of each z_level.
+        This is used to define the z_res of each cells.
+        We will put a resolution of zero to the topmost cells.
+
+        """
+        # Make a copy of the input so we do not modify it.
+        zl = zlevels[:]
+        tmp = zl + [zl[-1]]
+        
+        z_resolutions = zl
+        for i, z in enumerate(zl):
+            z_resolutions[i] = tmp[i + 1] - tmp[i]
+        return z_resolutions
