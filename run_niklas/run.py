@@ -32,14 +32,16 @@ z_step = 50
 
 # Create a floor every *step*. We have to add 1 so that the z_high is included
 # in the interval.
-z_levels = np.arange(z_low, z_high + 1, z_step)
+# TODO: May be bug prone: we have to cast to list, since arange produces an
+# array.
+z_levels = list(np.arange(z_low, z_high + 1, z_step))
 
 # Add the lowest level.
 z_levels = [z_base] + z_levels
 
 # Create the inversion grid.
-inversion_grid = InversionGrid(coarsen_x, coarsen_y, res_x, res_y, z_levels,
-        dsm)
+inversion_grid = InversionGrid(
+        coarsen_x, coarsen_y, res_x, res_y, z_levels, dsm)
 
 # Load the data points coordinates.
 data = loading.load_niklas(data_path)
