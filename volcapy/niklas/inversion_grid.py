@@ -29,8 +29,8 @@ class Cell():
         return("x: {} y: {} z: {} res_x: {} res_y: {}".format(self.x, self.y,
                 self.z, self.res_x, self.res_y))
 
-
-class InversionGrid():
+from collections.abc import Sequence
+class InversionGrid(Sequence):
     def __init__(self, coarsen_x, coarsen_y, zlevels, dsm):
         """
         Parameters
@@ -54,8 +54,21 @@ class InversionGrid():
 
         self.grid_max_zlevel = self.build_max_zlevel(self.coarsener, zlevels)
 
+        # Will be created when we call fill_grid.
+        self.cells = []
+        self.topmost_indices = []
+
         # Create the grid.
         self.fill_grid()
+
+        # Call parent constructor.
+        super().__init__()
+
+    def __getitem__(self, i):
+        return self.cells[i]
+
+    def __len__(self):
+        return len(self.cells)
 
     @staticmethod
     def build_max_zlevel(coarsener, zlevels):
@@ -86,6 +99,10 @@ class InversionGrid():
         return grid_max_zlevel
 
     def fill_grid(self):
+        """ Create the cells in the grid, taking into account the fact that the
+        grid is irregulat, i.e., the number a z-floors can change, since we do
+        not include cells that are 'in the air' wrt the dsm.
+        """
         self.cells = []
         self.topmost_indices = []
         for i, res_x in enumerate(self.coarsener.coarsen_x):
@@ -108,3 +125,6 @@ class InversionGrid():
                 # altitude, i.e. the topmost one. We can thus get its index by
                 # looking at the length of the list.
                 self.topmost_indices.append(len(self.cells) - 1)
+
+        # We cast to numpy array, so that we can index also with lists.
+        self.cells = np.array(self.cells)

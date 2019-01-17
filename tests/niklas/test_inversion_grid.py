@@ -7,6 +7,7 @@ from volcapy.niklas.inversion_grid import InversionGrid
 import numpy as np
 
 from numpy.testing import assert_array_equal
+from nose.tools import assert_equal
 
 
 class TestCoarsener():
