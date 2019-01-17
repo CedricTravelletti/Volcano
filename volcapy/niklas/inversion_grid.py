@@ -157,9 +157,13 @@ class InversionGrid(Sequence):
 
         """
         # Make a copy of the input so we do not modify it.
-        zl = zlevels[:]
-        tmp = zl + [zl[-1]]
-        
+        # TODO: Here we cast to list, because somehow it seems that zlevels is
+        # a numpy array. We cannot append to an array, so we convert.
+        # This is a bug-prone quickfix and should be cleaned.
+        zl = list(zlevels[:])
+        tmp = list(zlevels[:])
+        tmp.append(tmp[-1])
+
         z_resolutions = zl
         for i, z in enumerate(zl):
             z_resolutions[i] = tmp[i + 1] - tmp[i]
