@@ -26,7 +26,11 @@ class TestCoarsener():
 
         coarsen_x = [1, 3, 2]
         coarsen_y = [2,2]
-        self.coarsener = coas.Coarsener(coarsen_x, coarsen_y, dsm)
+
+        res_x = [100, 30, 20]
+        res_y = [20, 20]
+
+        self.coarsener = coas.Coarsener(coarsen_x, coarsen_y, res_x, res_y, dsm)
 
     def tearDown(self):
         pass

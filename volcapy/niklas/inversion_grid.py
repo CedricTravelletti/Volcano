@@ -31,7 +31,7 @@ class Cell():
 
 from collections.abc import Sequence
 class InversionGrid(Sequence):
-    def __init__(self, coarsen_x, coarsen_y, zlevels, dsm):
+    def __init__(self, coarsen_x, coarsen_y, res_x, res_y, zlevels, dsm):
         """
         Parameters
         ----------
@@ -42,12 +42,15 @@ class InversionGrid(Sequence):
             of the dsm, then, the second cells (along dim-x) will correspond to the
             next 5 cells, and so on.
         coarsen_y: List[int]
+        res_x: List[float]
+            Size of each cell in meters.
+        res_y: List[float]
         zlevels: List[float]
             List of heights (in meters) at wich we place cells.
         dsm: DSM
 
         """
-        self.coarsener = Coarsener(coarsen_x, coarsen_y, dsm)
+        self.coarsener = Coarsener(coarsen_x, coarsen_y, res_x, res_y, dsm)
         self.dimx = self.coarsener.dimx
         self.dimy = self.coarsener.dimy
         self.zlevels = zlevels
@@ -105,8 +108,8 @@ class InversionGrid(Sequence):
         """
         self.cells = []
         self.topmost_indices = []
-        for i, res_x in enumerate(self.coarsener.coarsen_x):
-            for j,res_y in enumerate(self.coarsener.coarsen_y):
+        for i, res_x in enumerate(self.coarsener.res_x):
+            for j,res_y in enumerate(self.coarsener.res_y):
                 # Get the levels (number of floors) for that cell.
                 current_max_zlevel = self.grid_max_zlevel[i, j]
                 current_zlevels = [v for v in self.zlevels if v <=

@@ -27,9 +27,12 @@ class TestCoarsener():
         coarsen_x = [1, 3, 2]
         coarsen_y = [2,2]
 
+        res_x = [100, 30, 20]
+        res_y = [20, 20]
+
         z_levels = [-1, 0, 2, 3, 4, 5]
-        self.inversion_grid = InversionGrid(coarsen_x, coarsen_y, z_levels,
-                dsm)
+        self.inversion_grid = InversionGrid(coarsen_x, coarsen_y, res_x, res_y,
+                z_levels, dsm)
 
     def tearDown(self):
         pass
@@ -47,3 +50,16 @@ class TestCoarsener():
         # Check the index correspondence.
         assert_array_equal(self.inversion_grid.grid_max_zlevel,
                 grid_max_zlevels)
+
+    def test_resolutions(self):
+        """ Check resolution of coarse cells correctly defined.
+        """
+        for cell in self.inversion_grid:
+            # Look for a specific cell whose res we know.
+            if cell.x == 3.0 and cell.y == 4.5:
+                assert_equal(cell.res_x, 30)
+                assert_equal(cell.res_y, 20)
+
+            if cell.x == 5.5 and cell.y == 6.5:
+                assert_equal(cell.res_x, 20)
+                assert_equal(cell.res_y, 20)

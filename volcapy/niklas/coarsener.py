@@ -24,20 +24,31 @@ class Coarsener():
         of the dsm, then, the second cells (along dim-x) will correspond to the
         next 5 cells, and so on.
     coarsen_y: [int]
+    res_x: List[float]
+        Size of each cell in meters.
+    res_y: List[float]
     dsm: DSM
     """
-    def __init__(self, coarsen_x, coarsen_y, dsm):
+    def __init__(self, coarsen_x, coarsen_y, res_x, res_y, dsm):
         self.dimx = len(coarsen_x)
         self.dimy = len(coarsen_y)
 
         self.coarsen_x = coarsen_x
         self.coarsen_y = coarsen_y
 
+        self.res_x = res_x
+        self.res_y = res_y
+
         self.dsm = dsm
 
         # Check dimensions.
         if not (sum(coarsen_x) == dsm.dimx and sum(coarsen_y) == dsm.dimy):
             raise ValueError("Coarsening doesnt agree with dimensions of dsm.")
+
+        if not (len(res_x) == len(coarsen_x) and len(res_y) == len(coarsen_y)):
+            raise ValueError(
+            "Length of resolution vectors differs from length of coarsening vector")
+
 
         # Produce index correspondances.
         # This will be a list of lists. Each element contains a list of the
