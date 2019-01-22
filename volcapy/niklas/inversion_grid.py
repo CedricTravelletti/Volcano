@@ -222,7 +222,17 @@ class InversionGrid(Sequence):
             to find the corresponding dsm cells.
 
         """
-        ind_y = ind % self.dimy
-        ind_x = (ind - ind_y) / self.dimy
+        ind_y = int(ind % self.dimy)
+        ind_x = int((ind - ind_y) / self.dimy)
 
         return ((ind_x, ind_y))
+
+    def fine_cells_from_topmost_ind(self, ind):
+        """ Given the index of a topmost cell, give the fine cells that
+        correspond to it.
+
+        """
+        # First convert to 2-D indexing.
+        (ind_x, ind_y) = self.topmost_ind_to_2d_ind(ind)
+
+        return self.coarsener.get_fine_cells(ind_x, ind_y)
