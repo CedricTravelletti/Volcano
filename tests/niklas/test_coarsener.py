@@ -22,7 +22,11 @@ class TestCoarsener():
                 [18, 19, 20, 21],
                 [22, 23, 24, 25],
                 ])
-        dsm = dsm_mod.DSM(longs, lats, elevations)
+
+        dem_res_x = 6*[1]
+        dem_res_y = 4*[1]
+
+        dsm = dsm_mod.DSM(longs, lats, elevations, dem_res_x, dem_res_y)
 
         coarsen_x = [1, 3, 2]
         coarsen_y = [2,2]
@@ -70,19 +74,19 @@ class TestCoarsener():
         cells = self.coarsener.get_fine_cells(1, 1)
 
         cell = cells[0]
-        assert_equal(cell, (2, 6, 7))
+        assert_equal((cell.x, cell.y, cell.z), (2, 6, 7))
 
         cell = cells[1]
-        assert_equal(cell, (2, 7, 8))
+        assert_equal((cell.x, cell.y, cell.z), (2, 7, 8))
 
         cell = cells[2]
-        assert_equal(cell, (3, 6, 12))
+        assert_equal((cell.x, cell.y, cell.z), (3, 6, 12))
         
         cell = cells[3]
-        assert_equal(cell, (3, 7, 13))
+        assert_equal((cell.x, cell.y, cell.z), (3, 7, 13))
 
         cell = cells[4]
-        assert_equal(cell, (4, 6, 16))
+        assert_equal((cell.x, cell.y, cell.z), (4, 6, 16))
 
         cell = cells[5]
-        assert_equal(cell, (4, 7, 17))
+        assert_equal((cell.x, cell.y, cell.z), (4, 7, 17))

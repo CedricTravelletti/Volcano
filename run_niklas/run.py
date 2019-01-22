@@ -10,11 +10,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
 
-dx = 50
-dy = 50
-dz = 50
-spacings = (dx, dy, dz)
-
 # LOAD DATA
 data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 dsm = DSM.from_matfile(data_path)
@@ -29,6 +24,10 @@ coarsen_y = [50] + 190*[5] + [75]
 # Note that inversion cells are coarser than the DEM.
 res_x = [5000] + 194*[50] + [7000]
 res_y = [5000] + 190*[50] + [7500]
+
+# Resolution of the DEM cells.
+dem_res_x = 50*[100] + 5*194*[10] + 70*[100]
+dem_res_y = 50*[100] + 5*190*[10] + 75*[100]
 
 z_base = -5000
 z_low = -475
