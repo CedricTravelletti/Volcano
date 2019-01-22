@@ -116,6 +116,30 @@ class InversionGrid(Sequence):
         """
         self.cells = []
         self.topmost_indices = []
+
+        # We do a first pass to put the topmost ones at the beginning of the
+        # list.
+        for i, res_x in enumerate(self.coarsener.res_x):
+            for j,res_y in enumerate(self.coarsener.res_y):
+
+                # Get the maximal altitude at that x-y point, that is, get the
+                # topmost cell.
+                current_max_zlevel = self.grid_max_zlevel[i, j]
+
+                # Get the coordinates, create the cell and append to the list.
+                # Note that the topmost cells will get refined, hence we do not
+                # need to know their resolution and we set it to -1.
+                x, y = self.coarsener.get_coords(i, j)
+                res_z = -1
+                cell = Cell(x, y, current_max_zlevel, res_x, res_y,
+                        res_z)
+                self.cells.append(cell)
+
+        # Store the indices of the surface cells so we can easily access them.
+        self.topmost_indices = list(range(len(self.cells)))
+
+        # In the second pass, populate all the floors below, i.e. the cells
+        # that are not on the surface.
         for i, res_x in enumerate(self.coarsener.res_x):
             for j,res_y in enumerate(self.coarsener.res_y):
                 # Get the levels (number of floors) for that cell.
@@ -124,8 +148,11 @@ class InversionGrid(Sequence):
                 # CLUMSY: Fucking vertical resolution: we have to keep the
                 # size information of each level, hence the intricate code
                 # below.
+
+                # Warning: Note the use of a 'strictly smaller' to discard the
+                # topmost level which has already be treated above.
                 current_zlevels = [v for v in zip(self.zlevels,
-                        self.z_resolutions) if v[0] <=
+                        self.z_resolutions) if v[0] <
                         current_max_zlevel]
 
                 # Loop over the floors, create the cells and append to list.

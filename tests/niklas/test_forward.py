@@ -28,12 +28,12 @@ class TestForward():
         """
         # Here, compare with outputs from Niklas's code.
         F = bu.F
-    
-        a = F[20000, 40]
+
+        a = F[47352, 40]
         assert_almost_equal(a, 0.001149142185113)
-    
-        a = F[100000, 500]
+
+        a = F[117412, 500]
         assert_almost_equal(a, 0.01927512613701765)
-    
-        a = F[80000, 10]
+
+        a = F[99449, 10]
         assert_almost_equal(a, 0.023827290251233535)
