@@ -63,3 +63,26 @@ class TestCoarsener():
 
         coords2 = self.coarsener.get_coords(1, 1)
         assert_equal(coords2, (3, 6.5))
+
+    def test_get_fine_cells(self):
+        """ Get fine cells corresponding to coarse cell.
+        """
+        cells = self.coarsener.get_fine_cells(1, 1)
+
+        cell = cells[0]
+        assert_equal(cell, (2, 6, 7))
+
+        cell = cells[1]
+        assert_equal(cell, (2, 7, 8))
+
+        cell = cells[2]
+        assert_equal(cell, (3, 6, 12))
+        
+        cell = cells[3]
+        assert_equal(cell, (3, 7, 13))
+
+        cell = cells[4]
+        assert_equal(cell, (4, 6, 16))
+
+        cell = cells[5]
+        assert_equal(cell, (4, 7, 17))

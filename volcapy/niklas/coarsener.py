@@ -1,6 +1,8 @@
 # File: coarsener.py, Author: Cedric Travelletti, Date: 15.01.2019.
 """ Class implementing coarsening functions.
 
+THIS IS STRICTLY 2-DIMENSIONAL, i.e., this only refers to x-y slice.
+
 We might want to have an inversion grid that is coarser than the dsm,
 i.e., each cell in the inversion grid corresponds to several cells in the dsm
 grid.
@@ -87,7 +89,7 @@ class Coarsener():
         Parameters
         ----------
         i,j: int
-            Index in the coars grid.
+            Index in the coarse grid.
 
         Returns
         -------
@@ -147,3 +149,25 @@ class Coarsener():
             coord_y.append(coords[1])
 
         return(np.mean(coord_x), np.mean(coord_y))
+
+    def get_fine_cells(self, i, j):
+        """ Get the cell (in the finer grid) corresponding to cell
+        (i, j) in the coarser grid.
+
+        Parameters
+        ----------
+        i,j: int
+            Index in the coarse grid.
+
+        Returns
+        -------
+        List[float]
+            List of elevations in the bigger grid.
+
+        """
+        fine_indices = self.get_fine_indices(i, j)
+        cells = []
+        for ind in fine_indices:
+            cell = self.dsm[ind[0], ind[1]]
+            cells.append(cell)
+        return cells
