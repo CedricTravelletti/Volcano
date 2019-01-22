@@ -19,9 +19,14 @@ spacings = (dx, dy, dz)
 data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 dsm = DSM.from_matfile(data_path)
 
+# Coarsening parameters.
+# For each inversion cell, it gives the number of DEM cells that are aggregated
+# to build it.
 coarsen_x = [50] + 194*[5] + [70]
 coarsen_y = [50] + 190*[5] + [75]
 
+# Resolution of each inversion cell (in meters).
+# Note that inversion cells are coarser than the DEM.
 res_x = [5000] + 194*[50] + [7000]
 res_y = [5000] + 190*[50] + [7500]
 
