@@ -125,8 +125,8 @@ class Coarsener():
         """
         fine_indices = self.get_fine_indices(i, j)
         elevations = []
-        for cell in fine_indices:
-            elevation = self.dsm[cell[0], cell[1]][2]
+        for cell_ind in fine_indices:
+            elevation = self.dsm[cell_ind[0], cell_ind[1]].z
             elevations.append(elevation)
         return elevations
 
@@ -143,10 +143,10 @@ class Coarsener():
         coord_x = []
         coord_y = []
         for ind in fine_indices:
-            coords = self.dsm[ind[0], ind[1]]
+            cell = self.dsm[ind[0], ind[1]]
 
-            coord_x.append(coords[0])
-            coord_y.append(coords[1])
+            coord_x.append(cell.x)
+            coord_y.append(cell.y)
 
         return(np.mean(coord_x), np.mean(coord_y))
 

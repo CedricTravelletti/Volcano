@@ -5,11 +5,15 @@ Also allows to build a dsm object from the raw Niklas data.
 import h5py
 import numpy as np
 
+# Import the definition of a Cell from inversion_grid, so that we have a
+# coherent data format across modules.
+from volcapy.niklas.inversion_grid import Cell
+
 
 class DSM:
     """ DSM functionalities
     """
-    def __init__(self, longs, lats, elevations):
+    def __init__(self, longs, lats, elevations, res_x, res_y):
         """ Default constructor to create dsm from a list of x-coordinates
         (longitudes), y-coordinates (latitudes) and a matrix of elevations
         (first coordinate for x-axis).
@@ -21,6 +25,9 @@ class DSM:
         elevations [[float]]
             2D array, elevations[i, j] gives the elevation of the cell with
             coordinates longs[i], lats[j].
+        res_x: [float]
+            For each x-cell, gives its size in meters.
+        res_y: [float]
         """
         self.xs = longs
         self.ys = lats
@@ -28,6 +35,9 @@ class DSM:
 
         self.dimx = len(self.xs)
         self.dimy = len(self.ys)
+
+        self.res_x = res_x
+        self.res_y = res_y
 
     @classmethod
     def from_matfile(cls, path):
@@ -56,9 +66,59 @@ class DSM:
 
         dsm = np.array(dsm)
 
-        return cls(xs, ys, elevations)
+        # TODO: Clean this.
+        # We have to specify the size of each dsm cell.
+        # This could be computed automatically.
+        # For the moment being, we hardcode the size of Niklas dsm here.
+        dem_res_x = 50*[100] + 5*194*[10] + 70*[100]
+        dem_res_y = 50*[100] + 5*190*[10] + 75*[100]
+
+        return cls(xs, ys, elevations, dem_res_x, dem_res_y)
 
     def __getitem__(self, index):
-        """ Make class subscriptable.
+        """ Return the coordinates/elecation of the cell at the given index.
+        Also allows for slicing (i.e. giving an array of indices instead of a
+        single scalar tuple.
+
+        This returns a Cell object, to make the data format compatible with the
+        inversion_grid module.
         """
-        return (self.xs[index[0]], self.ys[index[1]], self.elevations[index])
+        # If we get a tuple, then we simply have to return the single cell it
+        # indexes.
+        if isinstance(index, tuple):
+            return self._get_individual_item(index[0], index[1])
+
+        # If not, then we need to iterate the list we were provided, build once
+        # cell each time, store them in a list and return the list.
+        else:
+            cells = []
+            for ind in index:
+                cells.append(self._get_individual_item(ind[0], ind[1]))
+
+            return cells
+
+    def _get_individual_item(self, i, j):
+        """ Helper function for the above. Builds and return the cell
+        corresponding the a single index. Then, we chain it with the above in
+        order to allow the user to provide a list of indices and get back a
+        list of cells.
+
+        Parameters
+        ----------
+        i: int
+            Index along the x-dimension.
+        j: int
+            Index along the y-dimension.
+
+        Returns
+        -------
+        Cell
+        """
+        # Get the resolutions and lat/longs/elevations.
+        res_x = self.res_x[i]
+        res_y = self.res_y[j]
+        x = self.xs[i]
+        y = self.ys[j]
+        elevation = self.elevations[i, j]
+
+        return Cell(x, y, elevation, res_x, res_y, res_z=0)
