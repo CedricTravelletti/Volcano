@@ -78,3 +78,15 @@ class TestCoarsener():
 
         ind = self.inversion_grid.topmost_ind_to_2d_ind(4)
         assert_equal(ind, (2, 0))
+
+    def test_fine_cells_from_topmost_ind(self):
+        """ Check the fine cells corresponding to a given index of a topmost cell.
+        """
+        cells = self.inversion_grid.fine_cells_from_topmost_ind(2)
+        assert_equal(cells[0][0], 2)
+        assert_equal(cells[0][1], 4)
+        assert_equal(cells[0][2], 5)
+
+        assert_equal(cells[5][0], 4)
+        assert_equal(cells[5][1], 5)
+        assert_equal(cells[5][2], 15)
