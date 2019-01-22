@@ -69,3 +69,12 @@ class TestCoarsener():
         """
         z_res = [1, 2, 1, 1, 1, 0]
         assert_equal(self.inversion_grid.z_resolutions, z_res)
+
+    def test_topmost_ind_to_2d_ind(self):
+        """ Check conversion of 1D index to 2D one for topmost cells.
+        """
+        ind = self.inversion_grid.topmost_ind_to_2d_ind(3)
+        assert_equal(ind, (1, 1))
+
+        ind = self.inversion_grid.topmost_ind_to_2d_ind(4)
+        assert_equal(ind, (2, 0))

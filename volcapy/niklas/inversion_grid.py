@@ -195,3 +195,34 @@ class InversionGrid(Sequence):
         for i, z in enumerate(zl):
             z_resolutions[i] = tmp[i + 1] - tmp[i]
         return z_resolutions
+
+    # TODO: Refactor: it would be better to have the 1D -> 2D indices
+    # functionalities in the coarsener.
+    def topmost_ind_to_2d_ind(self, ind):
+        """ Given the index of a topmost cell in the list of cells, give the x
+        and y index (in the 2D grid) which correspond to that cell.
+
+        The goal of this method is to be able to find dsm cells that belong to
+        a given topmost cell.
+
+        Note that storing this as an attribute of each topmost cell would be
+        memory costly, so we chose to compute it dynamically.
+
+        Parameters
+        ----------
+        ind: int
+            Index, in the 'cells' list of the topmost cell we are interested
+            ind.
+
+        Returns
+        -------
+        (int, int)
+            x-y index (in the 2D version of the inversion grid) of the given
+            cell. One can then use the get_fine_cells method of the coarsener
+            to find the corresponding dsm cells.
+
+        """
+        ind_y = ind % self.dimy
+        ind_x = (ind - ind_y) / self.dimy
+
+        return ((ind_x, ind_y))
