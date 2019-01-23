@@ -1,4 +1,4 @@
-# File: inversion_grid.py, Author: Cedric Travelletti, Date: 15.01.2019.
+# fILe: inversion_grid.py, Author: Cedric Travelletti, Date: 15.01.2019.
 """ Class implementing inversion grid.
 
 The inversion grid has two importan properties
@@ -117,6 +117,9 @@ class InversionGrid(Sequence):
         self.cells = []
         self.topmost_indices = []
 
+        # --------------------------------------------------
+        # BUILD TOPMOST CELLS
+        # --------------------------------------------------
         # We do a first pass to put the topmost ones at the beginning of the
         # list.
         for i, res_x in enumerate(self.coarsener.res_x):
@@ -133,6 +136,15 @@ class InversionGrid(Sequence):
                 res_z = -1
                 cell = Cell(x, y, current_max_zlevel, res_x, res_y,
                         res_z)
+
+                # TODO: Maybe needs to be refactored.
+                # Add a new attribute to the topmost inversion cells:
+                # Each one stores a list of the fine cells that make it up.
+                # This takes some memory, but will speed up the refinement
+                # process: all information will be directly available, no
+                # lookup necessary.
+                cell.fine_cells = self.coarsener.get_fine_cells(i, j)
+
                 self.cells.append(cell)
 
         # Store the indices of the surface cells so we can easily access them.
