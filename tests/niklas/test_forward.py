@@ -44,3 +44,6 @@ class TestForward():
 
         a = F[17999, 542]
         assert_almost_equal(a, 5.850236139743695)
+
+        a = F[23550, 535]
+        assert_almost_equal(a, 5.16959614)
