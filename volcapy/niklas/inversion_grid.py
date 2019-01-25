@@ -122,19 +122,24 @@ class InversionGrid(Sequence):
         # --------------------------------------------------
         # We do a first pass to put the topmost ones at the beginning of the
         # list.
+        #
+        # Note that these cell do not follow the vertical z-splitting of the
+        # other one. That is, they have their true altitude as altitude.
         for i, res_x in enumerate(self.coarsener.res_x):
             for j,res_y in enumerate(self.coarsener.res_y):
-
-                # Get the maximal altitude at that x-y point, that is, get the
-                # topmost cell.
-                current_max_zlevel = self.grid_max_zlevel[i, j]
 
                 # Get the coordinates, create the cell and append to the list.
                 # Note that the topmost cells will get refined, hence we do not
                 # need to know their resolution and we set it to -1.
                 x, y = self.coarsener.get_coords(i, j)
+
+                # Get the elevations of the fine cells, and take the mean.
+                # Note that in the end, we will use the finer cells to compute
+                # the response, so this z-value wont ever get used.
+                z = np.mean(self.coarsener.get_fine_elevations(i, j))
+
                 res_z = -1
-                cell = Cell(x, y, current_max_zlevel, res_x, res_y,
+                cell = Cell(x, y, z, res_x, res_y,
                         res_z)
 
                 # TODO: Maybe needs to be refactored.
@@ -144,6 +149,7 @@ class InversionGrid(Sequence):
                 # process: all information will be directly available, no
                 # lookup necessary.
                 cell.fine_cells = self.coarsener.get_fine_cells(i, j)
+                cell.is_topcell = True
 
                 self.cells.append(cell)
 
@@ -177,13 +183,8 @@ class InversionGrid(Sequence):
                 for z in sorted(current_zlevels, key=lambda x: x[0]):
                     x, y = self.coarsener.get_coords(i, j)
                     cell = Cell(x, y, z[0], res_x, res_y, z[1])
+                    cell.is_topcell = False
                     self.cells.append(cell)
-
-                # Trick: since we sorted the list of z-levels, the last one to
-                # get appended to the list is the one with the maximal
-                # altitude, i.e. the topmost one. We can thus get its index by
-                # looking at the length of the list.
-                self.topmost_indices.append(len(self.cells) - 1)
 
         # We cast to numpy array, so that we can index also with lists.
         self.cells = np.array(self.cells)
