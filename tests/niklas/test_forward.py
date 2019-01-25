@@ -37,3 +37,10 @@ class TestForward():
 
         a = F[99449, 10]
         assert_almost_equal(a, 0.023827290251233535)
+
+        # Also test on a top cell.
+        a = F[17999, 10]
+        assert_almost_equal(a, 2.053663611660113)
+
+        a = F[17999, 542]
+        assert_almost_equal(a, 5.850236139743695)
