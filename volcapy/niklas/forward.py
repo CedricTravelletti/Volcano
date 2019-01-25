@@ -7,7 +7,7 @@ from volcapy.niklas.inversion_grid import InversionGrid
 from volcapy.niklas.banerjee import banerjee
 
 
-def forward(inversion_grid, data_points):
+def forward(inversion_grid, data_points, z_base):
     """ Compute forward operator associated to a given geometry/discretization
     defined by an inversion grid.
     The forward give the response at locations defined by the datapoints
@@ -19,6 +19,9 @@ def forward(inversion_grid, data_points):
     data_points: List[(float, float, float)]
         List containing the coordinates, in order (x, y, z) of the data points
         at which we measure the response / gravitational field.
+    z_base: float
+        Altitude (in meters) of the lowest level we consider. I.e., we will
+        build inversion cells down to that level.
 
     """
     n_cells = len(inversion_grid)
@@ -28,14 +31,21 @@ def forward(inversion_grid, data_points):
 
     for i, cell in enumerate(inversion_grid):
         print(i)
-        for j, point in enumerate(data_points):
+        # If it is a top cell, then it contains refinement attributes, so we
+        # compute differently.
+        if cell.is_topcell:
+            print("Top")
+            for j, point in enumerate(data_points):
+                F[i, j] = compute_top_cell_response_at_point(cell, point,
+                        z_base=z_base)
 
-            F[i, j] = compute_cell_response_at_point(cell, point)
+        else:
+            for j, point in enumerate(data_points):
+                F[i, j] = compute_cell_response_at_point(cell, point)
 
     return F
 
-def compute_cell_response_at_point(cell, point,
-        is_topcell=False, z_base=0):
+def compute_cell_response_at_point(cell, point):
     """ Compute the repsonse of an individual inversion cell on a measurement
     point.
 
@@ -45,13 +55,6 @@ def compute_cell_response_at_point(cell, point,
         Inversion cell whose response we want to compute.
     point: (float, float, float)
         Coordinates (x, y, z) of the point at which we measure the response.
-    is_topcell: bool
-        Should set to true when computing the repsonse of a top cell.
-        Such cells are treated differently, in that we take the prism to be
-        from the elevation, down to the base.
-        If true, then the z_base argument should be provided.
-    z_base: float
-        Altitude (in meters) of the lowest level we consider.
 
     """
 
@@ -68,43 +71,41 @@ def compute_cell_response_at_point(cell, point,
     zl = cell.z
     zh = zl + cell.res_z
 
-    # Special treatment for top cells: we go from their altitude down to the
-    # base.
-    if is_topcell:
-        zl = z_base
-        zh = cell.z
-
     return banerjee(xh, xl, yh, yl, zh, zl,
             point[0], point[1], point[2])
 
-# TODO: Currently modifies the operator in place.
-# Might be good to make it side-effect free.
-def correct_forward(F, inversion_grid, data_points, z_base):
-    """ Correct the forward at the topmost cells
+
+def compute_top_cell_response_at_point(cell, point, z_base=0):
+    """ Same as the above, but for a cell which contains subdivisions (i.e. a
+    topmost cell).
+    Note that for such cells, we extend the parallelograms down to zbase.
+
     Parameters
     ----------
-    F: array-like
-        Forward we want to correct.
-    inversion_grid: InversionGrid
-    data_points: List[(float, float, float)]
+    cell: Cell
+        Inversion cell whose response we want to compute.
+    point: (float, float, float)
+        Coordinates (x, y, z) of the point at which we measure the response.
+    z_base: float
+        Altitude (in meters) of the lowest level we consider.
 
     """
+    # Loop over the subdivisions.
+    F = 0.0
+    for subcell in cell.fine_cells:
+        # Define the corners of the parallelepiped.
+        # We consider the x/y of the cell to be in the middle, so we go one
+        # half resolution to the left/right.
+        xh = subcell.x + subcell.res_y/2
+        xl = subcell.x - subcell.res_y/2
 
-    # Only loop over cells that are on the surface (i.e. 'topmost' ones).
-    for i in inversion_grid.topmost_indices:
-        print(i)
+        yh = subcell.y + subcell.res_y/2
+        yl = subcell.y - subcell.res_y/2
 
-        # Get the fine cells that describe the topography at the current
-        # (coarse) cell. Compute each response and add up.
-        fine_cells = inversion_grid.fine_cells_from_topmost_ind(i)
+        zl = z_base
+        zh = subcell.z
 
-        for j, point in enumerate(data_points):
-            # Add the responses from each fine cell.
-            temp_F = 0
-            for fine_cell in fine_cells:
-                temp_f += compute_cell_response_at_point(fine_cell, point,
-                    True, z_base)
-
-        F[i, j] = temp_F
-
-        return F
+        # Add the contributions of each subcells.
+        F += banerjee(xh, xl, yh, yl, zh, zl,
+                point[0], point[1], point[2])
+    return F
