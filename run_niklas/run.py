@@ -52,7 +52,7 @@ data = loading.load_niklas(data_path)
 data_coords = data['data_coords']
 
 # Build the Forward.
-F = fwd.forward(inversion_grid, data_coords)
+F = fwd.forward(inversion_grid, data_coords, z_base)
 
 
 """
