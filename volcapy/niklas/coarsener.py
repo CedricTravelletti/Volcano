@@ -32,6 +32,8 @@ cell and take the minimum one.
 """
 import numpy as np
 
+from volcapy.niklas.cell import Cell
+
 
 class Coarsener():
     """ Build a grid coarser than the dsm.
@@ -184,3 +186,22 @@ class Coarsener():
             elevation = self.dsm[cell_ind[0], cell_ind[1]].z
             elevations.append(elevation)
         return elevations
+
+    def get_coarse_cell(self, i, j):
+        """ Given indices, spits out a coarse cell.
+
+        """
+        # Get the cells that make up the coarse one.
+        cells = self.get_fine_cells(i, j)
+
+        # As elevation, take the minimal one.
+        z_min = min([cell.z for cell in cells])
+
+        # For the corners take the min/max of the cells.
+        xl = min([cell.xl for cell in cells])
+        xh = min([cell.xh for cell in cells])
+
+        yl = min([cell.yl for cell in cells])
+        yh = min([cell.yh for cell in cells])
+
+        return Cell(xl, xh, yl, yh, z_min, z_min)

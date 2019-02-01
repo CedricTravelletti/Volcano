@@ -44,7 +44,7 @@ class CellDSM():
         return self.y - self.res_y / 2.0
 
     @property
-    def xh(self):
+    def yh(self):
         return self.y + self.res_y / 2.0
 
     # For z, we only have the altitude of the midpoint, there is no notion of
