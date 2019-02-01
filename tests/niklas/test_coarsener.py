@@ -44,8 +44,8 @@ class TestCoarsener():
         """
 
         # Check the index correspondence.
-        assert_array_equal(self.coarsener.inds_x, [[0], [1,2,3], [4, 5]])
-        assert_array_equal(self.coarsener.inds_y, [[0, 1], [2, 3]])
+        assert_array_equal(self.coarsener.fine_inds_x, [[0], [1,2,3], [4, 5]])
+        assert_array_equal(self.coarsener.fine_inds_y, [[0, 1], [2, 3]])
 
     def test_get_fine_indices(self):
         """ Get fine indices corresponding to coarse cell.
