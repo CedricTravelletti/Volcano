@@ -1,6 +1,13 @@
 # File: dsm.py, Author: Cedric Travelletti, Date: 15.01.2019.
 """ Class implementing dsm functionalities.
 Also allows to build a dsm object from the raw Niklas data.
+
+A dsm is basically a two dimensional array of cell, where for each cell we get
+the midpoint along the x-y axis and the elevation.
+
+Since we only have midpoints, and since the cells might have different sizes,
+we also need a list of resolutions.
+
 """
 import h5py
 import numpy as np
@@ -121,4 +128,10 @@ class DSM:
         y = self.ys[j]
         elevation = self.elevations[i, j]
 
-        return Cell(x, y, elevation, res_x, res_y, res_z=0)
+        # Create a cell and return it.
+        # Note the difference between dsm an the inversion grid.
+        # In the dsm we only get the midpoints, so we use the resolutions to
+        # compute the boundaries of the cell.
+        # Also, we only have one elevation, so we put zh to 0.
+        return Cell(x - res_x/2.0, x + res_x/2.0,
+                y - res_y/2.0, y+res_y/2.0, elevation, 0.0)
