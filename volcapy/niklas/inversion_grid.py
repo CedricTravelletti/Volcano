@@ -89,6 +89,10 @@ class InversionGrid(Sequence):
                 # Add an attribute to identify the top cells.
                 cell.is_topcell = True
 
+                # Keep a list of the fine cells building up the big cell.
+                # This is useful for refininf the forward.
+                cell.fine_cells = self.coarsener.get_fine_cells(i, j)
+
                 topcells.append(cell)
 
         # Store the indices of the surface cells so we can easily access them.
@@ -113,6 +117,8 @@ class InversionGrid(Sequence):
                     cell = Cell(top_cell.xl, top_cell.xh,
                             top_cell.yl, top_cell.yh,
                             self.zlevels[i - 1], z)
+
+                    cell.is_topcell = False
                     cells.append(cell)
 
         # We cast to numpy array, so that we can index also with lists.
