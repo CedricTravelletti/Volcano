@@ -17,6 +17,46 @@ import numpy as np
 from volcapy.niklas.inversion_grid import Cell
 
 
+class CellDSM():
+    """ Cell for DSM. The difference is that the dsm gives us midpoints,
+    whereas cells in the inversion grid are defined by their corners. We thus
+    use the resolution of each cell to return the corners.
+
+    """
+    def __init__(self, x, y, z, res_x, res_y):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.res_x = res_x
+        self.res_y = res_y
+
+    # Return the lower corner  along x.
+    @property
+    def xl(self):
+        return self.x - self.res_x / 2.0
+
+    @property
+    def xh(self):
+        return self.x + self.res_x / 2.0
+
+    @property
+    def yl(self):
+        return self.y - self.res_y / 2.0
+
+    @property
+    def xh(self):
+        return self.y + self.res_y / 2.0
+
+    # For z, we only have the altitude of the midpoint, there is no notion of
+    # resolution, so we return the same for high and low.
+    @property
+    def zl(self):
+        return self.z
+
+    @property
+    def zh(self):
+        return self.z
+
 class DSM:
     """ DSM functionalities
     """
@@ -119,7 +159,7 @@ class DSM:
 
         Returns
         -------
-        Cell
+        CellDSM
         """
         # Get the resolutions and lat/longs/elevations.
         res_x = self.res_x[i]
@@ -133,5 +173,4 @@ class DSM:
         # In the dsm we only get the midpoints, so we use the resolutions to
         # compute the boundaries of the cell.
         # Also, we only have one elevation, so we put zh to 0.
-        return Cell(x - res_x/2.0, x + res_x/2.0,
-                y - res_y/2.0, y+res_y/2.0, elevation, 0.0)
+        return CellDSM(x, y, elevation, res_x, res_y)
