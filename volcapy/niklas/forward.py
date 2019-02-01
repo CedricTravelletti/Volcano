@@ -61,15 +61,14 @@ def compute_cell_response_at_point(cell, point):
     # Define the corners of the parallelepiped.
     # We consider the x/y of the cell to be in the middle, so we go one
     # half resolution to the left/right.
-    xh = cell.x + cell.res_y/2
-    xl = cell.x - cell.res_y/2
-
-    yh = cell.y + cell.res_y/2
-    yl = cell.y - cell.res_y/2
+    xh = cell.xh
+    xl = cell.xl
+    yh = cell.yh
+    yl = cell.yl
 
     # TODO: Warning, z stuff done here, see issues.
-    zl = cell.z
-    zh = zl + cell.res_z
+    zl = cell.zl
+    zh = cell.zh
 
     return banerjee(xh, xl, yh, yl, zh, zl,
             point[0], point[1], point[2])
