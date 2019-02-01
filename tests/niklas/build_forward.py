@@ -43,3 +43,6 @@ data_coords = data['data_coords']
 
 # Build the Forward.
 F = fwd.forward(inversion_grid, data_coords, z_base)
+
+# Save, just in case.
+np.save("./F_cedric.npy", F)
