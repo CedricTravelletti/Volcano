@@ -39,10 +39,14 @@ def plot(vals, x_coords, y_coords, z_coords, n_sample=0):
             dict(
                     x=plot_x, y=plot_y, z=plot_z,
                     mode='markers',
-                    marker=dict(size=2, opacity=0.8, color=plot_vals,
+                    marker=dict(size=2, opacity=1.0, color=plot_vals,
                     colorscale='Jet', colorbar=dict(title='plot'))))
 
-    plt.plot([myplot])
+    layout = go.Layout()
+    layout.scene.update(go.layout.Scene(aspectmode='data'))
+
+    fig = go.Figure(data=[myplot], layout=layout)
+    plt.plot(fig)
 
 
 def plot_z_slice(slice_height, vals, x_coords, y_coords, z_coords, n_sample=0):
