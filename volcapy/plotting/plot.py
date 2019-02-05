@@ -74,3 +74,31 @@ def plot_z_slice(slice_height, vals, x_coords, y_coords, z_coords, n_sample=0):
     slice_z_coords = z_coords[slice_inds]
 
     plot(slice_vals, slice_x_coords, slice_y_coords, slice_z_coords, n_sample=0)
+
+def plot_region(region_inds, vals, x_coords, y_coords, z_coords, n_sample=0):
+    """ Same as above, but only plot a certain region. The region is defined by
+    passing the indices of the cell in the region.
+
+    Parameters
+    ----------
+    region_inds: 1D array-like
+        Indices of the cells in the region.
+    vals: List[float]
+        List of values to plot.
+    x_coords: List[float]
+        x-coordinate of the data points. Should have the same lenght as the
+        list of values.
+    y_coords: List[float]
+    z_coords: List[float]
+    n_sample: int
+        If non zero, then will only plot n_sample randomly selected points from
+        the dataset. Useful for visualizing heavy datasets.
+
+    """
+    # Subset the corrresponding values.
+    slice_vals = vals[region_inds]
+    slice_x_coords = x_coords[region_inds]
+    slice_y_coords = y_coords[region_inds]
+    slice_z_coords = z_coords[region_inds]
+
+    plot(slice_vals, slice_x_coords, slice_y_coords, slice_z_coords, n_sample=0)
