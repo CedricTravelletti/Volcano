@@ -102,3 +102,45 @@ class GaussianProcess():
         vorobev_inds = np.where(excursion_probs > alpha)[0]
 
         return vorobev_inds
+
+    def vorobev_expectation_inds(self, threshold):
+        """ Same as above, but return Vorob'ev expectation this time.
+        Parameters
+        ----------
+        threshold: float
+            Excursion threshold.
+
+        Returns
+        -------
+        List[int]
+            List of the indices of the points that are in the Vorobev quantile.
+
+        """
+        excursion_probs = self.compute_excursion_probs(threshold)
+        expected_measure = self.expected_excursion_measure(threshold)
+
+        # TODO: Refactor into dichotomic search.
+        # Loop over confidence levels, increase till smaller than expected
+        # measure.
+        for alpha in np.linspace(0.0, 1.0, num=10):
+            # Get the cell belonging to quantile alpha.
+            vorb_inds = self.vorobev_quantile_inds(alpha, threshold)
+
+            # Count how many, to get the measure.
+            measure = np.count_nonzero(vorb_inds)
+
+            # If smaller than epected measure, then continue, else return.
+            if measure < expected_measure:
+                return vorb_inds
+
+    # TODO: The following behaves as if all cells had size one. In the future:
+    # should either subset cells when building the GP so that have all same
+    # size, or loop over cells and get their resolutions.
+    def expected_excursion_measure(self, threshold):
+        """ Returns the expected measure of the excursion set above the
+        threshold.
+
+        """
+        excursion_probs = self.compute_excursion_probs(threshold)
+        return np.sum(excursion_probs)
+
