@@ -26,10 +26,10 @@ class GaussianProcess():
 
     """
 
-    def __init__(self, mean, variance, covariance):
+    def __init__(self, mean, variance, covariance_func):
         self.mean = mean
         self.var = variance
-        self.cov = covariance
+        self.cov = covariance_func
 
         self.dim = len(mean)
 
@@ -74,3 +74,31 @@ class GaussianProcess():
             excursion_probs[i] = self.coverage_fct(i, threshold)
 
         return excursion_probs
+
+    def vorobev_quantile_inds(self, alpha, threshold):
+        """ Returns Vorobev quantile alpha. In facts, return the indices of the
+        points which are in the quantile.
+
+        Parameters
+        ----------
+        alpha: float
+            Level of the quantile to return.
+            Will return points that have a prob greater than alpha to be in the
+            excursion set.
+        threshold: float
+            Excursion threshold.
+
+        Returns
+        -------
+        List[int]
+            List of the indices of the points that are in the Vorobev quantile.
+
+        """
+        excursion_probs = self.compute_excursion_probs(threshold)
+
+        # Indices of the points in the Vorob'ev quantile.
+        # Warning: where return a tuple. Here we are 1D so get the first
+        # element.
+        vorobev_inds = np.where(excursion_probs > alpha)[0]
+
+        return vorobev_inds
