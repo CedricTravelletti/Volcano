@@ -1,21 +1,18 @@
-#cython: boundscheck=False, wraparound=False, nonecheck=False
 from libc.math cimport exp
-
-# GLOBALS.
-# TODO: Refactor to have build covariance call get_covariance.
-# But needs profiling.
-cdef double sigma_2 = 150**2
-cdef double lambda_2 = 500.0**2
+import cython
+import numpy as np
+cimport numpy as np
 
 
-def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end,
-        double sigma_2, double lambda_2):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def build_cov(float[:, ::1] coords, int row_begin, int row_end,
+        float sigma_2, float lambda_2):
     """ Builds the covariance matrix from row_begin to row_end, both included..
 
     Parameters
     ----------
     coords
-    out
     row_begin
     row_end
 
@@ -23,13 +20,17 @@ def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end,
     cdef int dim_j = coords.shape[0]
     cdef int D = coords.shape[1]
 
-    cdef double dist = 0.0
+    cdef float dist = 0.0
 
     # Number of rows we will need to generate.
     cdef int n_rows = row_end - row_begin + 1
 
     cdef int row_ind = 0
     cdef int i, j, d
+
+    # Allocate memory.
+    cdef np.float32_t[:,::1] out
+    out = np.zeros((n_rows, dim_j), dtype=np.float32)
 
     for i in range(n_rows):
         # Where we are in the big matrix.
@@ -39,11 +40,13 @@ def build_cov(double[:, :] coords, double[:, :] out, int row_begin, int row_end,
             dist = 0.0
             for d in range(D):
                 dist += (coords[row_ind, d] - coords[j, d])**2
-            out[i, j] = sigma_2 * exp(- dist / lambda_2)
+            out[i, j] = exp(- dist / lambda_2)
 
     return out
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def get_cov(double[:, :] coords, int i, int j,
         double sigma_2, double lambda_2):
     """ Gets the covariance between two points in model space.
