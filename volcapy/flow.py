@@ -1,123 +1,207 @@
 from volcapy import loading
-import volcapy.matrix_tools as mt
+import volcapy.math.matrix_tools as mat
 import volcapy.fast_covariance as ft
 
 import numpy as np
+import os
 from math import floor
 
+from timeit import default_timer as timer
 
+
+# TODO: Refactor so that InverseProblem has a CovarianceModel member.
 # Globals
 sigma_2 = 50.0**2
 lambda_2 = 130**2
 
-dx = 50
-dy = 50
-dz = 50
-spacings = (dx, dy, dz)
+# Unused, just there to remind of the value for Niklas's data.
+sigma_d = 0.1
 
 # LOAD DATA
 data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
-data = loading.load_niklas(data_path)
-
-coords = data['coords']
-F = data['F']
-d_obs = data['d']
-
-# Dimensions
-n_model = coords.shape[0]
-n_data = F.shape[0]
-
-# Build data covariance matrix.
-sigma_d = 0.1
-cov_d = np.diag([sigma_d] * n_data)
 
 
-# Prepare a function for returning partial rows of the covariance matrix.
-def build_partial_covariance(row_begin, row_end):
+class InverseProblem():
+    """ Numerical implementation of an inverse problem.
+    Needs a forward and an inversion grid as
+    input. Then can perform several inversions.
+
+    Parameters
+    ----------
+    inversion_grid
+    forward
+    data_points
+    data_values
     """
-    Warning: should cast, since returns MemoryView.
-    """
-    n_rows = row_end - row_begin + 1
-    out = np.zeros((n_rows , n_model))
-    return ft.build_cov(coords, out, row_begin, row_end,
-            sigma_2, lambda_2)
+    def __init__(self, cells_coords, forward, data_points, data_values):
+        self.cells_coords = cells_coords
+        self.forward = forward
+        self.data_points = data_points
+        self.data_values = data_values
 
-# TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
-# an implicitly defined one.
-def compute_Cm_Gt(G):
-    """ Compute the matrix product C_m * G^T.
-    """
-    n_data = G.shape[0]
-    out = np.zeros((n_model, n_data))
+        # Dimensions
+        self.n_model = cells_coords.shape[0]
+        self.n_data = forward.shape[0]
 
-    # Store the transpose once and for all.
-    GT = G.T
+    @classmethod
+    def from_matfile(cls, path):
+        """ Read forward, inversion grid and data from a matlab file.
 
-    # Create the list of chunks.
-    chunk_size = 1000
-    chunks = []
-    for i in range(floor(n_model / chunk_size)):
-        chunks.append((i * chunk_size, i * chunk_size + chunk_size - 1))
+        Parameters
+        ----------
+        path: string
+            Path to a matlab file containing the data. The file should have the
+            same format as the original file from Niklas (see documentation).
 
-    # Last chunk cannot be fully loop.
-    chunks.append((floor(n_model / float(chunk_size))*chunk_size, n_model - 1))
+        """
+        data = loading.load_niklas(path)
 
-    # Loop in chunks of 1000.
-    for row_begin, row_end in chunks:
-        print(row_begin)
-        # Get corresponding part of covariance matrix.
-        partial_cov = build_partial_covariance(row_begin, row_end)
+        cells_coords = data['coords'].astype(dtype=np.float32, order='C', copy=False)
 
-        # Append to result.
-        out[row_begin:row_end + 1, :] = partial_cov @ GT
+        # TODO: Maybe refactor loading so that directly returns an array
+        # instead of a list.
+        # Long run, should think about unifying datatypes.
+        data_coords = np.array(data['data_coords']).astype(
+                dtype=np.float32, order='C', copy=False)
 
-    return out
+        forward = data['F'].astype(
+                dtype=np.float32, order='C', copy=False)
+
+        data_values = data['d'].astype(
+                dtype=np.float32, order='C', copy=False)
 
 
-# Build prior mean.
-# The order parameters are statically compiled in fast covariance.
-m_prior = np.full(n_model, 2350.0)
+        return cls(cells_coords, forward, data_coords, data_values)
 
-# Compute big matrix product and save.
-print("Computing big matrix product.")
-out = compute_Cm_Gt(F)
-np.save('Cm_Gt.npy', out)
+    def build_partial_covariance(self, row_begin, row_end):
+        """ Prepare a function for returning partial rows of the covariance
+        matrix.
 
-# Use to perform inversion and save.
-print("Inverting matrix.")
-temp = F @ out
-inverse = np.linalg.inv(temp + cov_d)
+        Warning: should cast, since returns MemoryView.
+        """
+        n_rows = row_end - row_begin + 1
+        return ft.build_cov(self.cells_coords, row_begin, row_end, sigma_2, lambda_2)
 
-# TODO: Warning, compensating for Bouguer anomaly.
-print("Computing posterior mean.")
-m_posterior = m_prior + out @ inverse @ (d_obs - F @ m_prior)
-np.save('m_posterior.npy', m_posterior)
+    # TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
+    # an implicitly defined one.
+    def compute_Cm_Gt(self, G):
+        """ Compute the matrix product C_m * G^T.
+        """
+        n_data = G.shape[0]
+        out = np.zeros((self.n_model, n_data), dtype=np.float32)
 
-# ----------------------------------------------
-# Build and save the diagonal of the posterior covariance matrix.
-# ----------------------------------------------
-print("Computing posterior variance.")
-Cm_post = np.empty([n_model], dtype=out.dtype)
-A = out @ inverse
-B = out.T
+        # Store the transpose once and for all.
+        GT = (G.T).astype(
+                dtype=np.float32, order='F', copy=False)
 
-# Diagonal is just given by the scalar product of the two factors.
-for i in range(n_model):
-    Cm_post[i] = np.dot(A[i, :], B[:, i])
+        # Create the list of chunks.
+        chunk_size = 2048
+        chunks = mat.chunk_range(self.n_model, chunk_size)
 
-# Save the square root standard deviation).
-np.save("posterior_cov_diag.npy", np.sqrt(np.array([sigma_2]*n_model) - Cm_post))
+        # Loop in chunks of 1000.
+        for row_begin, row_end in chunks:
+            print(row_begin)
+            start = timer()
+            # Get corresponding part of covariance matrix.
+            partial_cov = self.build_partial_covariance(row_begin, row_end)
 
-# AMBITIOUS: Compute the whole (38GB) posterior covariance matrix.
-print("Computing posterior covariance.")
-post_cov = np.memmap('post_cov.npy', dtype='float32', mode='w+',
-        shape=(n_model, n_model))
+            mid = timer()
 
-# Compute the matrix product line by line.
-for i in range(n_model):
-    print(i)
-    prior_cov = build_partial_covariance(i, i)
-    post_cov[i, :] = prior_cov - A[i, :] @ B
+            # Append to result.
+            out[row_begin:row_end + 1, :] = partial_cov @ GT
 
-# Flush to disk.
-del post_cov
+            end = timer()
+            print(
+                "Building done in "
+                + str(mid - start)
+                + " and multiplication done in " + str(end - mid))
+
+        return out
+
+    def inverse(self, out_folder, prior_mean, sigma_d, compute_post_covariance=False):
+        """ Perform inversion.
+
+        Parameters
+        ----------
+        out_folder: string
+            Path to a folder where we will save the resutls.
+        compute_post_covariance: Boolean
+            If set to True, then will compute and store the full posterior
+            covariance matrix (huge).
+
+        """
+        # We will save a lot of stuff, so place it in a dedicated directory..
+        os.chdir(out_folder)
+
+        # Build prior mean.
+        # The order parameters are statically compiled in fast covariance.
+        m_prior = np.full(self.n_model, prior_mean, dtype=np.float32)
+
+        # Build data covariance matrix.
+        cov_d = sigma_d**2 * np.eye(self.n_data, dtype=np.float32)
+
+        # Compute big matrix product and save.
+        print("Computing big matrix product.")
+        start = timer()
+        out = self.compute_Cm_Gt(self.forward)
+        end = timer()
+        print("Done in " + str(end - start))
+        np.save('Cm_Gt.npy', out)
+
+        # Use to perform inversion and save.
+        print("Inverting matrix.")
+        start = timer()
+        temp = self.forward @ out
+        inverse = np.linalg.inv(temp + cov_d)
+        end = timer()
+        print("Done in " + str(end - start))
+
+        # TODO: Warning, compensating for Bouguer anomaly.
+        print("Computing posterior mean.")
+        start = timer()
+        m_posterior = m_prior + out @ inverse @ (
+                self.data_values - self.forward @ m_prior)
+
+        end = timer()
+        print("Done in " + str(end - start))
+
+        np.save('m_posterior.npy', m_posterior)
+
+        # ----------------------------------------------
+        # Build and save the diagonal of the posterior covariance matrix.
+        # ----------------------------------------------
+        print("Computing posterior variance.")
+        start = timer()
+        Cm_post = np.empty([self.n_model], dtype=out.dtype)
+        A = out @ inverse
+        B = out.T
+
+        # Diagonal is just given by the scalar product of the two factors.
+        for i in range(self.n_model):
+            Cm_post[i] = np.dot(A[i, :], B[:, i])
+
+        end = timer()
+        print("Done in " + str(end - start))
+
+        # Save the square root standard deviation).
+        np.save(
+                "posterior_cov_diag.npy",
+                np.sqrt(np.array([sigma_2] * self.n_model) - Cm_post))
+
+        print("DONE")
+
+        if compute_post_covariance:
+            # AMBITIOUS: Compute the whole (38GB) posterior covariance matrix.
+            print("Computing posterior covariance.")
+            post_cov = np.memmap('post_cov.npy', dtype='float32', mode='w+',
+                    shape=(self.n_model, n_model))
+
+            # Compute the matrix product line by line.
+            # TODO: Could compute several lines at a time, by chunks.
+            for i in range(self.n_model):
+                print(i)
+                prior_cov = self.build_partial_covariance(i, i)
+                post_cov[i, :] = prior_cov - A[i, :] @ B
+
+            # Flush to disk.
+            del post_cov
