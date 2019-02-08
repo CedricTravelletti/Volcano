@@ -73,3 +73,16 @@ plt.plot_region(island_inds, post_std_dev,
 # Plot a slice of the residual std at sea level.
 plt.plot_z_slice(0.0, post_std_dev,
         coords[:, 0],coords[:, 1],coords[:, 2])
+
+# Plot individual measurement.
+# Index of the measurement we want to consider.
+data_index = 200
+
+my_coords = np.vstack((coords, data_coords[data_index]))
+
+my_mean = np.append(post_mean, 100000)
+
+plt.plot_region(my_surface_inds, my_mean, my_coords[:,0], my_coords[:,1],
+        my_coords[:,2])
+
+# Interesting measurements are nr 100 and nr 200.
