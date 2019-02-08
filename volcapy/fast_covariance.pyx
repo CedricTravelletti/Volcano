@@ -6,6 +6,7 @@ cimport numpy as np
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 def build_cov(float[:, ::1] coords, int row_begin, int row_end,
         float sigma_2, float lambda_2):
     """ Builds the covariance matrix from row_begin to row_end, both included..
@@ -29,18 +30,20 @@ def build_cov(float[:, ::1] coords, int row_begin, int row_end,
     cdef int i, j, d
 
     # Allocate memory.
-    cdef np.float32_t[:,::1] out
-    out = np.zeros((n_rows, dim_j), dtype=np.float32)
+    cdef np.float32_t[::1,:] out
+    out = np.zeros((n_rows, dim_j), dtype=np.float32, order='F')
 
-    for i in range(n_rows):
-        # Where we are in the big matrix.
-        row_ind = row_begin + i
+    for j in range(dim_j):
 
-        for j in range(dim_j):
+        for i in range(n_rows):
             dist = 0.0
+
+            # Where we are in the big matrix.
+            row_ind = row_begin + i
+
             for d in range(D):
                 dist += (coords[row_ind, d] - coords[j, d])**2
-            out[i, j] = exp(- dist / lambda_2)
+            out[i, j] = sigma_2 * exp(- dist / lambda_2)
 
     return out
 

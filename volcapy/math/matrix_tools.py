@@ -105,9 +105,11 @@ def chunk_range(n_lines, chunk_size):
     for i in range(floor(n_lines / chunk_size)):
         chunks.append((i * chunk_size, i * chunk_size + chunk_size - 1))
 
-    # Last chunk cannot be fully loop.
-    chunks.append(
-            (
-                    floor(n_lines / float(chunk_size))*chunk_size, n_lines)
-            )
+    # If remainder.
+    if n_lines % chunk_size > 0:
+        # Last chunk cannot be fully loop.
+        chunks.append(
+                (
+                        floor(n_lines / float(chunk_size))*chunk_size, n_lines-1)
+                )
     return chunks
