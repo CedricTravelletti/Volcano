@@ -12,7 +12,8 @@ from timeit import default_timer as timer
 # TODO: Refactor so that InverseProblem has a CovarianceModel member.
 # Globals
 sigma_2 = 50.0**2
-lambda_2 = 130**2
+# lambda_2 = 130**2
+lambda_2 = 800**2
 
 # Unused, just there to remind of the value for Niklas's data.
 sigma_d = 0.1
@@ -118,7 +119,10 @@ class InverseProblem():
 
         return out
 
-    def inverse(self, out_folder, prior_mean, sigma_d, compute_post_covariance=False):
+    # TODO: Factor out some methods.
+    def inverse(self, out_folder, prior_mean, sigma_d,
+            preload_covariance_pushforward=False, cov_pushforward=None,
+            compute_post_covariance=False):
         """ Perform inversion.
 
         Parameters
@@ -140,13 +144,17 @@ class InverseProblem():
         # Build data covariance matrix.
         cov_d = sigma_d**2 * np.eye(self.n_data, dtype=np.float32)
 
-        # Compute big matrix product and save.
-        print("Computing big matrix product.")
-        start = timer()
-        out = self.compute_Cm_Gt(self.forward)
-        end = timer()
-        print("Done in " + str(end - start))
-        np.save('Cm_Gt.npy', out)
+        # If the covariance pushforward hasnt been precomputed.
+        if not preload_covariance_pushforward:
+            # Compute big matrix product and save.
+            print("Computing big matrix product.")
+            start = timer()
+            out = self.compute_Cm_Gt(self.forward)
+            end = timer()
+            print("Done in " + str(end - start))
+            np.save('Cm_Gt.npy', out)
+        else:
+            out = cov_pushforward
 
         # Use to perform inversion and save.
         print("Inverting matrix.")
@@ -191,17 +199,20 @@ class InverseProblem():
         print("DONE")
 
         if compute_post_covariance:
-            # AMBITIOUS: Compute the whole (38GB) posterior covariance matrix.
-            print("Computing posterior covariance.")
-            post_cov = np.memmap('post_cov.npy', dtype='float32', mode='w+',
-                    shape=(self.n_model, n_model))
+            self.compute_post_covariance()
 
-            # Compute the matrix product line by line.
-            # TODO: Could compute several lines at a time, by chunks.
-            for i in range(self.n_model):
-                print(i)
-                prior_cov = self.build_partial_covariance(i, i)
-                post_cov[i, :] = prior_cov - A[i, :] @ B
+    def compute_post_covariance(self):
+        # AMBITIOUS: Compute the whole (38GB) posterior covariance matrix.
+        print("Computing posterior covariance.")
+        post_cov = np.memmap('post_cov.npy', dtype='float32', mode='w+',
+                shape=(self.n_model, n_model))
 
-            # Flush to disk.
-            del post_cov
+        # Compute the matrix product line by line.
+        # TODO: Could compute several lines at a time, by chunks.
+        for i in range(self.n_model):
+            print(i)
+            prior_cov = self.build_partial_covariance(i, i)
+            post_cov[i, :] = prior_cov - A[i, :] @ B
+
+        # Flush to disk.
+        del post_cov
