@@ -85,21 +85,28 @@ class InverseProblem():
 
     # TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
     # an implicitly defined one.
-    def compute_Cm_Gt(self, G):
-        """ Compute the matrix product C_m * G^T.
+    def compute_covariance_pushforward(self, G):
+        """ Compute the matrix product C_m * G^T, which we call the *covariance
+        pushforward*.
+
+        Parameters
+        ----------
+        G: 2-D array
+            The forward operator.
         """
+        # Allocate memory for output array.
         n_data = G.shape[0]
         out = np.zeros((self.n_model, n_data), dtype=np.float32)
 
         # Store the transpose once and for all.
         GT = (G.T).astype(
-                dtype=np.float32, order='F', copy=False)
+                dtype=np.float32, order='C', copy=False)
 
         # Create the list of chunks.
-        chunk_size = 2048
+        chunk_size = 1024
         chunks = mat.chunk_range(self.n_model, chunk_size)
 
-        # Loop in chunks of 1000.
+        # Loop in chunks.
         for row_begin, row_end in chunks:
             print(row_begin)
             start = timer()
@@ -149,26 +156,26 @@ class InverseProblem():
             # Compute big matrix product and save.
             print("Computing big matrix product.")
             start = timer()
-            out = self.compute_Cm_Gt(self.forward)
+            self.covariance_pushforward = self.compute_covariance_pushforward(self.forward)
             end = timer()
             print("Done in " + str(end - start))
-            np.save('Cm_Gt.npy', out)
+            np.save('Cm_Gt.npy', self.covariance_pushforward)
         else:
-            out = cov_pushforward
+            self.covariance_pushforward = cov_pushforward
 
         # Use to perform inversion and save.
         print("Inverting matrix.")
         start = timer()
-        temp = self.forward @ out
+        temp = self.forward @ self.covariance_pushforward
         inverse = np.linalg.inv(temp + cov_d)
         end = timer()
         print("Done in " + str(end - start))
 
-        # TODO: Warning, compensating for Bouguer anomaly.
         print("Computing posterior mean.")
         start = timer()
-        m_posterior = m_prior + out @ inverse @ (
-                self.data_values - self.forward @ m_prior)
+        m_posterior = (m_prior
+                + self.covariance_pushforward
+                @ inverse @ (self.data_values - self.forward @ m_prior))
 
         end = timer()
         print("Done in " + str(end - start))
@@ -180,9 +187,12 @@ class InverseProblem():
         # ----------------------------------------------
         print("Computing posterior variance.")
         start = timer()
-        Cm_post = np.empty([self.n_model], dtype=out.dtype)
-        A = out @ inverse
-        B = out.T
+        Cm_post = np.empty([self.n_model],
+                dtype=self.covariance_pushforward.dtype)
+
+        #TODO: Find a name for these and store them cleanly.
+        A = self.covariance_pushforward @ inverse
+        B = self.covariance_pushforward.T
 
         # Diagonal is just given by the scalar product of the two factors.
         for i in range(self.n_model):
@@ -201,11 +211,14 @@ class InverseProblem():
         if compute_post_covariance:
             self.compute_post_covariance()
 
+    # TODO: Refactor. Currently accessing stuf oustide its scope.
     def compute_post_covariance(self):
-        # AMBITIOUS: Compute the whole (38GB) posterior covariance matrix.
+        """ Compute the full posterior covariance matrix.
+        """
+        # AMBITIOUS: Compute the whole (120GB) posterior covariance matrix.
         print("Computing posterior covariance.")
         post_cov = np.memmap('post_cov.npy', dtype='float32', mode='w+',
-                shape=(self.n_model, n_model))
+                shape=(self.n_model, self.n_model))
 
         # Compute the matrix product line by line.
         # TODO: Could compute several lines at a time, by chunks.
