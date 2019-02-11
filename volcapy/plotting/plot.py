@@ -39,7 +39,7 @@ def plot(vals, x_coords, y_coords, z_coords, n_sample=0):
             dict(
                     x=plot_x, y=plot_y, z=plot_z,
                     mode='markers',
-                    marker=dict(size=2, opacity=1.0, color=plot_vals,
+                    marker=dict(size=4, opacity=1.0, color=plot_vals,
                     colorscale='Jet', colorbar=dict(title='plot'))))
 
     layout = go.Layout()
@@ -108,6 +108,76 @@ def plot_z_slice(slice_height, vals, x_coords, y_coords, z_coords, n_sample=0):
         slice_inds[:] = False
 
         for h in slice_height:
+            slice_inds = np.logical_or(slice_inds, z_coords[:] == h)
+
+    plot_region(slice_inds, vals, x_coords, y_coords, z_coords, n_sample=0)
+
+
+def plot_x_slice(slice_x, vals, x_coords, y_coords, z_coords, n_sample=0):
+    """ Same as above, but only plot as slice of fixed z coordinate.
+
+    Parameters
+    ----------
+    slice_height: float or List[float]
+        Value of the z coordinate along which to slice.
+        If a list, then will plot several slices.
+    vals: List[float]
+        List of values to plot.
+    x_coords: List[float]
+        x-coordinate of the data points. Should have the same lenght as the
+        list of values.
+    y_coords: List[float]
+    z_coords: List[float]
+    n_sample: int
+        If non zero, then will only plot n_sample randomly selected points from
+        the dataset. Useful for visualizing heavy datasets.
+
+    """
+    # If list, then have to slice several times.
+    if not isinstance(slice_x, list):
+        # Get the indices of the cells in the slice.
+        slice_inds = x_coords[:] == slice_x
+    else:
+        # Create empyt boolean array, one hot encoding of cells we will plot.
+        slice_inds = np.empty(x_coords.shape, dtype='bool')
+        slice_inds[:] = False
+
+        for h in slice_x:
+            slice_inds = np.logical_or(slice_inds, z_coords[:] == h)
+
+    plot_region(slice_inds, vals, x_coords, y_coords, z_coords, n_sample=0)
+
+
+def plot_y_slice(slice_y, vals, x_coords, y_coords, z_coords, n_sample=0):
+    """ Same as above, but only plot as slice of fixed z coordinate.
+
+    Parameters
+    ----------
+    slice_height: float or List[float]
+        Value of the z coordinate along which to slice.
+        If a list, then will plot several slices.
+    vals: List[float]
+        List of values to plot.
+    x_coords: List[float]
+        x-coordinate of the data points. Should have the same lenght as the
+        list of values.
+    y_coords: List[float]
+    z_coords: List[float]
+    n_sample: int
+        If non zero, then will only plot n_sample randomly selected points from
+        the dataset. Useful for visualizing heavy datasets.
+
+    """
+    # If list, then have to slice several times.
+    if not isinstance(slice_y, list):
+        # Get the indices of the cells in the slice.
+        slice_inds = y_coords[:] == slice_y
+    else:
+        # Create empyt boolean array, one hot encoding of cells we will plot.
+        slice_inds = np.empty(x_coords.shape, dtype='bool')
+        slice_inds[:] = False
+
+        for h in slice_y:
             slice_inds = np.logical_or(slice_inds, z_coords[:] == h)
 
     plot_region(slice_inds, vals, x_coords, y_coords, z_coords, n_sample=0)
