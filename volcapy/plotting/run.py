@@ -10,4 +10,4 @@ data = np.load("/home/cedric/PHD/Dev/Volcano/volcapy/test_out/m_posterior.npy")
 
 import volcapy.plotting.plot as plt
 
-plt.plot_z_slice([-150, 0, 500, 800], data, coords[:, 0], coords[:, 1], coords[:, 2])
+# plt.plot_z_slice([-150, 0, 500, 800], data, coords[:, 0], coords[:, 1], coords[:, 2])
