@@ -1,6 +1,6 @@
 from volcapy import loading
 import volcapy.math.matrix_tools as mat
-import volcapy.fast_covariance as ft
+import volcapy.kernels.squared_exponential as kern
 
 import numpy as np
 import os
@@ -81,7 +81,7 @@ class InverseProblem():
         Warning: should cast, since returns MemoryView.
         """
         n_rows = row_end - row_begin + 1
-        return ft.build_cov(self.cells_coords, row_begin, row_end, sigma_2, lambda_2)
+        return kern.build_cov(self.cells_coords, row_begin, row_end, sigma_2, lambda_2)
 
     # TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
     # an implicitly defined one.
@@ -103,7 +103,7 @@ class InverseProblem():
                 dtype=np.float32, order='C', copy=False)
 
         # Create the list of chunks.
-        chunk_size = 1024
+        chunk_size = 2048
         chunks = mat.chunk_range(self.n_model, chunk_size)
 
         # Loop in chunks.

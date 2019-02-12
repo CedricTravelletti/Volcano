@@ -1,4 +1,7 @@
-from libc.math cimport exp
+""" Exponential (non-squared) kernel.
+
+"""
+from libc.math cimport exp, sqrt
 import cython
 import numpy as np
 cimport numpy as np
@@ -45,7 +48,7 @@ def build_cov(float[:, ::1] coords, int row_begin, int row_end,
                 dist = 0.0
                 for d in range(D):
                     dist = dist + (coords[row_ind, d] - coords[j, d])**2
-                out[i, j] = sigma_2 * exp(- dist / lambda_2)
+                out[i, j] = sigma_2 * exp(- sqrt(dist) / lambda_2)
 
     return out
 
@@ -92,7 +95,7 @@ def build_and_mult(float[:, ::1] coords,
                     dist = dist + (coords[row_ind, d] - coords[j, d])**2
 
                     # Element i,j of the covariance matrix.
-                    cov_elem = sigma_2 * exp(- dist / lambda_2)
+                    cov_elem = sigma_2 * exp(- sqrt(dist) / lambda_2)
 
                     # Loop over the columns of second matrix.
                     for k in range(n_cols):
