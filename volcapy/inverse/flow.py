@@ -1,6 +1,6 @@
 from volcapy import loading
 import volcapy.math.matrix_tools as mat
-import volcapy.kernels.squared_exponential as kern
+import volcapy.kernels.exponential as kern
 
 import numpy as np
 import os
@@ -29,8 +29,12 @@ class InverseProblem():
 
     Parameters
     ----------
-    inversion_grid
-    forward
+    cells_coords: 2D array
+        Coordinates of the inversion cells. Element i,j should contain j-th
+        coordinate of inversion cell nr i. Note the order of the cells should
+        reflect the order of the columns of the forward.
+    forward: 2D array
+        Forward operator.
     data_points
     data_values
     """
