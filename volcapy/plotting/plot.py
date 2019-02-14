@@ -4,7 +4,7 @@ import plotly.offline as plt
 import plotly.graph_objs as go
 
 
-def plot(vals, x_coords, y_coords, z_coords, n_sample=0):
+def plot(vals, coords, cmin=2150, cmax=2550.0, n_sample=0):
     """ Plot 3 dimensional scalar field.
 
     Parameters
@@ -30,16 +30,17 @@ def plot(vals, x_coords, y_coords, z_coords, n_sample=0):
         # Otherwise just use all indices.
         plot_indices = list(range(dim))
 
-    plot_x = x_coords[plot_indices]
-    plot_y = y_coords[plot_indices]
-    plot_z = z_coords[plot_indices]
+    plot_x = coords[plot_indices, 0]
+    plot_y = coords[plot_indices, 1]
+    plot_z = coords[plot_indices, 2]
     plot_vals = vals[plot_indices]
 
     myplot = go.Scatter3d(
             dict(
                     x=plot_x, y=plot_y, z=plot_z,
                     mode='markers',
-                    marker=dict(size=4, opacity=1.0, color=plot_vals,
+                    marker=dict(size=3.2, opacity=1.0, color=plot_vals,
+                    cmin=cmin, cmax=cmax,
                     colorscale='Jet', colorbar=dict(title='plot'))))
 
     layout = go.Layout()
@@ -49,7 +50,7 @@ def plot(vals, x_coords, y_coords, z_coords, n_sample=0):
     plt.plot(fig)
 
 
-def plot_region(region_inds, vals, x_coords, y_coords, z_coords, n_sample=0):
+def plot_region(region_inds, vals, coords, cmin=2150, cmax=2550.0, n_sample=0):
     """ Same as above, but only plot a certain region. The region is defined by
     passing the indices of the cell in the region.
 
@@ -71,14 +72,12 @@ def plot_region(region_inds, vals, x_coords, y_coords, z_coords, n_sample=0):
     """
     # Subset the corrresponding values.
     slice_vals = vals[region_inds]
-    slice_x_coords = x_coords[region_inds]
-    slice_y_coords = y_coords[region_inds]
-    slice_z_coords = z_coords[region_inds]
+    slice_coords = coords[region_inds, :]
 
-    plot(slice_vals, slice_x_coords, slice_y_coords, slice_z_coords, n_sample=0)
+    plot(slice_vals, slice_coords,cmin, cmax, n_sample)
 
 
-def plot_z_slice(slice_height, vals, x_coords, y_coords, z_coords, n_sample=0):
+def plot_z_slice(slice_height, vals, coords,cmin=2150, cmax=2550.0, n_sample=0):
     """ Same as above, but only plot as slice of fixed z coordinate.
 
     Parameters
@@ -101,19 +100,19 @@ def plot_z_slice(slice_height, vals, x_coords, y_coords, z_coords, n_sample=0):
     # If list, then have to slice several times.
     if not isinstance(slice_height, list):
         # Get the indices of the cells in the slice.
-        slice_inds = z_coords[:] == slice_height
+        slice_inds = coords[:, 2] == slice_height
     else:
         # Create empyt boolean array, one hot encoding of cells we will plot.
-        slice_inds = np.empty(x_coords.shape, dtype='bool')
+        slice_inds = np.empty(coords.shape[0], dtype='bool')
         slice_inds[:] = False
 
         for h in slice_height:
-            slice_inds = np.logical_or(slice_inds, z_coords[:] == h)
+            slice_inds = np.logical_or(slice_inds, coords[:, 2] == h)
 
-    plot_region(slice_inds, vals, x_coords, y_coords, z_coords, n_sample=0)
+    plot_region(slice_inds, vals, coords,cmin, cmax, n_sample)
 
 
-def plot_x_slice(slice_x, vals, x_coords, y_coords, z_coords, n_sample=0):
+def plot_x_slice(slice_x, vals, coords,cmin=2150, cmax=2550.0, n_sample=0):
     """ Same as above, but only plot as slice of fixed z coordinate.
 
     Parameters
@@ -136,19 +135,19 @@ def plot_x_slice(slice_x, vals, x_coords, y_coords, z_coords, n_sample=0):
     # If list, then have to slice several times.
     if not isinstance(slice_x, list):
         # Get the indices of the cells in the slice.
-        slice_inds = x_coords[:] == slice_x
+        slice_inds = coords[:, 0] == slice_x
     else:
         # Create empyt boolean array, one hot encoding of cells we will plot.
-        slice_inds = np.empty(x_coords.shape, dtype='bool')
+        slice_inds = np.empty(coords.shape[0], dtype='bool')
         slice_inds[:] = False
 
         for h in slice_x:
-            slice_inds = np.logical_or(slice_inds, z_coords[:] == h)
+            slice_inds = np.logical_or(slice_inds, coords[:, 0] == h)
 
-    plot_region(slice_inds, vals, x_coords, y_coords, z_coords, n_sample=0)
+    plot_region(slice_inds, vals, coords,cmin, cmax, n_sample)
 
 
-def plot_y_slice(slice_y, vals, x_coords, y_coords, z_coords, n_sample=0):
+def plot_y_slice(slice_y, vals, coords,cmin=2150, cmax=2550.0, n_sample=0):
     """ Same as above, but only plot as slice of fixed z coordinate.
 
     Parameters
@@ -171,13 +170,13 @@ def plot_y_slice(slice_y, vals, x_coords, y_coords, z_coords, n_sample=0):
     # If list, then have to slice several times.
     if not isinstance(slice_y, list):
         # Get the indices of the cells in the slice.
-        slice_inds = y_coords[:] == slice_y
+        slice_inds = coords[:, 1] == slice_y
     else:
         # Create empyt boolean array, one hot encoding of cells we will plot.
-        slice_inds = np.empty(x_coords.shape, dtype='bool')
+        slice_inds = np.empty(coords.shape[0], dtype='bool')
         slice_inds[:] = False
 
         for h in slice_y:
-            slice_inds = np.logical_or(slice_inds, z_coords[:] == h)
+            slice_inds = np.logical_or(slice_inds, coords[:, 1] == h)
 
-    plot_region(slice_inds, vals, x_coords, y_coords, z_coords, n_sample=0)
+    plot_region(slice_inds, vals, coords,cmin, cmax, n_sample)
