@@ -69,23 +69,6 @@ init_lambda_2 = 2 * 100.0**2
 simga_2 = tf.Variable(init_sigma_2)
 lambda_2 = tf.Variable(init_lambda_2)
 
-"""
-# Loop chunks.
-for i in range(n_chunks):
-    
-    a = matrices[get_chunk_ind(i)]
-    b = tf.exp(tf.pow(a, 2))
-    
-    # Partial multiplication.
-    partial_mat_list[get_chunk_ind(i)] = tf.matmul(part, GT)
-    
-# ---------------------------------------------------------------------
-# Time for the Reduce.
-# Reducer is a stack operation along axis 0 for all the members of the partial
-# matrix list.
-# ---------------------------------------------------------------------
-pushforward_cov = tf.stack(partial_mat_list, axis=0)
-"""
 
 place = tf.placeholder(tf.float32, shape=(chunk_size, GT.shape[0]))
 
