@@ -41,9 +41,9 @@ coords = coords[:50000, :]
 
 # Parameters to optimize.
 init_sigma_2 = 50.0**2
-init_lambda_2 = 2 * 100.0**2
+init_lambda_2 = 130.0**2
 
-simga_2 = tf.Variable(init_sigma_2)
+sigma_2 = tf.Variable(init_sigma_2)
 lambda_2 = tf.Variable(init_lambda_2)
 
 
@@ -69,8 +69,8 @@ def per_line_operation(line):
     del(diff_zt)
 
     diff = tf.add_n([diffx, diffy, diffz])
-    b = tf.exp(
-            tf.math.negative(tf.divide(diff, lambda_2)))
+    b = tf.scalar_mul(sigma_2,
+            tf.exp(tf.math.negative(tf.divide(diff, lambda_2))))
     out = tf.matmul(b, GT)
     return out
 
