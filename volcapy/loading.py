@@ -34,7 +34,7 @@ def load_niklas(path):
     # It has one element too much compared to what F expects,
     # hence we remove the first element, since it is 0.
     # (Maybe was included as reference point.)
-    d = np.array(dataset['d_land'])[0, 1:]
+    d = np.array(dataset['d_land'], dtype=np.float32)[0, 1:]
 
     # Coordinates.
     xi = dataset['xi'][:, 0]
@@ -46,9 +46,9 @@ def load_niklas(path):
 
     # DSM
     # We have arrays of arrays, so we flatten to be one dimensional.
-    dsm_x = np.ndarray.flatten(np.array(dataset['x']))
-    dsm_y = np.ndarray.flatten(np.array(dataset['y']))
-    dsm_z = np.array(dataset['z'])
+    dsm_x = np.ndarray.flatten(np.array(dataset['x'], dtype=np.float32))
+    dsm_y = np.ndarray.flatten(np.array(dataset['y'], dtype=np.float32))
+    dsm_z = np.array(dataset['z'], dtype=np.float32)
 
     # Build a dsm matrix.
     dsm = []
@@ -56,7 +56,7 @@ def load_niklas(path):
         for j in range(dsm_y.size):
             dsm.append([dsm_x[i], dsm_y[j], dsm_z[i, j]])
 
-    dsm = np.array(dsm)
+    dsm = np.array(dsm, dtype=np.float32)
 
     # Build a coords matrix.
     coords = []
@@ -71,7 +71,7 @@ def load_niklas(path):
 
     # We put results in a numpy array for ease of use, it makes subsetting
     # easier.
-    coords = np.array(coords)
+    coords = np.array(coords, dtype=np.float32)
 
     # Extract the data points locations.
     data_x = dataset['long'][0, :]

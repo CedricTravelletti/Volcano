@@ -1,6 +1,6 @@
 from volcapy import loading
 import volcapy.math.matrix_tools as mat
-import volcapy.kernels.exponential as kern
+import volcapy.kernels.squared_exponential as kern
 
 import numpy as np
 import os
@@ -12,8 +12,7 @@ from timeit import default_timer as timer
 # TODO: Refactor so that InverseProblem has a CovarianceModel member.
 # Globals
 sigma_2 = 50.0**2
-# lambda_2 = 130**2
-lambda_2 = 800**2
+lambda_2 = 130**2
 
 # Unused, just there to remind of the value for Niklas's data.
 sigma_d = 0.1
