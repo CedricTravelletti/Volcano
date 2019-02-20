@@ -72,8 +72,6 @@ setup(
     include_package_data=False,
     install_requires=io.open(requirements, encoding='utf8').read(),
     classifiers=[],
-    cmdclass={"test": test,
-              "version_build": version_build},
     ext_modules=ext_modules_settings,
     include_dirs=[np.get_include()],
 )
