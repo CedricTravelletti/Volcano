@@ -28,7 +28,7 @@ AUTHOR_EMAIL = "cedrictravelletti@gmail.com"
 URL = 'https://github.com/CedricTravelletti/Volcapy'
 
 
-requirements = "requirements/py3.txt"
+requirements = "requirements.txt"
 
 ext_modules = [
     "volcapy/kernels/squared_exponential.pyx",
