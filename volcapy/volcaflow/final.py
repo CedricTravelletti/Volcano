@@ -90,9 +90,9 @@ def per_chunk_operation(chunk):
     diff_yt, diff_y = tf.meshgrid(chunk[:, 1], coords[:, 1], indexing='ij')
     diff_zt, diff_z = tf.meshgrid(chunk[:, 2], coords[:, 2], indexing='ij')
 
-    diffx = tf.math.squared_difference(diff_x, diff_xt)
-    diffy = tf.math.squared_difference(diff_y, diff_yt)
-    diffz = tf.math.squared_difference(diff_z, diff_zt)
+    diffx = tf.squared_difference(diff_x, diff_xt)
+    diffy = tf.squared_difference(diff_y, diff_yt)
+    diffz = tf.squared_difference(diff_z, diff_zt)
 
     del(diff_x)
     del(diff_xt)
@@ -103,7 +103,7 @@ def per_chunk_operation(chunk):
 
     diff = tf.add_n([diffx, diffy, diffz])
     b = tf.scalar_mul(sigma_2,
-            tf.exp(tf.math.negative(tf.divide(diff, lambda_2))))
+            tf.exp(tf.negative(tf.divide(diff, lambda_2))))
     out = tf.matmul(b, GT)
     return out
 
