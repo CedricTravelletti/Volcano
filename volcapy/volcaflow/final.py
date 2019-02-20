@@ -39,7 +39,13 @@ coords = tf.convert_to_tensor(coords)
 # ------------------------------------------------------------------------
 
 # SUBSET
-coords_subset = tf.convert_to_tensor(coords[:3000, :])
+coords_subset = tf.convert_to_tensor(coords[:1000, :])
+
+# SPLITS
+# splits = 17917*[10] + [1]
+# coords_split = tf.split(coords, splits)
+splits = 200*[5]
+coords_split = tf.split(coords_subset, splits)
 
 # Parameters to optimize.
 init_sigma_2 = 50.0**2
@@ -115,10 +121,34 @@ config.gpu_options.allow_growth = True
 start = timer()
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    a = sess.run(final2)
-    print(a)
+    a = sess.run(final)
 
 end = timer()
+time_line = end - start
+print("Per line.")
+print(str((end - start)/60.0))
+
+
+start = timer()
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    a = sess.run(final2)
+
+end = timer()
+print("Per chunk.")
+print(str((end - start)/60.0))
+print("Line over chunk: " + str(time_line/(end - start)))
+
+
+# SPLITS
+final_splits = tf.map_fn(per_chunk_operation, coords_split)
+start = timer()
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    a = sess.run(final_splits)
+
+end = timer()
+print("Per splits.")
 print(str((end - start)/60.0))
 
 # place = tf.placeholder(tf.float32, shape=(chunk_size, GT.shape[0]))
