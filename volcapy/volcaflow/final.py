@@ -17,11 +17,11 @@ import os
 from timeit import default_timer as timer
 
 
-tf.logging.set_verbosity(tf.logging.DEBUG)
-
 from volcapy.loading import load_niklas
 
 
+
+tf.logging.set_verbosity(tf.logging.DEBUG)
 
 # ------------------------------------------------------------------------
 niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
@@ -30,16 +30,16 @@ niklas_data = load_niklas(niklas_data_path)
 GT = niklas_data['F']
 GT = GT.T
 
-# SUBSTET
-GT = GT[:120000, :]
+# GT = GT[:50000, :]
 GT = tf.convert_to_tensor(GT, np.float32)
 
 coords = niklas_data['coords']
 coords = coords.astype(np.float32, copy=False)
+coords = tf.convert_to_tensor(coords)
 # ------------------------------------------------------------------------
 
 # SUBSET
-coords = coords[:120000, :]
+coords_subset = tf.convert_to_tensor(coords[:3000, :])
 
 # Parameters to optimize.
 init_sigma_2 = 50.0**2
@@ -77,18 +77,48 @@ def per_line_operation(line):
     return out
 
 # ---------------------------------------------------------------------
-final = tf.map_fn(per_line_operation, coords)
+final = tf.map_fn(per_line_operation, coords_subset)
+
+
+def per_chunk_operation(chunk):
+    """ Operation to perform on each line.
+    That is, given a coords line corresponding to one of the model cells,
+    return the corresponding line of the matrix C_M GT.
+
+    """
+    diff_xt, diff_x = tf.meshgrid(chunk[:, 0], coords[:, 0], indexing='ij')
+    diff_yt, diff_y = tf.meshgrid(chunk[:, 1], coords[:, 1], indexing='ij')
+    diff_zt, diff_z = tf.meshgrid(chunk[:, 2], coords[:, 2], indexing='ij')
+
+    diffx = tf.math.squared_difference(diff_x, diff_xt)
+    diffy = tf.math.squared_difference(diff_y, diff_yt)
+    diffz = tf.math.squared_difference(diff_z, diff_zt)
+
+    del(diff_x)
+    del(diff_xt)
+    del(diff_y)
+    del(diff_yt)
+    del(diff_z)
+    del(diff_zt)
+
+    diff = tf.add_n([diffx, diffy, diffz])
+    b = tf.scalar_mul(sigma_2,
+            tf.exp(tf.math.negative(tf.divide(diff, lambda_2))))
+    out = tf.matmul(b, GT)
+    return out
+
+final2 = per_chunk_operation(coords_subset)
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
 start = timer()
-with tf.Session(config=config) as sess:
+with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    a = sess.run(final)
+    a = sess.run(final2)
+    print(a)
 
 end = timer()
 print(str((end - start)/60.0))
-
 
 # place = tf.placeholder(tf.float32, shape=(chunk_size, GT.shape[0]))
