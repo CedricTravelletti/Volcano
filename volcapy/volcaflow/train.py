@@ -25,48 +25,46 @@ niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 
 # Load data from Niklas (forward and measurements).
 niklas_data = load_niklas(niklas_data_path)
-GT = niklas_data['F']
-GT = GT.T
-
-F = niklas_data['F']
-F = F[:data_subset, :]
-F = tf.convert_to_tensor(F, tf.float32)
 
 # Data subset.
-data_subset = 10
-GT = GT[:, :data_subset]
+nr_data = 8
+
+F = niklas_data['F']
+F = F[:nr_data, :]
+n_model = F.shape[1]
+F = tf.convert_to_tensor(F, tf.float32)
+
+GT = niklas_data['F']
+GT = GT.T
+GT = GT[:, :nr_data]
+GT = tf.convert_to_tensor(GT, np.float32)
 
 d_obs = niklas_data['d']
-d_obs = d_obs[:data_subset]
+d_obs = d_obs[:nr_data][:, None]
 d_obs = tf.convert_to_tensor(d_obs)
 
 # Data covariance matrix.
 sigma_d = 0.1
-cov_d = sigma_d**2 * tf.eye(data_subset, dtype=tf.float32)
-
-# SUBSET
-GT = tf.convert_to_tensor(GT, np.float32)
+cov_d = sigma_d**2 * tf.eye(nr_data, dtype=tf.float32)
 
 coords = niklas_data['coords']
 coords = coords.astype(np.float32, copy=False)
 coords = tf.convert_to_tensor(coords)
-# ------------------------------------------------------------------------
 
-# SUBSET
+# SUBSET THE MODEL.
 coords_subset = tf.convert_to_tensor(coords[:, :])
 
-# SPLITS
-# splits = 17917*[10] + [1]
-# coords_split = tf.split(coords, splits)
-# splits = 200*[5]
-# coords_split = tf.split(coords_subset, splits)
-
 # Parameters to optimize.
+init_mu_0 = 2300.0
 init_sigma_2 = 50.0**2
 init_lambda_2 = 130.0**2
 
 sigma_2 = tf.Variable(init_sigma_2)
-lambda_2 = tf.Variable(init_lambda_2)
+lambda_2 = tf.Variable(init_lambda_2, trainable=True)
+mu_0 = tf.Variable(init_mu_0, trainable=True)
+
+# Build prior mean.
+m_prior = tf.scalar_mul(mu_0, tf.ones([n_model, 1], dtype=tf.float32))
 
 
 def per_line_operation(line):
@@ -128,16 +126,30 @@ def per_chunk_operation(chunk):
 # Compute C_M GT.
 pushforward_cov = tf.squeeze(
         tf.map_fn(per_line_operation, coords_subset))
-inversion_operator = tf.linalg.inv(
-        tf.add(tf.matmul(F, pushforward_cov), cov_d))
+inversion_operator = tf.matmul(
+        pushforward_cov,
+        tf.linalg.inv(tf.add(tf.matmul(F, pushforward_cov), cov_d))
+        )
 
-prior_misfit = tf.subtract(d_obs, tf.matmul(G, m_prior))
+prior_misfit = tf.subtract(d_obs, tf.matmul(F, m_prior))
 
-d_posteriot = tf.matmul(F,
+d_posterior = tf.matmul(F,
         tf.add(m_prior, tf.matmul(inversion_operator, prior_misfit)))
 
+mse = tf.losses.mean_squared_error(d_posterior, d_obs)
+adam = tf.train.AdamOptimizer(learning_rate=5.0)
+min_handle = adam.minimize(mse, var_list=mu_0)
 # place = tf.placeholder(tf.float32, shape=(chunk_size, GT.shape[0]))
 
+my_mu0 = []
+my_lambda = []
+nr_train = 3
 with tf.Session() as sess:
+    start = timer()
     sess.run(tf.global_variables_initializer())
-    a = sess.run(pushforward_cov)
+    for i in range(nr_train):
+        sess.run(min_handle)
+        my_mu0.append(sess.run(mu_0))
+        my_lambda.append(sess.run(lambda_2))
+    end = timer()
+    # a = sess.run(d_posterior)
