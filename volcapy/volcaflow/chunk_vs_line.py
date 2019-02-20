@@ -31,7 +31,7 @@ GT = niklas_data['F']
 GT = GT.T
 
 # SUBSTET
-GT = GT[:120000, :]
+# GT = GT[:5000, :]
 GT = tf.convert_to_tensor(GT, np.float32)
 
 coords = niklas_data['coords']
@@ -39,7 +39,7 @@ coords = coords.astype(np.float32, copy=False)
 # ------------------------------------------------------------------------
 
 # SUBSET
-coords = coords[:120000, :]
+coords = coords[:5000, :]
 
 # Parameters to optimize.
 init_sigma_2 = 50.0**2
@@ -47,6 +47,34 @@ init_lambda_2 = 130.0**2
 
 sigma_2 = tf.Variable(init_sigma_2)
 lambda_2 = tf.Variable(init_lambda_2)
+
+
+def per_chunk_operation(chunk):
+    """ Operation to perform on each line.
+    That is, given a coords line corresponding to one of the model cells,
+    return the corresponding line of the matrix C_M GT.
+
+    """
+    diff_xt, diff_x = tf.meshgrid(chunk[:, 0], coords[:, 0], indexing='ij')
+    diff_yt, diff_y = tf.meshgrid(chunk[:, 1], coords[:, 1], indexing='ij')
+    diff_zt, diff_z = tf.meshgrid(chunk[:, 2], coords[:, 2], indexing='ij')
+
+    diffx = tf.squared_difference(diff_x, diff_xt)
+    diffy = tf.squared_difference(diff_y, diff_yt)
+    diffz = tf.squared_difference(diff_z, diff_zt)
+
+    del(diff_x)
+    del(diff_xt)
+    del(diff_y)
+    del(diff_yt)
+    del(diff_z)
+    del(diff_zt)
+
+    diff = tf.add_n([diffx, diffy, diffz])
+    b = tf.scalar_mul(sigma_2,
+            tf.exp(tf.negative(tf.divide(diff, lambda_2))))
+    out = tf.matmul(b, GT)
+    return out
 
 
 def per_line_operation(line):
@@ -90,5 +118,19 @@ with tf.Session(config=config) as sess:
 end = timer()
 print(str((end - start)/60.0))
 
+
+# Per chunk this time.
+final2 = per_chunk_operation(coords)
+
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+
+start = timer()
+with tf.Session(config=config) as sess:
+    sess.run(tf.global_variables_initializer())
+    a2 = sess.run(final2)
+
+end = timer()
+print(str((end - start)/60.0))
 
 # place = tf.placeholder(tf.float32, shape=(chunk_size, GT.shape[0]))

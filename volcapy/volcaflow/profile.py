@@ -14,7 +14,8 @@ import tensorflow as tf
 import numpy as np
 import os
 
-from timeit import default_timer as timer
+import tempfile
+from tensorflow.python.client import timeline
 
 
 tf.logging.set_verbosity(tf.logging.DEBUG)
@@ -79,16 +80,23 @@ def per_line_operation(line):
 # ---------------------------------------------------------------------
 final = tf.map_fn(per_line_operation, coords)
 
+
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
-start = timer()
 with tf.Session(config=config) as sess:
     sess.run(tf.global_variables_initializer())
-    a = sess.run(final)
+    
+    options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    run_metadata = tf.RunMetadata()
 
-end = timer()
-print(str((end - start)/60.0))
+    a = sess.run(final, options=options, run_metadata=run_metadata)
+
+    fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+    chrome_trace = fetched_timeline.generate_chrome_trace_format()
+
+    with open('timeline_02_step.json', 'w') as f:
+        f.write(chrome_trace)
 
 
 # place = tf.placeholder(tf.float32, shape=(chunk_size, GT.shape[0]))
