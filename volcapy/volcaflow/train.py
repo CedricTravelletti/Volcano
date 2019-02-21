@@ -27,7 +27,7 @@ niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 niklas_data = load_niklas(niklas_data_path)
 
 # Data subset.
-nr_data = 8
+nr_data = 6
 
 F = niklas_data['F']
 F = F[:nr_data, :]
@@ -57,10 +57,10 @@ coords_subset = tf.convert_to_tensor(coords[:, :])
 # Parameters to optimize.
 init_mu_0 = 2300.0
 init_sigma_2 = 50.0**2
-init_lambda_2 = 130.0**2
+init_inv_lambda_2 = - 1/(130.0**2)
 
 sigma_2 = tf.Variable(init_sigma_2)
-lambda_2 = tf.Variable(init_lambda_2, trainable=True)
+inv_lambda_2 = tf.Variable(init_inv_lambda_2, trainable=True)
 mu_0 = tf.Variable(init_mu_0, trainable=True)
 
 # Build prior mean.
@@ -88,10 +88,15 @@ def per_line_operation(line):
     del(diff_z)
     del(diff_zt)
 
-    diff = tf.add_n([diffx, diffy, diffz])
-    b = tf.scalar_mul(sigma_2,
-            tf.exp(tf.negative(tf.divide(diff, lambda_2))))
-    out = tf.matmul(b, GT)
+    exp_x = tf.exp(tf.scalar_mul(inv_lambda_2, diffx))
+    exp_y = tf.exp(tf.scalar_mul(inv_lambda_2, diffy))
+    exp_z = tf.exp(tf.scalar_mul(inv_lambda_2, diffz))
+
+    exp_tot = tf.scalar_mul(sigma_2,
+            tf.multiply(exp_x,
+                    tf.multiply(exp_y, exp_z)))
+
+    out = tf.matmul(exp_tot, GT)
     return out
 
 
@@ -117,8 +122,10 @@ def per_chunk_operation(chunk):
     del(diff_zt)
 
     diff = tf.add_n([diffx, diffy, diffz])
+    """
     b = tf.scalar_mul(sigma_2,
             tf.exp(tf.negative(tf.divide(diff, lambda_2))))
+    """
     out = tf.matmul(b, GT)
     return out
 
@@ -126,15 +133,16 @@ def per_chunk_operation(chunk):
 # Compute C_M GT.
 pushforward_cov = tf.squeeze(
         tf.map_fn(per_line_operation, coords_subset))
+
 inversion_operator = tf.matmul(
         pushforward_cov,
         tf.linalg.inv(tf.add(tf.matmul(F, pushforward_cov), cov_d))
         )
 
 prior_misfit = tf.subtract(d_obs, tf.matmul(F, m_prior))
-
-d_posterior = tf.matmul(F,
-        tf.add(m_prior, tf.matmul(inversion_operator, prior_misfit)))
+m_posterior = tf.add(m_prior, tf.matmul(inversion_operator, prior_misfit))
+d_posterior = tf.matmul(F, m_posterior)
+        
 
 mse = tf.losses.mean_squared_error(d_posterior, d_obs)
 adam = tf.train.AdamOptimizer(learning_rate=5.0)
@@ -144,12 +152,16 @@ min_handle = adam.minimize(mse, var_list=mu_0)
 my_mu0 = []
 my_lambda = []
 nr_train = 3
+
 with tf.Session() as sess:
     start = timer()
     sess.run(tf.global_variables_initializer())
     for i in range(nr_train):
         sess.run(min_handle)
-        my_mu0.append(sess.run(mu_0))
-        my_lambda.append(sess.run(lambda_2))
+        current_mu0 = sess.run(mu_0)
+        print(current_mu0)
+        my_mu0.append(current_mu0)
+
     end = timer()
     # a = sess.run(d_posterior)
+print(str((end - start)/60.0))
