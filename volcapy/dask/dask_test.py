@@ -22,6 +22,8 @@ niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # Load data from Niklas (forward and measurements).
 niklas_data = load_niklas(niklas_data_path)
 
+import psutil
+process = psutil.Process(os.getpid())
 
 F = niklas_data['F']
 n_data = F.shape[0]
@@ -43,9 +45,13 @@ coords_x = da.from_array(coords_x, chunks=5000)
 coords_y = da.from_array(coords_y, chunks=5000)
 coords_z = da.from_array(coords_z, chunks=5000)
 
+print(str(process.memory_info().rss / 1e9))
+
 x1, x2 = da.meshgrid(coords_x, coords_x, indexing='ij')
 y1, y2 = da.meshgrid(coords_y, coords_y, indexing='ij')
 z1, z2 = da.meshgrid(coords_z, coords_z, indexing='ij')
+
+print(str(process.memory_info().rss / 1e9))
 
 diff_x = da.subtract(x1, x2)
 diff_y = da.subtract(y1, y2)
@@ -60,6 +66,8 @@ inv_lambda_2 = - 1/(130.0**2)
 exp_x = da.exp(inv_lambda_2, squared_x)
 exp_y = da.exp(inv_lambda_2, squared_y)
 exp_z = da.exp(inv_lambda_2, squared_z)
+
+print(str(process.memory_info().rss / 1e9))
 
 sigma_2 = 50.0**2
 exp_tot = da.multiply(sigma_2,
