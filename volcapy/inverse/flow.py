@@ -60,22 +60,43 @@ class InverseProblem():
         """
         data = loading.load_niklas(path)
 
-        cells_coords = data['coords'].astype(dtype=np.float32, order='C', copy=False)
+        cells_coords = data['coords']
 
         # TODO: Maybe refactor loading so that directly returns an array
         # instead of a list.
         # Long run, should think about unifying datatypes.
-        data_coords = np.array(data['data_coords']).astype(
-                dtype=np.float32, order='C', copy=False)
+        data_coords = np.array(data['data_coords'])
 
-        forward = data['F'].astype(
-                dtype=np.float32, order='C', copy=False)
-
-        data_values = data['d'].astype(
-                dtype=np.float32, order='C', copy=False)
-
+        forward = data['F']
+        data_values = data['d']
 
         return cls(cells_coords, forward, data_coords, data_values)
+
+    def subset(self, n_cells):
+        """ Subset an inverse problem by only keeping the first n_cells
+        inversion cells. This is used to make the problem more tractable and
+        allow prototyping calculations on a small computer.
+
+        The effect of this method is to directly modify the attributes of the
+        class to adapt them to the smaller problem.
+
+        Parameters
+        ----------
+        n_cells: int
+            Only keep the first n_cells.
+
+        """
+        # Pick indices at random.
+        inds = np.random.random_integers(0, self.n_model - 1, size=(n_cells))
+
+        self.cells_coords = self.cells_coords[inds, :]
+        self.forward = self.forward[:, inds]
+        # We subsetted columns, hence we have to restore C-contiguity by hand.
+        self.forward = np.ascontiguousarray(self.forward)
+        self.cells_coords = np.asfortranarray(self.cells_coords)
+
+        # Dimensions
+        self.n_model = self.cells_coords.shape[0]
 
     def build_partial_covariance(self, row_begin, row_end):
         """ Prepare a function for returning partial rows of the covariance
