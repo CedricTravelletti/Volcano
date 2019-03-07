@@ -30,6 +30,9 @@ def load_niklas(path):
     # so we have to rebuild it.
     F = np.reshape(dataset['F_land/data'], (N_OBS, N_MODEL), order = 'F')
 
+    # Make contigous in memory.
+    F = np.ascontiguousarray(F, dtype=np.float32)
+
     # Measurement vector.
     # It has one element too much compared to what F expects,
     # hence we remove the first element, since it is 0.
@@ -72,6 +75,13 @@ def load_niklas(path):
     # We put results in a numpy array for ease of use, it makes subsetting
     # easier.
     coords = np.array(coords, dtype=np.float32)
+
+    # IMPORTANT.
+    # We make the array Fortran contiguous. This means that column subsetting
+    # will return contiguous data, i.e., when we select one of the coordinates
+    # (say x) we will get the x-coordinates of all the cells as a contiguous
+    # array, so we can loop faster.
+    coords = np.asfortranarray(coords)
 
     # Extract the data points locations.
     data_x = dataset['long'][0, :]
