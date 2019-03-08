@@ -49,6 +49,10 @@ class SquaredExpModel(torch.nn.Module):
         
         self.m_prior = torch.mul(self.m0, torch.ones((inverseProblem.n_model, 1)))
 
+        self.F = F
+        self.d_obs = d_obs
+        self.data_cov = data_cov
+
     def forward(self, distance_mesh):
         """ Squared exponential kernel. Builds the full covariance matrix from a
         squared distance mesh.
@@ -68,25 +72,26 @@ class SquaredExpModel(torch.nn.Module):
                                     - 1/(2 * self.length_scale.pow(2)))
                             ),
                 self.sigma.pow(2)),
-                F.t()
+                self.F.t()
                 ))
         inversion_operator = torch.inverse(
                 torch.add(
-                        data_cov,
-                        torch.mm(F, pushforward_cov)
+                        self.data_cov,
+                        torch.mm(self.F, pushforward_cov)
                         ))
         m_posterior = torch.add(
                 self.m_prior,
                 torch.mm(
                         torch.mm(pushforward_cov, inversion_operator),
-                        torch.sub(d_obs, torch.mm(F, self.m_prior)))
+                        torch.sub(self.d_obs, torch.mm(self.F, self.m_prior)))
                 )
-        return torch.mm(F, m_posterior)
+        return torch.mm(self.F, m_posterior)
 
 
 myModel = SquaredExpModel()
 criterion = torch.nn.MSELoss() 
-optimizer = torch.optim.SGD(myModel.parameters(), lr = 0.5) 
+# optimizer = torch.optim.SGD(myModel.parameters(), lr = 0.5) 
+optimizer = torch.optim.Adam(myModel.parameters, lr=1.0) 
   
 for epoch in range(10): 
   
@@ -100,7 +105,8 @@ for epoch in range(10):
     # Zero gradients, perform a backward pass,  
     # and update the weights. 
     optimizer.zero_grad() 
-    loss.backward() 
+    loss.backward(retain_graph=True) 
+    # loss.backward() 
     optimizer.step() 
     print(
             'epoch {}, loss {}, m0 {} length_scale {}, sigma {}'.format(
