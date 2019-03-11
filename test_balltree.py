@@ -29,13 +29,22 @@ tree = BallTree(inverseProblem.cells_coords)
 def get_cells_ind_with_radius(cell, radius):
     return tree.query_radius(cell.reshape(1, -1), radius)[0]
 
-def compute_cov_within_radius(cell, radius):
-    neighbor_inds = get_cells_ind_with_radius(cell, radius)
-    for neighbor_ind in neighbor_inds:
-        cov = np.exp(
-                - np.linalg.norm(
-                        cell - inverseProblem.cells_coords[neighbor_ind, :]))
+def compute_sparse_distance_mesh(radius):
+    # Lists to store the computed covariances and indices in the big sparse
+    # matrix.
+    covariances = []
+    inds = []
 
-for i in range(inverseProblem.cells_coords.shape[0]):
-    print(i)
-    compute_cov_within_radius(inverseProblem.cells_coords[i, :], 250.0)
+    # Loop over all cells.
+    for cell_ind, cell in enumerate(inverseProblem.cells_coords):
+        print(cell_ind)
+        # Get neighbors.
+        neighbor_inds = get_cells_ind_with_radius(cell, radius)
+
+        # Loop over all neighboring cells.
+        for neighbor_ind in neighbor_inds:
+            covariances.append(
+                np.linalg.norm(
+                    cell - inverseProblem.cells_coords[neighbor_ind, :]))
+            inds.append((cell_ind, neighbor_ind))
+    return (covariances, inds)
