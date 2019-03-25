@@ -73,8 +73,9 @@ class InverseProblem():
         return cls(cells_coords, forward, data_coords, data_values)
 
     def subset(self, n_cells):
-        """ Subset an inverse problem by only keeping the first n_cells
-        inversion cells. This is used to make the problem more tractable and
+        """ Subset an inverse problem by only keeping n_cells
+        inversion cells selected at random.
+        This is used to make the problem more tractable and
         allow prototyping calculations on a small computer.
 
         The effect of this method is to directly modify the attributes of the
@@ -97,6 +98,38 @@ class InverseProblem():
 
         # Dimensions
         self.n_model = self.cells_coords.shape[0]
+
+    def subset_data(self, n_data):
+        """ Subset an inverse problem by only keeping n_data data
+        points selected at random.
+
+        The effect of this method is to directly modify the attributes of the
+        class to adapt them to the smaller problem.
+
+        Parameters
+        ----------
+        n_data: int
+            Only keep n_data data points.
+
+        """
+        # Pick indices at random.
+        inds = np.random.random_integers(0, self.n_data - 1, size=(n_data))
+
+        self.forward = self.forward[inds, :]
+        # We subsetted columns, hence we have to restore C-contiguity by hand.
+        self.forward = np.ascontiguousarray(self.forward)
+
+        self.data_points = self.data_points[inds, :]
+        self.data_values = self.data_values[inds]
+
+        # Dimensions
+        self.n_data = self.forward.shape[0]
+
+        # Return the unused part of the forward and of the data so that it can
+        # be used as test set.
+        rest_forward = np.delete(self.forward, inds, axis=0)
+        rest_data = np.delete(self.data_values, inds, axis=0)
+        return (rest_forward, rest_data)
 
     def build_partial_covariance(self, row_begin, row_end):
         """ Prepare a function for returning partial rows of the covariance
