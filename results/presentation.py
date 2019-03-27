@@ -3,6 +3,7 @@
 """
 from volcapy.loading import load_niklas
 import volcapy.plotting.plot as plt
+import volcapy.uq.azzimonti as azz
 
 import numpy as np
 
@@ -44,8 +45,7 @@ island_inds = np.where(
 surface_inds = island_inds[island_inds < 32000]
 
 # Plot surface.
-plt.plot_region(surface_inds, post_mean,
-        coords[:, 0],coords[:, 1],coords[:, 2])
+plt.plot_region(surface_inds, post_mean, coords)
 
 # Plot slices as in Niklas.
 plt.plot_z_slice(0.0, post_mean,
@@ -86,3 +86,14 @@ plt.plot_region(my_surface_inds, my_mean, my_coords[:,0], my_coords[:,1],
         my_coords[:,2])
 
 # Interesting measurements are nr 100 and nr 200.
+
+# Misfit.
+np.matmult(F, post_mean)
+
+# Azzimonti Stuff
+mygp = azz.GaussianProcess(post_mean, post_variance, covariance_func=None)
+excu = mygp.compute_excursion_probs(threshold=2500.0)
+
+# Vorobev expectation.
+vorb_inds = mygp.vorobev_expectation_inds(threshold=2500.0)
+plt.plot_region(vorb_inds, excu, coords[:,0], coords[:,1], coords[:,2])

@@ -32,7 +32,7 @@ niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
-# inverseProblem.subset(120000)
+inverseProblem.subset(50000)
 
 tree = BallTree(inverseProblem.cells_coords)
 
@@ -170,27 +170,3 @@ with tf.Session() as sess:
         current_sigma = sess.run(sigma)
         print(current_m0)
         print(current_sigma)
-"""
-# optimizer = torch.optim.Adam(myModel.parameters(), lr=4.0)
-
-    # Forward pass: Compute predicted y by passing
-    # x to the model
-    pred_y = myModel(distance_mesh)
-
-    # Compute and print loss
-    loss = pred_y
-
-    # Zero gradients, perform a backward pass,
-    # and update the weights.
-    optimizer.zero_grad()
-    loss.backward(retain_graph=True)
-    # loss.backward()
-    optimizer.step()
-    print(
-            'epoch {}, loss {}, m0 {} length_scale {}, sigma {}'.format(
-                    epoch, loss.data,
-                    float(myModel.m0),
-                    float(myModel.length_scale),
-                    float(myModel.sigma)
-                    ))
-"""

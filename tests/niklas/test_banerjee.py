@@ -8,7 +8,7 @@ import numpy as np
 from nose.tools import assert_almost_equal
 
 
-def test_from_matfile():
+def test_banerjee():
     """ Banerjee formula for whole parallelepiped.
     """
     # Here, compare with outputs from Niklas's code.

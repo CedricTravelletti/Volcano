@@ -129,7 +129,7 @@ class GaussianProcess():
             # Count how many, to get the measure.
             measure = np.count_nonzero(vorb_inds)
 
-            # If smaller than epected measure, then continue, else return.
+            # If smaller than expected measure, then continue, else return.
             if measure < expected_measure:
                 return vorb_inds
 
