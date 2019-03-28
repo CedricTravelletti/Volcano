@@ -111,6 +111,11 @@ class InverseProblem():
         n_data: int
             Only keep n_data data points.
 
+        Returns
+        -------
+        (rest_forward, rest_data)
+
+
         """
         # Pick indices at random.
         inds = np.random.random_integers(0, self.n_data - 1, size=(n_data))
