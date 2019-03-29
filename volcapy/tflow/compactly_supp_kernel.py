@@ -13,12 +13,12 @@ niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
-inverseProblem.subset(50000)
+rest_forward, rest_data = inverseProblem.subset_data(2)
 
 # Create the sparsifier that will take care of ignoring cell couple that are
 # too distant from each other.
 sparsifier = Sparsifier(inverseProblem)
-radius = 100.0
+radius = 200.0
 
 ## ML part.
 import tensorflow as tf
@@ -33,14 +33,18 @@ dist_mesh_shape = np.array([n_model, n_model], dtype=np.int64)
 # feed_dict = {dist_mesh_sparse: tf.SparseTensorValue(dist_mesh_inds, dist_mesh_vals, dist_mesh_shape)}
 
 # Initialization variables.
-m0 = 2200.0
+m0 = 2184.0
 data_std = 0.1
-length_scale = 100.0
-sigma = 20.0
+length_scale = 460.0
+sigma = 140.0
+
+min_len = 10.0
+max_len = 5000.0
 
 # Prior parameters
 m0 = tf.Variable(m0)
 length_scale = tf.Variable(length_scale)
+clipped_length_scale = tf.clip_by_value(length_scale, min_len, max_len)
 sigma = tf.Variable(sigma)
 
 # Prior mean and data covariance.
@@ -55,7 +59,7 @@ d_obs = tf.convert_to_tensor(inverseProblem.data_values[:, None])
 # This is easier, since taking the exp of zero values would unzero them.
 covariance_mat_vals = tf.scalar_mul(
     tf.pow(sigma, 2),
-    tf.exp(dist_mesh_vals / tf.scalar_mul(2.0, tf.pow(length_scale, 2))))
+    tf.exp(dist_mesh_vals / tf.scalar_mul(2.0, tf.pow(clipped_length_scale, 2))))
 
 # Now put this in a sparse matrix.
 covariance_mat_sparse = tf.SparseTensor(
@@ -93,21 +97,24 @@ log_likelyhood = tf.add(
 
 # Setup optimization
 adam = tf.train.AdamOptimizer(learning_rate=5.0)
-min_handle = adam.minimize(log_likelyhood, var_list=[m0, sigma])
+min_handle = adam.minimize(log_likelyhood, var_list=[m0, sigma, length_scale])
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
 
     nr_train = 100
     for i in range(nr_train):
+        print("Iteration {}".format(i))
         tmp = sess.run(pushforward_cov)
-        print(tmp)
-        """
-        sess.run(log_likelyhood)
+        current_cov_mat_sparse = sess.run(covariance_mat_sparse)
+        print(current_cov_mat_sparse)
+        log_likl = sess.run(log_likelyhood)
+        print(log_likl)
+
         sess.run(min_handle)
         current_m0 = sess.run(m0)
         current_sigma = sess.run(sigma)
+        current_length_scale = sess.run(length_scale)
         print("m0 {}".format(current_m0))
         print("sigma {}".format(current_sigma))
-        print("log likelyhood {}".format(sess.run(log_likelyhood)))
-        """
+        print("length_scale {}".format(current_length_scale))
