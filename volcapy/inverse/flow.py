@@ -134,7 +134,10 @@ class InverseProblem():
         # be used as test set.
         rest_forward = np.delete(self.forward, inds, axis=0)
         rest_data = np.delete(self.data_values, inds, axis=0)
-        return (rest_forward, rest_data)
+
+        # Note that we return data in a column vector, to make it
+        # compatible with the rest of the data.
+        return (rest_forward, rest_data[:, None])
 
     def build_partial_covariance(self, row_begin, row_end):
         """ Prepare a function for returning partial rows of the covariance
