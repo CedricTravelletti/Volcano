@@ -68,6 +68,10 @@ class Sparsifier():
             # Get neighbors.
             neighbor_inds = self.get_cells_ind_with_radius(cell, threshold_dist)
 
+            # We always return at least the cell itself.
+            if len(neighbor_inds) == 0:
+                neighbor_inds = [cell_ind]
+
             # Loop over all neighboring cells.
             for neighbor_ind in neighbor_inds:
                 squared_dists.append(
@@ -75,4 +79,5 @@ class Sparsifier():
                         np.linalg.norm(
                             cell - self.inverseProblem.cells_coords[neighbor_ind, :])))
                 inds.append((cell_ind, neighbor_ind))
-        return (squared_dists, inds)
+        # Return numpy array, so TF doesnt have to cast later.
+        return (np.array(squared_dists), np.array(inds))
