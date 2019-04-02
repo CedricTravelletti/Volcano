@@ -7,7 +7,7 @@ euclidean distance between the points.
 import numpy as np
 from sklearn.neighbors import BallTree
 from multiprocessing import Pool
-from itertools import repeat
+from itertools import repeat, chain
 
 
 class Sparsifier():
@@ -83,9 +83,9 @@ class Sparsifier():
         pool.close()
         pool.join()
 
-        # Un-nest the lists.
-        dists = list(itertools.chain.from_iterable(dists))
-        ind = list(itertools.chain.from_iterable(ind))
+        # Un-nest the lists using itertools.chain.
+        dists = list(chain.from_iterable(dists))
+        ind = list(chain.from_iterable(ind))
 
         # Return numpy array, so TF doesnt have to cast later.
         return (np.array(dists), np.array(inds))
