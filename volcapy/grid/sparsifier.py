@@ -85,7 +85,7 @@ class Sparsifier():
 
         # Un-nest the lists using itertools.chain.
         dists = list(chain.from_iterable(dists))
-        ind = list(chain.from_iterable(ind))
+        inds = list(chain.from_iterable(inds))
 
         # Return numpy array, so TF doesnt have to cast later.
         return (np.array(dists), np.array(inds))
