@@ -11,8 +11,6 @@ m0 = 2200.0
 data_std = 0.1
 sigma_epsilon = data_std
 
-length_scale = 100.0
-sigma = 20.0
 
 n_freqs = 1000
 n_dims = 3
@@ -42,7 +40,6 @@ d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
 
 # Important params.
 sigma_0 = 1.0
-sigma_n = 1.0
 
 
 # Begin computations here.
@@ -53,7 +50,6 @@ class SquaredExpModel(torch.nn.Module):
         super(SquaredExpModel, self).__init__()
 
         self.m0 = torch.nn.Parameter(torch.tensor(m0))
-        self.length_scale = torch.nn.Parameter(torch.tensor(length_scale))
         self.sigma_0 = torch.nn.Parameter(torch.tensor(sigma_0))
 
         self.m_prior = torch.mul(self.m0, torch.ones((inverseProblem.n_model, 1)))
@@ -61,20 +57,35 @@ class SquaredExpModel(torch.nn.Module):
         self.data_cov = data_cov
 
         # Initial frequencies.
-        self.freqs = torch.nn.Parameter(200.0 * torch.ones((n_freqs, n_dims)))
-        
+        # We have to sample them from a multivariate normal.
+        # WARNING: The original paper optimizes frequencies and length scale
+        # jointly (length scale is the one defining the normal we sample the
+        # frequencies from.
+        # We do not do it for the moment, and assume the length scale is 200m.
+        length_scale = 200.0
+        freqs_cov = 1 / (2 * np.pi)**2 * 1 / length_scale**2
+
+        # Define the parameters of the distribution.
+        freqs_mean = np.zeros(n_dims)
+        freqs_cov = freqs_cov * np.eye(n_dims)
+        # Sample
+        freqs = np.random.multivariate_normal(freqs_mean, freqs_cov,
+                size=n_freqs)
+        freqs = freqs.astype(np.float32)
+        self.freqs = torch.nn.Parameter(torch.from_numpy(freqs))
+
         # Put all points in an array.
         # We transpose so the array is n_dim x n_cells.
         coords = torch.as_tensor(inverseProblem.cells_coords).t()
-        
+
         # Dot product each frequency with each cell. Due to our clever transposition
         # above, this is just a matmul.
         # Resulting matrix is n_freq * n_cells.
-        phases = torch.mul(np.pi, torch.mm(self.freqs, coords))
-        
+        phases = torch.mul(np.float32(np.pi), torch.mm(self.freqs, coords))
+
         cosines = torch.cos(phases)
         sines = torch.sin(phases)
-        
+
         # Finally build the phi vector (our principal object of interest).
         # Note that there is a slight difference with the paper: they alternate cos and
         # sin, where we put all the sins after all the coss.
@@ -96,11 +107,11 @@ class SquaredExpModel(torch.nn.Module):
 
         # --------------------------------------------------------------
         fourier_space_fwd = torch.mm(F, self.PHI.t())
-        
+
         a = torch.mul(
             n_freqs,
             torch.div(sigma_epsilon**2, self.sigma_0**2))
-        
+
         inv = torch.inverse(
             torch.add(
                 torch.mul(a, torch.eye(2 * n_freqs)),
@@ -109,11 +120,11 @@ class SquaredExpModel(torch.nn.Module):
                     torch.mm(
                         torch.eye(inverseProblem.n_data),
                         fourier_space_fwd))))
-        
+
         tmp = torch.sub(
                 torch.eye(inverseProblem.n_data),
                 torch.mm(fourier_space_fwd, torch.mm(inv, fourier_space_fwd.t())))
-        
+
         posterior_mean = torch.add(
             self.m_prior,
             torch.div(
@@ -145,10 +156,10 @@ for epoch in range(600):
     loss = criterion(pred_y, d_obs)
 
     # Loss on test set.
-    test_loss = criterion(
+    test_loss = torch.sqrt(criterion(
         torch.mm(
             torch.as_tensor(rest_forward), posterior_mean),
-        torch.as_tensor(rest_data))
+        torch.as_tensor(rest_data)))
 
     # Zero gradients, perform a backward pass,
     # and update the weights.
@@ -167,9 +178,3 @@ for epoch in range(600):
             'RMSE on test data:  {}'.format(
                     float(test_loss),
                     ))
-
-"""
-new_var = Variable(torch.Tensor([[4.0]]))
-pred_y = our_model(new_var)
-print("predict (after training)", 4, our_model(new_var).data[0][0])
-"""
