@@ -56,7 +56,6 @@ sigma = tf.Variable(sigma)
 
 # Prior mean and data covariance.
 m_prior = tf.scalar_mul(m0, tf.ones((inverseProblem.n_model, 1)))
-data_cov = tf.scalar_mul(data_std**2, tf.eye(data_batch_size))
 
 
 # Compute the values of the non-zero elements in the covariance matrix.
@@ -103,6 +102,8 @@ validation_init_op = iterator.make_initializer(valid_dataset)
 def run_model(F, d):
     """ Run on one line of the forward and one data point.
     """
+    data_cov = tf.scalar_mul(data_std**2, tf.eye(d.shape[0]))
+
     pushforward_cov = tf.sparse.matmul(
                     covariance_mat_sparse,
                     tf.transpose(F)
