@@ -107,11 +107,14 @@ class SquaredExpModel(torch.nn.Module):
 
         # --------------------------------------------------------------
         fourier_space_fwd = torch.mm(F, self.PHI.t())
+        freq_quad = torch.mm(self.PHI.t(), fourier_space_fwd.t())
 
         a = torch.mul(
             n_freqs,
             torch.div(sigma_epsilon**2, self.sigma_0**2))
 
+        # QUESTION: What does the penultimate multiplication do?
+        # I.e.: why is there an identity operator in data space there?
         inv = torch.inverse(
             torch.add(
                 torch.mul(a, torch.eye(2 * n_freqs)),
@@ -125,40 +128,80 @@ class SquaredExpModel(torch.nn.Module):
                 torch.eye(inverseProblem.n_data),
                 torch.mm(fourier_space_fwd, torch.mm(inv, fourier_space_fwd.t())))
 
-        posterior_mean = torch.add(
+        m_posterior = torch.add(
             self.m_prior,
             torch.div(
                 torch.mm(
-                    self.PHI.t(),
-                    torch.mm(
-                        fourier_space_fwd.t(),
-                        torch.mm(
-                            tmp,
-                            torch.sub(d_obs, torch.mm(F, self.m_prior))))),
+                    freq_quad,
+                    torch.mm(tmp, prior_misfit)),
                 a))
+        prediction = torch.mm(F, m_posterior)
+        posterior_misfit = torch.sub(d_obs, prediction)
 
-        return posterior_mean
+        # ----- Likelihood part. -------
+
+        # Prior data variance that is purely due to the model (i.e.: without
+        # data noise).
+        prior_data_model_cov = torch.mul(
+            torch.div(sigma_0**2, n_freqs),
+            torch.mm(fourier_space_fwd, fourier_space_fwd.t()))
+
+        inv_inversion_operator = torch.add(
+                        data_cov, prior_data_model_cov)
+
+        inversion_operator = torch.inverse(inv_inversion_operator)
+
+        # Need to do it this way, otherwise rounding errors kill everything.
+        log_det = - torch.logdet(inversion_operator)
+        print("Log det")
+        print(log_det)
+        log_likelyhood = torch.add(
+            log_det,
+            torch.mm(
+                prior_misfit.t(),
+                torch.mm(inversion_operator, prior_misfit)))
+
+        """
+        # Now posterior covariance, in data space.
+        scal = torch.div(torch.div(sigma_0**2, n_freqs), a)
+        left = torch.mm(F, freq_quad)
+        right = torch.mm(
+                    torch.mm(tmp, freq_quad.t()),
+                    F.t())
+
+
+        posterior_data_cov = torch.add(
+            data_cov,
+            torch.sub(
+                prior_data_model_cov,
+                torch.mul(
+                    scal,
+                    torch.mm(left, right))))
+        """
+
+        return m_posterior
 
 
 myModel = SquaredExpModel()
 # optimizer = torch.optim.SGD(myModel.parameters(), lr = 0.5)
-optimizer = torch.optim.Adam(myModel.parameters(), lr=0.3)
+optimizer = torch.optim.Adam(myModel.parameters(), lr=1.3)
 criterion = torch.nn.MSELoss()
 
-for epoch in range(600):
+for epoch in range(10):
 
     # Forward pass: Compute predicted y by passing
     # x to the model
-    posterior_mean = myModel()
-    pred_y = torch.mm(F, posterior_mean)
+    m_posterior = myModel()
 
     # Compute and print loss
-    loss = criterion(pred_y, d_obs)
+    loss = criterion(
+            torch.mm(torch.as_tensor(rest_forward[:-30,:]), m_posterior),
+            torch.as_tensor(rest_data[:-30]))
 
     # Loss on test set.
     test_loss = torch.sqrt(criterion(
         torch.mm(
-            torch.as_tensor(rest_forward), posterior_mean),
+            torch.as_tensor(rest_forward), m_posterior),
         torch.as_tensor(rest_data)))
 
     # Zero gradients, perform a backward pass,
@@ -178,3 +221,10 @@ for epoch in range(600):
             'RMSE on test data:  {}'.format(
                     float(test_loss),
                     ))
+
+print("Saving Results ...")
+torch.save(m_posterior, "posterior_mean.pt")
+torch.save(myModel.freqs, "freqs.pt")
+torch.save(myModel.m0, "m0.pt")
+torch.save(myModel.sigma_0, "sigma_0.pt")
+ 
