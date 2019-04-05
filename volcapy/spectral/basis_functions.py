@@ -6,7 +6,7 @@ import volcapy.grid.covariance_tools as cl
 import numpy as np
 
 import torch
-torch.set_num_threads(3)
+# torch.set_num_threads(3)
 
 
 # GLOBALS
@@ -20,23 +20,25 @@ n_dims = 3
 
 # Initial length scales.
 lambda0 = 300**2
-length_scales_init = lambda0 * torch.ones((n_basis, 1), dtype=torch.float32)
+length_scales_init = lambda0 * torch.ones((n_basis, 1), dtype=torch.float32).cuda()
 
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
-niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
+# niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
+niklas_data_path = "/home/ec2-user/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
 # Subset the data and build the train/test datasets.
 F_test, d_obs_test = inverseProblem.subset_data(500)
 n_model = inverseProblem.n_model
 
-F_train = torch.as_tensor(inverseProblem.forward)
+F_train = torch.as_tensor(inverseProblem.forward).cuda()
 # Careful: we have to make a column vector here.
-d_obs_train = torch.as_tensor(inverseProblem.data_values[:, None])
+d_obs_train = torch.as_tensor(inverseProblem.data_values[:, None]).cuda()
 
-data_cov = torch.mul(data_std**2, torch.eye(inverseProblem.n_data))
+data_cov = torch.mul(data_std**2, torch.eye(inverseProblem.n_data)).cuda()
 
 # Put all points in an array.
 # We transpose so the array is n_dim x n_cells.
@@ -48,23 +50,23 @@ inducing_points = torch.from_numpy(
 
 x = inducing_points.unsqueeze(1).expand(n_basis, n_model, n_dims)
 y = coords.unsqueeze(0).expand(n_basis, n_model, n_dims)
-dist = torch.pow(x - y, 2).sum(2)
+dist = torch.pow(x - y, 2).sum(2).cuda()
 
 
 class SquaredExpModel(torch.nn.Module):
     def __init__(self):
         super(SquaredExpModel, self).__init__()
 
-        self.m0 = torch.nn.Parameter(torch.tensor(m0))
-        self.sigma_0 = torch.nn.Parameter(torch.tensor(sigma_0))
+        self.m0 = torch.nn.Parameter(torch.tensor(m0)).cuda()
+        self.sigma_0 = torch.nn.Parameter(torch.tensor(sigma_0)).cuda()
 
-        self.m_prior = torch.mul(self.m0, torch.ones((inverseProblem.n_model, 1)))
-        self.data_cov = data_cov
+        self.m_prior = torch.mul(self.m0, torch.ones((inverseProblem.n_model, 1))).cuda()
+        self.data_cov = data_cov.cuda()
 
         # Initial lengthscales
-        self.length_scales = torch.nn.Parameter(length_scales_init)
+        self.length_scales = torch.nn.Parameter(length_scales_init).cuda()
 
-        self.PHI = torch.exp(- dist / self.length_scales)
+        self.PHI = torch.exp(- dist / self.length_scales).cuda()
 
     def forward(self):
         """ Squared exponential kernel. Builds the full covariance matrix from a
@@ -115,6 +117,8 @@ class SquaredExpModel(torch.nn.Module):
 
 
 myModel = SquaredExpModel()
+myModel.cuda()
+
 optimizer = torch.optim.Adam(myModel.parameters(), lr=1.3)
 criterion = torch.nn.MSELoss()
 
@@ -126,9 +130,11 @@ for epoch in range(100):
 
     # Compute and print loss
     loss = log_likelyhood
+    print(loss)
 
     # Zero gradients, perform a backward pass,
     # and update the weights.
+    """
     optimizer.zero_grad()
     loss.backward(retain_graph=True)
     optimizer.step()
@@ -139,3 +145,4 @@ for epoch in range(100):
                     myModel.length_scales[0],
                     float(myModel.sigma_0)
                     ))
+    """
