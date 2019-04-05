@@ -9,23 +9,23 @@ import torch
 # torch.set_num_threads(3)
 
 # Choose between CPU and GPU.
-device = torch.device('cpu')
+device = torch.device('cuda:0')
 
 # GLOBALS
-m0 = torch.tensor(2200.0, requires_grad=False)
-data_std = torch.tensor(0.1, requires_grad=False)
+m0 = torch.tensor(2200.0, requires_grad=False, device=device)
+data_std = torch.tensor(0.1, requires_grad=False, device=device)
 sigma_epsilon = data_std
-sigma_0 = torch.tensor(50.0, requires_grad=False)
-lambda0 = torch.tensor(2000.0, requires_grad=False)
+sigma_0 = torch.tensor(50.0, requires_grad=False, device=device)
+lambda0 = torch.tensor(2000.0, requires_grad=False, device=device)
 
-n_basis = 100
-n_dims = torch.tensor(3, requires_grad=False)
+n_basis = 1000
+n_dims = torch.tensor(3, requires_grad=False, device=device)
 
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
-niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
-# niklas_data_path = "/home/ec2-user/Volcano/data/Cedric.mat"
+niklas_data_path = "/home/ec2-user/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
 # Subset the data and build the train/test datasets.
@@ -56,6 +56,7 @@ dist = torch.pow(x - y, 2).sum(2)
 
 # Send to gpu.
 dist = dist.to(device)
+inducing_points_inds = torch.from_numpy(inducing_points_inds).to(device)
 
 
 class SquaredExpModel(torch.nn.Module):
@@ -66,12 +67,12 @@ class SquaredExpModel(torch.nn.Module):
         # WARNING: We now use only one length scale.
         self.lambda0 = torch.nn.Parameter(lambda0)
         self.length_scales = self.lambda0**2 * torch.ones((n_basis, 1),
-                dtype=torch.float32)
+                dtype=torch.float32, device=device)
 
         self.m0 = torch.nn.Parameter(m0)
         self.sigma_0 = torch.nn.Parameter(sigma_0)
 
-        self.m_prior = torch.mul(self.m0, torch.ones((n_model, 1)))
+        self.m_prior = torch.mul(self.m0, torch.ones((n_model, 1), dtype=torch.float32, device=device))
         self.data_cov = data_cov
 
         self.PHI = torch.exp(- dist / self.length_scales)
@@ -136,7 +137,7 @@ class SquaredExpModel(torch.nn.Module):
 
 
 myModel = SquaredExpModel()
-myModel = myModel
+myModel = myModel.cuda()
 
 optimizer = torch.optim.Adam(myModel.parameters(), lr=0.05)
 criterion = torch.nn.MSELoss()
@@ -146,12 +147,12 @@ for epoch in range(100):
     # Forward pass: Compute predicted y by passing
     # x to the model
     (log_likelyhood, m_posterior) = myModel()
+    # log_likelyhood = myModel().cuda()
 
     prediction_error = criterion(torch.mm(F_test, m_posterior), d_obs_test)
     print("Prediction error: {}.".format(prediction_error))
 
     # Compute and print loss
-    # loss = criterion(torch.mm(F_train, output), d_obs_train)
     loss = log_likelyhood
 
     # Zero gradients, perform a backward pass,
