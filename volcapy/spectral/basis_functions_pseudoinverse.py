@@ -97,6 +97,7 @@ class SquaredExpModel(torch.nn.Module):
             (Square of) standard deviation.
 
         """
+        print(self.lambda0)
         prior_misfit = torch.sub(d_obs_train, torch.mm(F_train, self.m_prior))
 
         # Compute C_M GT.
@@ -139,7 +140,7 @@ class SquaredExpModel(torch.nn.Module):
 myModel = SquaredExpModel()
 myModel = myModel.cuda()
 
-optimizer = torch.optim.Adam(myModel.parameters(), lr=0.05)
+optimizer = torch.optim.Adam(myModel.parameters(), lr=0.000005)
 criterion = torch.nn.MSELoss()
 
 for epoch in range(100):
