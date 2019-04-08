@@ -30,6 +30,10 @@ coarse_cells_coords, coarse_to_fine_inds = irregular_regrid_single_step(
         inverseProblem.cells_coords, 50.0)
 
 # Train-validation split.
+# Save a regridded version before splitting
+F_coarse_tot = regrid_forward(inverseProblem.forward, coarse_to_fine_inds)
+np.save(F_coarse_tot, "F_coarse_tot.npy")
+
 nr_train = 500
 F_test_raw, d_obs_valid_raw = inverseProblem.subset_data(nr_train)
 n_data = inverseProblem.n_data
@@ -161,8 +165,8 @@ for epoch in range(200):
                     ))
     print("RMSE prediction error: {}".format(prediction_error))
 
-"""
-new_var = Variable(torch.Tensor([[4.0]]))
-pred_y = our_model(new_var)
-print("predict (after training)", 4, our_model(new_var).data[0][0])
-"""
+print("Saving Results ...")
+torch.save(m_posterior, "posterior_mean.pt")
+torch.save(myModel.m0, "m0.pt")
+torch.save(myModel.sigma_0, "sigma_0.pt")
+torch.save(myModel.length_scale, "length_scale.pt")
