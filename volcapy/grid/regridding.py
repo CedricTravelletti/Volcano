@@ -65,4 +65,19 @@ def irregular_regrid_single_step(cells_coords, step_resolution):
         coarse_to_fine_inds.append(neighbor_inds)
         candidate_cells[neighbor_inds] = -1
 
-    return (np.array(coarse_cells_coords), coarse_to_fine_inds)
+    coarse_cells_coords = np.array(coarse_cells_coords)
+    coarse_cells_coords = np.asfortranarray(coarse_cells_coords)
+    return (coarse_cells_coords, coarse_to_fine_inds)
+
+def regrid_forward(F, coarse_to_fine_inds):
+    """ Adapt the forward to the new grid.
+
+    """
+    n_cells = len(coarse_to_fine_inds)
+    F_new = np.zeros((F.shape[0], n_cells), dtype=np.float32)
+
+    for i, fine_inds in enumerate(coarse_to_fine_inds):
+        new_column = np.sum(F[:, fine_inds], axis=1)
+        F_new[:, i] = new_column
+
+    return F_new
