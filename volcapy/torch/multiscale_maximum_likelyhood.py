@@ -14,11 +14,11 @@ import torch
 device = torch.device('cuda:0')
 
 # GLOBALS
-m0 = torch.tensor(2124.0, requires_grad=False, device=device)
+m0 = torch.tensor(2400.0, requires_grad=False, device=device)
 data_std = torch.tensor(0.1, requires_grad=False, device=device)
 sigma_epsilon = data_std
 sigma_0 = torch.tensor(75.0, requires_grad=False, device=device)
-lambda0 = torch.tensor(156.0, requires_grad=False, device=device)
+lambda0 = torch.tensor(500.0, requires_grad=False, device=device)
 
 
 # Initialize an inverse problem from Niklas's data.
@@ -130,6 +130,10 @@ class SquaredExpModel(torch.nn.Module):
                         prior_misfit)
                 )
 
+        prediction_train = torch.mm(self.F, m_posterior)
+        mseLoss = torch.nn.MSELoss()
+        RMSE_train = torch.sqrt(
+                mseLoss(self.d_obs, prediction_train))
         # Maximum likelyhood estimator of posterior mean, given values
         # of sigma and lambda. Obtained using the concentration formula.
         log_likelyhood = torch.add(
@@ -138,13 +142,17 @@ class SquaredExpModel(torch.nn.Module):
                       prior_misfit.t(),
                       torch.mm(inversion_operator, prior_misfit)))
 
-        return (log_likelyhood, m_posterior)
+        return (log_likelyhood, m_posterior, RMSE_train)
 
 
 myModel = SquaredExpModel()
 myModel.cuda()
 # optimizer = torch.optim.SGD(myModel.parameters(), lr = 0.5)
-optimizer = torch.optim.Adam(myModel.parameters(), lr=0.05)
+optimizer = torch.optim.Adam(myModel.parameters(), lr=0.001)
+
+losses = []
+train_rmses = []
+test_rmses = []
 
 for epoch in range(20000):
 
@@ -153,6 +161,7 @@ for epoch in range(20000):
     tmp = myModel(distance_mesh)
     log_likelyhood = tmp[0]
     m_posterior = tmp[1]
+    RMSE_train = tmp[2]
 
     # Compute and print loss
     loss = log_likelyhood
@@ -176,10 +185,21 @@ for epoch in range(20000):
                     float(myModel.lambda0),
                     float(myModel.sigma_0)
                     ))
+    print("RMSE train error: {}".format(RMSE_train))
     print("RMSE prediction error: {}".format(prediction_error))
+    
+    # Save training history periodically.
+    if epoch % 10 == 0:
+        losses.append(loss.data.cpu().numpy()[0])
+        train_rmses.append(RMSE_train.data.cpu())
+        test_rmses.append(prediction_error.data.cpu())
 
 print("Saving Results ...")
 torch.save(m_posterior, "posterior_mean.pt")
 torch.save(myModel.m0, "m0.pt")
 torch.save(myModel.sigma_0, "sigma_0.pt")
 torch.save(myModel.lambda0, "lambda0.pt")
+
+np.save("losses.npy", np.array(losses))
+np.save("train_rmses.npy", np.array(train_rmses))
+np.save("test_rmses.npy", np.array(test_rmses))
