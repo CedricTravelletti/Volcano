@@ -6,6 +6,7 @@ optimizing the prio mean.
 from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
 from volcapy.grid.regridding import irregular_regrid_single_step, regrid_forward
+import numpy as np
 
 # Now torch in da place.
 import torch
@@ -13,27 +14,28 @@ import torch
 device = torch.device('cuda:0')
 
 # GLOBALS
-m0 = 2200.0
-data_std = 0.1
-
-length_scale = 100.0
-sigma = 20.0
+m0 = torch.tensor(2124.0, requires_grad=False, device=device)
+data_std = torch.tensor(0.1, requires_grad=False, device=device)
+sigma_epsilon = data_std
+sigma_0 = torch.tensor(75.0, requires_grad=False, device=device)
+lambda0 = torch.tensor(156.0, requires_grad=False, device=device)
 
 
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
-niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
+niklas_data_path = "/home/ec2-user/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
 # Regrid the problem at lower resolution.
 coarse_cells_coords, coarse_to_fine_inds = irregular_regrid_single_step(
-        inverseProblem.cells_coords, 50.0)
+        inverseProblem.cells_coords, 100.0)
 
 # Train-validation split.
 # Save a regridded version before splitting
 F_coarse_tot = regrid_forward(inverseProblem.forward, coarse_to_fine_inds)
-np.save(F_coarse_tot, "F_coarse_tot.npy")
+np.save("F_coarse_tot.npy", F_coarse_tot)
 
 nr_train = 500
 F_test_raw, d_obs_valid_raw = inverseProblem.subset_data(nr_train)
@@ -43,6 +45,8 @@ new_F = regrid_forward(inverseProblem.forward, coarse_to_fine_inds)
 new_F_test = regrid_forward(F_test_raw, coarse_to_fine_inds)
 
 n_model = len(coarse_to_fine_inds)
+print(
+    "Coarse model size: {}. Corresponds to {} billion matrix entries.".format(n_model, n_model**2/1e9))
 del(coarse_to_fine_inds)
 F_train_raw = new_F
 d_obs_train_raw = inverseProblem.data_values[:, None]
@@ -76,16 +80,16 @@ class SquaredExpModel(torch.nn.Module):
         super(SquaredExpModel, self).__init__()
 
         self.m0 = torch.nn.Parameter(torch.tensor(m0))
-        self.length_scale = torch.nn.Parameter(torch.tensor(length_scale))
-        self.sigma = torch.nn.Parameter(torch.tensor(sigma))
+        self.lambda0 = torch.nn.Parameter(torch.tensor(lambda0))
+        self.sigma_0 = torch.nn.Parameter(torch.tensor(sigma_0))
 
         self.m_prior = torch.mul(self.m0,
                 torch.ones((n_model, 1), dtype=torch.float32,
                         device=device))
 
-        self.F = F
-        self.d_obs = d_obs
-        self.data_cov = data_cov
+        self.F = F.to(device)
+        self.d_obs = d_obs.to(device)
+        self.data_cov = data_cov.to(device)
 
     def forward(self, distance_mesh):
         """ Squared exponential kernel. Builds the full covariance matrix from a
@@ -103,9 +107,9 @@ class SquaredExpModel(torch.nn.Module):
                 torch.mul(
                     torch.exp(
                             torch.mul(distance_mesh,
-                                    - 1/(2 * self.length_scale.pow(2)))
+                                    - 1/(2 * self.lambda0.pow(2)))
                             ),
-                self.sigma.pow(2)),
+                self.sigma_0.pow(2)),
                 self.F.t()
                 )
         inv_inversion_operator = torch.add(
@@ -140,9 +144,9 @@ class SquaredExpModel(torch.nn.Module):
 myModel = SquaredExpModel()
 myModel.cuda()
 # optimizer = torch.optim.SGD(myModel.parameters(), lr = 0.5)
-optimizer = torch.optim.Adam(myModel.parameters(), lr=4.0)
+optimizer = torch.optim.Adam(myModel.parameters(), lr=0.05)
 
-for epoch in range(200):
+for epoch in range(20000):
 
     # Forward pass: Compute predicted y by passing
     # x to the model
@@ -166,11 +170,11 @@ for epoch in range(200):
             torch.mm(F_test, m_posterior), d_obs_test))
 
     print(
-            'epoch {}, loss {}, m0 {} length_scale {}, sigma {}'.format(
+            'epoch {}, loss {}, m0 {} lambda0 {}, sigma {}'.format(
                     epoch, loss.data,
                     float(myModel.m0),
-                    float(myModel.length_scale),
-                    float(myModel.sigma)
+                    float(myModel.lambda0),
+                    float(myModel.sigma_0)
                     ))
     print("RMSE prediction error: {}".format(prediction_error))
 
@@ -178,4 +182,4 @@ print("Saving Results ...")
 torch.save(m_posterior, "posterior_mean.pt")
 torch.save(myModel.m0, "m0.pt")
 torch.save(myModel.sigma_0, "sigma_0.pt")
-torch.save(myModel.length_scale, "length_scale.pt")
+torch.save(myModel.lambda0, "lambda0.pt")
