@@ -9,7 +9,8 @@ from volcapy.grid.regridding import irregular_regrid_single_step, regrid_forward
 
 # Now torch in da place.
 import torch
-torch.set_num_threads(4)
+# Choose between CPU and GPU.
+device = torch.device('cuda:0')
 
 # GLOBALS
 m0 = 2200.0
@@ -64,6 +65,11 @@ F_test = torch.as_tensor(new_F_test)
 
 data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
+# Send to GPU
+distance_mesh = distance_mesh.to(device)
+F_test = F_test.to(device)
+d_obs_test = d_obs_test.to(device)
+
 
 class SquaredExpModel(torch.nn.Module):
     def __init__(self):
@@ -73,7 +79,9 @@ class SquaredExpModel(torch.nn.Module):
         self.length_scale = torch.nn.Parameter(torch.tensor(length_scale))
         self.sigma = torch.nn.Parameter(torch.tensor(sigma))
 
-        self.m_prior = torch.mul(self.m0, torch.ones((n_model, 1)))
+        self.m_prior = torch.mul(self.m0,
+                torch.ones((n_model, 1), dtype=torch.float32,
+                        device=device))
 
         self.F = F
         self.d_obs = d_obs
@@ -130,6 +138,7 @@ class SquaredExpModel(torch.nn.Module):
 
 
 myModel = SquaredExpModel()
+myModel.cuda()
 # optimizer = torch.optim.SGD(myModel.parameters(), lr = 0.5)
 optimizer = torch.optim.Adam(myModel.parameters(), lr=4.0)
 
