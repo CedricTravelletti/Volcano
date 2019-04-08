@@ -14,9 +14,18 @@ class Sparsifier():
     """ Sparsigying functionalities by ignoring cells more distant than a given
     threshold.
 
+    Parameters
+    ----------
+    cell_coords: ndarray n_cells*n_dims
+    infty_metric: Bool
+        True is should use infinity norm. Defaults to false.
+
     """
-    def __init__(self, cells_coords):
-        self.tree = BallTree(cells_coords)
+    def __init__(self, cells_coords, infty_metric=False):
+        if infty_metric:
+            self.tree = BallTree(cells_coords, metric='chebyshev')
+        else: self.tree = BallTree(cells_coords)
+
         self.cells_coords = cells_coords
         self.n_cells = cells_coords.shape[0]
 
