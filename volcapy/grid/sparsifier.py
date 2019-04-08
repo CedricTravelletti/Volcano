@@ -15,10 +15,10 @@ class Sparsifier():
     threshold.
 
     """
-    def __init__(self, inverseProblem):
-        self.tree = BallTree(inverseProblem.cells_coords)
-        self.inverseProblem = inverseProblem
-
+    def __init__(self, cells_coords):
+        self.tree = BallTree(cells_coords)
+        self.cells_coords = cells_coords
+        self.n_cells = cells_coords.shape[0]
 
     def get_cells_ind_with_radius(self, cell, radius):
         """ Given a BallTree (based on an underlying list of cells), get indices of
@@ -76,8 +76,8 @@ class Sparsifier():
         # itertools.chain.
         dists, inds = zip(
             *pool.starmap(self.per_cell_dist_mesh,
-                    zip(self.inverseProblem.cells_coords,
-                            list(range(self.inverseProblem.n_model)),
+                    zip(self.cells_coords,
+                            list(range(self.n_cells)),
                             repeat(threshold_dist))))
         # Free up resources.
         pool.close()
@@ -123,6 +123,6 @@ class Sparsifier():
             dists.append(
                 np.float32(
                     np.linalg.norm(
-                        cell - self.inverseProblem.cells_coords[neighbor_ind, :])))
+                        cell - self.cells_coords[neighbor_ind, :])))
             inds.append((cell_ind, neighbor_ind))
         return (dists, inds)

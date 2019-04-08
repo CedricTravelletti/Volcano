@@ -30,7 +30,7 @@ d_obs_train_raw = inverseProblem.data_values[:, None]
 
 # Create the sparsifier that will take care of ignoring cell couple that are
 # too distant from each other.
-sparsifier = Sparsifier(inverseProblem)
+sparsifier = Sparsifier(inverseProblem.cells_coords)
 radius = 50.0
 
 # Build the distance matrix as a sparse tensor.

@@ -40,13 +40,13 @@ dist_mesh_shape = np.array([n_model, n_model], dtype=np.int64)
 
 
 # Initialization variables.
-m0 = 2184.0
+m0 = 2089.0
 data_std = 0.1
-length_scale = 50.0
-sigma = 140.0
+length_scale = 101.43
+sigma = 228.75
 
 min_len = 0.0
-max_len = 100.0
+max_len = 300.0
 
 # Prior parameters
 m0 = tf.Variable(m0)
@@ -79,13 +79,15 @@ d_obs_train = tf.data.Dataset.from_tensor_slices(d_obs_train_raw)
 
 # zip the x and y training data together and shuffle, batch etc.
 train_dataset = tf.data.Dataset.zip((F_train,
-        d_obs_train)).shuffle(500).repeat().batch(data_batch_size)
+        d_obs_train)).shuffle(500).repeat().batch(data_batch_size,
+                drop_remainder=True)
 
 # Same for validation.
 F_valid = tf.data.Dataset.from_tensor_slices(F_valid_raw)
 d_obs_valid = tf.data.Dataset.from_tensor_slices(d_obs_valid_raw)
 valid_dataset = tf.data.Dataset.zip((F_valid,
-        d_obs_valid)).shuffle(500).repeat().batch(data_batch_size)
+        d_obs_valid)).shuffle(500).repeat().batch(data_batch_size,
+                drop_remainder=True)
 
 iterator = tf.data.Iterator.from_structure(train_dataset.output_types,
         train_dataset.output_shapes)
@@ -102,7 +104,7 @@ validation_init_op = iterator.make_initializer(valid_dataset)
 def run_model(F, d):
     """ Run on one line of the forward and one data point.
     """
-    data_cov = tf.scalar_mul(data_std**2, tf.eye(d.shape[0]))
+    data_cov = tf.scalar_mul(data_std**2, tf.eye(data_batch_size))
 
     pushforward_cov = tf.sparse.matmul(
                     covariance_mat_sparse,
@@ -137,7 +139,7 @@ def run_model(F, d):
     return (log_likelyhood, prediction, m_posterior)
 
 
-log_likelyhood, prediction, _  = run_model(next_element[0], next_element[1])
+log_likelyhood, prediction, m_posterior  = run_model(next_element[0], next_element[1])
 loss = log_likelyhood
 accuracy = tf.losses.mean_squared_error(prediction, next_element[1])
 
@@ -150,22 +152,5 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     sess.run(training_init_op)
 
-    epochs = 200
-    for i in range(epochs):
-        print("Iteration {}".format(i))
-        lkl, acc, _ = sess.run([loss, accuracy, min_handle])
-        print("Epoch: {}, loss: {}, training accuracy: {}".format(i,
-                str(lkl), str(acc)))
-        print("m0: {}".format(sess.run(m0)))
-        print("sigma: {}".format(sess.run(sigma)))
-        print("lambda: {}".format(sess.run(length_scale)))
+    m_post = sess.run(m_posterior)
 
-    valid_iters = 20
-    # re-initialize the iterator, but this time with validation data
-    sess.run(validation_init_op)
-    avg_acc = 0.0
-    for i in range(valid_iters):
-        acc = sess.run([accuracy])
-        avg_acc += acc[0]
-    print("Average validation set accuracy over {} iterations is {:.10f}".format(
-                    valid_iters, (avg_acc / valid_iters)))
