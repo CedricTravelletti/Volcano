@@ -79,10 +79,6 @@ class SquaredExpModel(torch.nn.Module):
         self.length_scale = torch.nn.Parameter(torch.tensor(length_scale))
         self.sigma = torch.nn.Parameter(torch.tensor(sigma))
 
-        self.m_prior = torch.mul(self.m0,
-                torch.ones((n_model, 1), dtype=torch.float32,
-                        device=device))
-
         self.F = F
         self.d_obs = d_obs
         self.data_cov = data_cov
@@ -117,37 +113,35 @@ class SquaredExpModel(torch.nn.Module):
         # Need to do it this way, otherwise rounding errors kill everything.
         log_det = - torch.logdet(inversion_operator)
 
-        prior_misfit = torch.sub(self.d_obs, torch.mm(self.F, self.m_prior))
-
-        m_posterior = torch.add(
-                self.m_prior,
-                torch.mm(
-                        torch.mm(pushforward_cov, inversion_operator),
-                        prior_misfit)
-                )
-
         # We now concentrate the log-likelihood around m0.
         # Since the concetrated version of the prior mean is big, and since it
         # only plays a role when multiplied wiht the forward, we do not compute
         # it directly.
-        concentrated_data = torch.mm(
-            torch.mm(
-                self.F,
-                torch.inverse(torch.mm(
-                    torch.mm(self.F.t(), inversion_operator),
-                    self.F))),
-            torch.mm(
-                inversion_operator,
-                torch.mm(self.F.t(), d_obs)))
+        I = torch.ones((n_model, 1), dtype=torch.float32,
+                        device=device))
 
-        concentrated_prior_misfit = torch.sub(self.d_obs, concentrated_data)
+        concentrated_m0 = torch.mm(
+            torch.inverse(
+                torch.mm(
+                    torch.mm(I.t(), self.F.t()),
+                    torch.mm(
+                        inversion_operator,
+                        torch.mm(self.F, I)))),
+            torch.mm(
+                torch.mm(d_obs.t(), inversion_operator),
+                torch.mm(self.F, I)))
+        concentrated_m_prior = torch.mul(concentrated_m0, I)
+
+        concentrated_prior_misfit = torch.sub(self.d_obs,
+                torch.mm(self.F, concentrated_m_prior))
+
         concentrated_log_likelyhood = torch.add(
               log_det,
               torch.mm(
                       concentrated_prior_misfit.t(),
                       torch.mm(inversion_operator, concentrated_prior_misfit)))
 
-        return (concentrated_log_likelyhood, m_posterior)
+        return (concentrated_log_likelyhood, concentrated_m0)
 
 
 myModel = SquaredExpModel()
