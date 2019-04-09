@@ -6,6 +6,7 @@ optimizing the prio mean.
 from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
 from volcapy.grid.regridding import irregular_regrid_single_step, regrid_forward
+import numpy as np
 
 # Now torch in da place.
 import torch
@@ -13,27 +14,27 @@ import torch
 device = torch.device('cuda:0')
 
 # GLOBALS
-m0 = 2200.0
 data_std = 0.1
 
 length_scale = 100.0
-sigma = 20.0
+sigma_0 = 20.0
 
 
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
-niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
+niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
 # Regrid the problem at lower resolution.
 coarse_cells_coords, coarse_to_fine_inds = irregular_regrid_single_step(
-        inverseProblem.cells_coords, 50.0)
+        inverseProblem.cells_coords, 100.0)
 
 # Train-validation split.
 # Save a regridded version before splitting
 F_coarse_tot = regrid_forward(inverseProblem.forward, coarse_to_fine_inds)
-np.save(F_coarse_tot, "F_coarse_tot.npy")
+np.save("F_coarse_tot.npy", F_coarse_tot)
 
 nr_train = 500
 F_test_raw, d_obs_valid_raw = inverseProblem.subset_data(nr_train)
@@ -44,6 +45,9 @@ new_F_test = regrid_forward(F_test_raw, coarse_to_fine_inds)
 
 n_model = len(coarse_to_fine_inds)
 del(coarse_to_fine_inds)
+
+print("Size of model after regridding: {} cells.".format(n_model))
+
 F_train_raw = new_F
 d_obs_train_raw = inverseProblem.data_values[:, None]
 
@@ -75,13 +79,16 @@ class SquaredExpModel(torch.nn.Module):
     def __init__(self):
         super(SquaredExpModel, self).__init__()
 
-        self.m0 = torch.nn.Parameter(torch.tensor(m0))
         self.length_scale = torch.nn.Parameter(torch.tensor(length_scale))
-        self.sigma = torch.nn.Parameter(torch.tensor(sigma))
+        self.sigma_0 = torch.nn.Parameter(torch.tensor(sigma_0))
 
-        self.F = F
-        self.d_obs = d_obs
-        self.data_cov = data_cov
+        self.F = F.to(device)
+        self.d_obs = d_obs.to(device)
+        self.data_cov = data_cov.to(device)
+
+        self.I = torch.ones((n_model, 1), dtype=torch.float32,
+                        device=device)
+
 
     def forward(self, distance_mesh):
         """ Squared exponential kernel. Builds the full covariance matrix from a
@@ -101,7 +108,7 @@ class SquaredExpModel(torch.nn.Module):
                             torch.mul(distance_mesh,
                                     - 1/(2 * self.length_scale.pow(2)))
                             ),
-                self.sigma.pow(2)),
+                self.sigma_0.pow(2)),
                 self.F.t()
                 )
         inv_inversion_operator = torch.add(
@@ -109,6 +116,9 @@ class SquaredExpModel(torch.nn.Module):
                         torch.mm(self.F, pushforward_cov)
                         )
         inversion_operator = torch.inverse(inv_inversion_operator)
+        del inv_inversion_operator
+        temp_to_move_outside = torch.mm(pushforward_cov, inversion_operator)
+        del pushforward_cov
 
         # Need to do it this way, otherwise rounding errors kill everything.
         log_det = - torch.logdet(inversion_operator)
@@ -117,20 +127,17 @@ class SquaredExpModel(torch.nn.Module):
         # Since the concetrated version of the prior mean is big, and since it
         # only plays a role when multiplied wiht the forward, we do not compute
         # it directly.
-        I = torch.ones((n_model, 1), dtype=torch.float32,
-                        device=device))
-
         concentrated_m0 = torch.mm(
             torch.inverse(
                 torch.mm(
-                    torch.mm(I.t(), self.F.t()),
+                    torch.mm(self.I.t(), self.F.t()),
                     torch.mm(
                         inversion_operator,
-                        torch.mm(self.F, I)))),
+                        torch.mm(self.F, self.I)))),
             torch.mm(
-                torch.mm(d_obs.t(), inversion_operator),
-                torch.mm(self.F, I)))
-        concentrated_m_prior = torch.mul(concentrated_m0, I)
+                torch.mm(self.d_obs.t(), inversion_operator),
+                torch.mm(self.F, self.I)))
+        concentrated_m_prior = torch.mul(concentrated_m0, self.I)
 
         concentrated_prior_misfit = torch.sub(self.d_obs,
                 torch.mm(self.F, concentrated_m_prior))
@@ -141,21 +148,30 @@ class SquaredExpModel(torch.nn.Module):
                       concentrated_prior_misfit.t(),
                       torch.mm(inversion_operator, concentrated_prior_misfit)))
 
-        return (concentrated_log_likelyhood, concentrated_m0)
+        # Maybe move out of model.
+        m_posterior = torch.add(
+                concentrated_m_prior,
+                torch.mm(
+                        temp_to_move_outside,
+                        concentrated_prior_misfit)
+                )
+
+        return (concentrated_log_likelyhood, concentrated_m0, m_posterior)
 
 
 myModel = SquaredExpModel()
 myModel.cuda()
 # optimizer = torch.optim.SGD(myModel.parameters(), lr = 0.5)
-optimizer = torch.optim.Adam(myModel.parameters(), lr=4.0)
+optimizer = torch.optim.Adam(myModel.parameters(), lr=10.0)
 
-for epoch in range(200):
+for epoch in range(20000):
 
     # Forward pass: Compute predicted y by passing
     # x to the model
     tmp = myModel(distance_mesh)
     log_likelyhood = tmp[0]
-    m_posterior = tmp[1]
+    concentrated_m0 = tmp[1]
+    m_posterior = tmp[2]
 
     # Compute and print loss
     loss = log_likelyhood
@@ -175,14 +191,14 @@ for epoch in range(200):
     print(
             'epoch {}, loss {}, m0 {} length_scale {}, sigma {}'.format(
                     epoch, loss.data,
-                    float(myModel.m0),
+                    float(concentrated_m0),
                     float(myModel.length_scale),
-                    float(myModel.sigma)
+                    float(myModel.sigma_0)
                     ))
     print("RMSE prediction error: {}".format(prediction_error))
 
 print("Saving Results ...")
 torch.save(m_posterior, "posterior_mean.pt")
-torch.save(myModel.m0, "m0.pt")
+torch.save(concentrated_m0, "concentrated_m0.pt")
 torch.save(myModel.sigma_0, "sigma_0.pt")
 torch.save(myModel.length_scale, "length_scale.pt")
