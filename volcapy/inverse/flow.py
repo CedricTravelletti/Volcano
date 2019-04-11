@@ -129,9 +129,6 @@ class InverseProblem():
         rest_data = np.delete(self.data_values, inds, axis=0)
         rest_data_points = np.delete(self.data_points, inds, axis=0)
 
-        print("dfdafdas")
-        print(rest_data.shape)
-
         # Now subset
         self.forward = self.forward[inds, :]
         self.data_points = self.data_points[inds, :]
