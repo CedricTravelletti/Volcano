@@ -52,6 +52,7 @@ distance_mesh = cl.compute_mesh_squared_euclidean_distance(
         coarse_cells_coords[:, 0], coarse_cells_coords[:, 0],
         coarse_cells_coords[:, 1], coarse_cells_coords[:, 1],
         coarse_cells_coords[:, 2], coarse_cells_coords[:, 2])
+cells_coords = torch.as_tensor(coarse_cells_coords)
 del(coarse_cells_coords)
 del(inverseProblem)
 
@@ -69,22 +70,16 @@ a = torch.stack(
     dim=0)
 
 # Try to do it in chunks.
+n_dims = 3
 b = torch.cat(
-    [torch.matmul(torch.exp(torch.mul(inv_lambda2, x)), F.t()) for i, x in enumerate(torch.chunk(distance_mesh, chunks=20, dim=0))],
+    [torch.matmul(torch.exp(torch.mul(inv_lambda2,
+            torch.pow(
+                    inducing_points.unsqueeze(1).expand(inducing_points.shape[0], n_model, n_dims) - 
+                    cells_coords.unsqueeze(0).expand(inducing_points.shape[0], n_model, n_dims)
+                    , 2).sum(2)))
+            , F.t()) for i, inducing_points in enumerate(torch.chunk(cells_coords, chunks=20, dim=0))],
     dim=0)
 
-
-
-
-def per_line_operation(line):
-    """ Operation to perform on each line.
-    That is, given a line of the distance mesh,
-    return the corresponding line of the matrix exp(-dist^2 / 2 lambda^2).
-
-    """
-    out = tf.matmul(torch.exp(torch.mul(inv_lambda2, line)), F.t())
-    return out
-
-# Compute C_M GT.
-pushforward_cov = tf.squeeze(
-        tf.map_fn(per_line_operation, coords_subset))
+c = torch.cat(
+    [torch.matmul(torch.exp(torch.mul(inv_lambda2, x)), F.t()) for i, x in enumerate(torch.chunk(distance_mesh, chunks=20, dim=0))],
+    dim=0)
