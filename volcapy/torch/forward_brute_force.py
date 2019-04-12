@@ -15,23 +15,24 @@ import numpy as np
 # Now torch in da place.
 import torch
 # Choose between CPU and GPU.
-device = torch.device('cuda:0')
+# device = torch.device('cuda:0')
+device = torch.device('cpu')
 
 # GLOBALS
 data_std = 0.1
-length_scale = 164.17
+lambda0 = 164.17
 sigma_0 = 88.95
 
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
-# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
-niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
+# niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
 # Regrid the problem at lower resolution.
 coarse_cells_coords, coarse_to_fine_inds = irregular_regrid_single_step(
-        inverseProblem.cells_coords, 50.0)
+        inverseProblem.cells_coords, 100.0)
 
 # Save a regridded version before splitting
 F_coarse_tot = regrid_forward(inverseProblem.forward, coarse_to_fine_inds)
@@ -45,7 +46,7 @@ del(coarse_to_fine_inds)
 print("Size of model after regridding: {} cells.".format(n_model))
 
 # Careful: we have to make a column vector here.
-d_obs = torch.as_tensor(d_obs_train_raw)
+d_obs = torch.as_tensor(inverseProblem.data_values)
 
 distance_mesh = cl.compute_mesh_squared_euclidean_distance(
         coarse_cells_coords[:, 0], coarse_cells_coords[:, 0],
@@ -60,6 +61,19 @@ data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
 # Distance mesh is horribly expansive, to use half-precision.
 distance_mesh = distance_mesh.to(torch.device("cpu"))
+
+lambda0 = torch.tensor(lambda0, requires_grad=True)
+inv_lambda2 = - 1 / (2 * lambda0**2)
+a = torch.stack(
+    [torch.matmul(torch.exp(torch.mul(inv_lambda2, x)), F.t()) for i, x in enumerate(torch.unbind(distance_mesh, dim=0))],
+    dim=0)
+
+# Try to do it in chunks.
+b = torch.cat(
+    [torch.matmul(torch.exp(torch.mul(inv_lambda2, x)), F.t()) for i, x in enumerate(torch.chunk(distance_mesh, chunks=20, dim=0))],
+    dim=0)
+
+
 
 
 def per_line_operation(line):
