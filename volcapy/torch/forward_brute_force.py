@@ -9,7 +9,6 @@ Lets hope it works.
 """
 from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
-from volcapy.grid.regridding import irregular_regrid_single_step, regrid_forward
 import numpy as np
 
 # Now torch in da place.
@@ -30,34 +29,23 @@ niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
-# Regrid the problem at lower resolution.
-coarse_cells_coords, coarse_to_fine_inds = irregular_regrid_single_step(
-        inverseProblem.cells_coords, 100.0)
-
-# Save a regridded version before splitting
-F_coarse_tot = regrid_forward(inverseProblem.forward, coarse_to_fine_inds)
-np.save("F_coarse_tot.npy", F_coarse_tot)
-
 n_data = inverseProblem.n_data
-
-new_F = regrid_forward(inverseProblem.forward, coarse_to_fine_inds)
-n_model = len(coarse_to_fine_inds)
-del(coarse_to_fine_inds)
+F = torch.as_tensor(inverseProblem.forward)
+n_model = F.shape[1]
 print("Size of model after regridding: {} cells.".format(n_model))
 
 # Careful: we have to make a column vector here.
 d_obs = torch.as_tensor(inverseProblem.data_values)
 
+cells_coords = inverseProblem.cells_coords
 distance_mesh = cl.compute_mesh_squared_euclidean_distance(
-        coarse_cells_coords[:, 0], coarse_cells_coords[:, 0],
-        coarse_cells_coords[:, 1], coarse_cells_coords[:, 1],
-        coarse_cells_coords[:, 2], coarse_cells_coords[:, 2])
-cells_coords = torch.as_tensor(coarse_cells_coords)
-del(coarse_cells_coords)
+        cells_coords[:, 0], cells_coords[:, 0],
+        cells_coords[:, 1], cells_coords[:, 1],
+        cells_coords[:, 2], cells_coords[:, 2])
 del(inverseProblem)
 
 distance_mesh = torch.as_tensor(distance_mesh)
-F = torch.as_tensor(new_F)
+F = torch.as_tensor(F)
 data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
 # Distance mesh is horribly expansive, to use half-precision.
@@ -70,6 +58,11 @@ a = torch.stack(
     dim=0)
 
 # Try to do it in chunks.
+cells_coords = torch.as_tensor(cells_coords)
+cells_coords = cells_coords[:100000, :]
+F = F[:, :100000]
+n_model = 100000
+
 n_dims = 3
 b = torch.cat(
     [torch.matmul(torch.exp(torch.mul(inv_lambda2,
