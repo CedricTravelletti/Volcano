@@ -11,6 +11,11 @@ from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
 import numpy as np
 
+# Set up logging.
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Now torch in da place.
 import torch
 torch.set_num_threads(4)
@@ -20,7 +25,7 @@ device = torch.device('cuda:0')
 
 # GLOBALS
 data_std = 0.1
-lambda0 = 164.17
+lambda0 = 800.0
 sigma_0 = 88.95
 m0 = 2200.0
 
@@ -37,7 +42,7 @@ n_model = F.shape[1]
 print("Size of model after regridding: {} cells.".format(n_model))
 
 # Careful: we have to make a column vector here.
-d_obs = torch.as_tensor(inverseProblem.data_values)
+d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
 
 cells_coords = inverseProblem.cells_coords
 """
@@ -70,6 +75,9 @@ cells_coords = cells_coords.to(device)
 n_dims = 3
 tot = torch.Tensor().to(device)
 for i, x in enumerate(torch.chunk(cells_coords, chunks=150, dim=0)):
+    print(i)
+    if i % 10 == 0:
+        torch.cuda.empty_cache()
     tot = torch.cat((
             tot,
             torch.matmul(torch.exp(torch.mul(inv_lambda2,
@@ -153,13 +161,13 @@ class SquaredExpModel(torch.nn.Module):
 
 model = SquaredExpModel()
 model = torch.nn.DataParallel(model).cuda()
-optimizer = torch.optim.Adam(model.parameters(), lr=2.0)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 for epoch in range(100000):
 
     # Forward pass: Compute predicted y by passing
     # x to the model
-    tmp = model(distance_mesh.to(device))
+    tmp = model(tot)
     log_likelyhood = tmp[0]
     # m_posterior = tmp[1].to(torch.device("cpu"))
     m_posterior = tmp[1]
@@ -182,15 +190,6 @@ for epoch in range(100000):
     print("RMSE train error: {}".format(train_error))
     print("Log-likelihood: {}".format(loss))
 
-    """
-    print(
-            'epoch {}, loss {}, m0 {} length_scale {}, sigma {}'.format(
-                    epoch, loss.data,
-                    float(model.m0),
-                    float(model.length_scale),
-                    float(model.sigma_0)
-                    ))
-    """
 
 print("Saving Results ...")
 torch.save(m_posterior, "posterior_mean.pt")
