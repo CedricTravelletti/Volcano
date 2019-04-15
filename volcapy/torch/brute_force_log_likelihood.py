@@ -1,4 +1,4 @@
-# File: forward_brute_force.py, Author: Cedric Travelletti, Date: 12.04.2019.
+# File: brute_force_log_likelihood.py, Author: Cedric Travelletti, Date: 15.04.2019.
 """ Only do forward pass. Brute force optimization by grid search.
 
 This is an attempt at saving what can be saved, in the aftermath of the April
@@ -6,10 +6,18 @@ This is an attempt at saving what can be saved, in the aftermath of the April
 
 Lets hope it works.
 
+THIS ONE DOES NOT USE THE CONCENTRATED VERSION, BUT RUNS GRADIENT DESCENT ON m0
+AND sigma0 instead.
+
 """
 from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
 import numpy as np
+
+# Set up logging.
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Now torch in da place.
 import torch
@@ -20,7 +28,6 @@ device = torch.device('cuda:0')
 
 # GLOBALS
 data_std = 0.1
-lambda0 = 164.17
 sigma_0 = 88.95
 m0 = 2200.0
 
@@ -39,14 +46,17 @@ print("Size of model after regridding: {} cells.".format(n_model))
 # Careful: we have to make a column vector here.
 d_obs = torch.as_tensor(inverseProblem.data_values)
 
-cells_coords = inverseProblem.cells_coords
 """
-distance_mesh = cl.compute_mesh_squared_euclidean_distance(
+cl.save_mesh_squared_euclidean_distance(
+        "squared_dist_mesh.npy",
         cells_coords[:, 0], cells_coords[:, 0],
         cells_coords[:, 1], cells_coords[:, 1],
         cells_coords[:, 2], cells_coords[:, 2])
 """
 del(inverseProblem)
+
+dist_mesh = np.memmap("/scratch/ctravelletti/squared_dist_mesh.npy", dtype='float32', mode='r',
+                shape=(n_model, n_model))
 
 # distance_mesh = torch.as_tensor(distance_mesh)
 F = F.to(device)
@@ -55,40 +65,27 @@ data_cov = torch.mul(data_std**2, torch.eye(n_data))
 # Distance mesh is horribly expansive, to use half-precision.
 # distance_mesh = distance_mesh.to(torch.device("cpu"))
 
-lambda0 = torch.tensor(lambda0).to(device)
-inv_lambda2 = - 1 / (2 * lambda0**2)
-"""
-a = torch.stack(
-    [torch.matmul(torch.exp(torch.mul(inv_lambda2, x)), F.t()) for i, x in enumerate(torch.unbind(distance_mesh, dim=0))],
-    dim=0)
-"""
 
-# Try to do it in chunks.
-cells_coords = torch.as_tensor(cells_coords)
-cells_coords = cells_coords.to(device)
+def per_chunk_pushforward_cov(chunk, lambda0):
+    """ Given a chunk of the squared distance mesh, compute its associated part
+    of the pushforward covariance.
 
-n_dims = 3
-tot = torch.Tensor().to(device)
-for i, x in enumerate(torch.chunk(cells_coords, chunks=150, dim=0)):
-    tot = torch.cat((
-            tot,
-            torch.matmul(torch.exp(torch.mul(inv_lambda2,
-                torch.pow(
-                    x.unsqueeze(1).expand(x.shape[0], n_model, n_dims) - 
-                    cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
-                    , 2).sum(2)))
-                , F.t())))
-"""
-b = torch.cat(
-    [torch.matmul(torch.exp(torch.mul(inv_lambda2,
-            torch.pow(
-                    inducing_points.unsqueeze(1).expand(inducing_points.shape[0], n_model, n_dims) - 
-                    cells_coords.unsqueeze(0).expand(inducing_points.shape[0], n_model, n_dims)
-                    , 2).sum(2)))
-            , F.t()) for i, inducing_points in
-            enumerate(torch.chunk(cells_coords, chunks=150, dim=0))],
-    dim=0)
-"""
+    """
+    inv_lambda2 = - 1 / (2 * lambda0**2)
+    return torch.matmul(torch.exp(torch.mul(inv_lambda2, chunk)), F.t())
+
+def compute_pushforward_cov(lambda0, dist_mesh):
+    pushforward_cov = torch.Tensor().to(device)
+    # Produce the chunks and iterate in chunks;
+    chunks = mat.chunk_range(dist_mesh.shape[0], chunk_size=6000)
+    for row_begin, row_end in chunk:
+        print(row_begin)
+        chunk = torch.as_tensor(dist_mesh[row_begin:row_end + 1, :]).to(device)
+        torch.cat(pushforward_cov,
+                per_chunk_pushforward_cov(chunk, lambda0))
+    return pushforward_cov
+
+
 class SquaredExpModel(torch.nn.Module):
     def __init__(self):
         super(SquaredExpModel, self).__init__()
@@ -145,6 +142,7 @@ class SquaredExpModel(torch.nn.Module):
                       prior_misfit.t(),
                       torch.mm(inversion_operator, prior_misfit)))
 
+        print(log_likelyhood.shape)
         logger.debug("GPU at end of forward pass: {} Gb.".format(
                 torch.cuda.memory_allocated(device)/1e9))
 
@@ -155,45 +153,54 @@ model = SquaredExpModel()
 model = torch.nn.DataParallel(model).cuda()
 optimizer = torch.optim.Adam(model.parameters(), lr=2.0)
 
-for epoch in range(100000):
+losses = []
+train_rmses = []
+m0s = []
+sigma0s = []
 
-    # Forward pass: Compute predicted y by passing
-    # x to the model
-    tmp = model(distance_mesh.to(device))
-    log_likelyhood = tmp[0]
-    # m_posterior = tmp[1].to(torch.device("cpu"))
-    m_posterior = tmp[1]
+# Iterate over candidate lengthscales.
+lambda0s = np.linspace(start=45.0, stop=5000.0, num=100)
 
-    # Compute and print loss
-    loss = log_likelyhood
+for i, lambda0 in enumerate(lambda0s):
+    lambda0 = torch.tensor(lambda0).to(device)
 
-    # Zero gradients, perform a backward pass,
-    # and update the weights.
-    optimizer.zero_grad()
-    loss.backward(retain_graph=True)
-    # loss.backward()
-    optimizer.step()
+    # Compute the corresponding pushforward cov.
+    pushforward_cov = compute_pushforward_cov(lambda0, dist_mesh)
 
-    # Compute prediction error.
-    criterion = torch.nn.MSELoss()
+    # Optimize the tow remaining hyperparams.
+    for epoch in range(100000):
+    
+        # Forward pass: Compute predicted y by passing
+        # x to the model
+        log_likeyhood, m_posterior = model(pushforward_cov)
+    
+        # Compute and print loss
+        loss = log_likelyhood
+    
+        # Zero gradients, perform a backward pass,
+        # and update the weights.
+        optimizer.zero_grad()
+        loss.backward(retain_graph=True)
+        # loss.backward()
+        optimizer.step()
+    
+        # Compute prediction error.
+        criterion = torch.nn.MSELoss()
+        train_error = torch.sqrt(criterion(
+                torch.mm(F.to(device), m_posterior), d_obs.to(device)))
+    
+        print("RMSE train error: {}".format(train_error))
+        print("Log-likelihood: {}".format(loss))
 
-    train_error = torch.sqrt(criterion(
-            torch.mm(F.to(device), m_posterior), d_obs.to(device)))
-    print("RMSE train error: {}".format(train_error))
-    print("Log-likelihood: {}".format(loss))
-
-    """
-    print(
-            'epoch {}, loss {}, m0 {} length_scale {}, sigma {}'.format(
-                    epoch, loss.data,
-                    float(model.m0),
-                    float(model.length_scale),
-                    float(model.sigma_0)
-                    ))
-    """
+    # Save data for each lambda.
+    losses.append(loss.data.cpu().numpy()[0])
+    train_rmses.append(train_error.data.cpu())
+    m0s.append(model.m0.data.cpu())
+    sigma0s.append(model.sigma_0.data.cpu())
 
 print("Saving Results ...")
-torch.save(m_posterior, "posterior_mean.pt")
-torch.save(concentrated_m0, "concentrated_m0.pt")
-torch.save(myModel.sigma_0, "sigma_0.pt")
-torch.save(myModel.length_scale, "length_scale.pt")
+np.save("losses.npy", np.array(losses))
+np.save("train_rmses.npy", np.array(train_rmses))
+np.save("m0s.npy", np.array(m0s))
+np.save("sigma0s.npy", np.array(sigma0s))
+np.save("lambda0s.npy", np.array(lambda0s))
