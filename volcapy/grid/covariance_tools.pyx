@@ -110,8 +110,3 @@ def save_mesh_squared_euclidean_distance(
     for i in range(dim_1):
         for j in range(dim_2):
             out[i, j] += (coords_z1[i] - coords_z2[j])**2
-
-    # Have to wrap a numpy array around the memoryview. This spares later
-    # trouble, since later cast to numpy array might trigger copy under the
-    # hood.
-    return np.asarray(out)
