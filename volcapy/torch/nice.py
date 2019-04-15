@@ -159,7 +159,7 @@ for epoch in range(100000):
 
     # Forward pass: Compute predicted y by passing
     # x to the model
-    tmp = model(distance_mesh.to(device))
+    tmp = model(tot)
     log_likelyhood = tmp[0]
     # m_posterior = tmp[1].to(torch.device("cpu"))
     m_posterior = tmp[1]
