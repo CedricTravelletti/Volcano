@@ -1,6 +1,6 @@
 from volcapy import loading
 import volcapy.math.matrix_tools as mat
-import volcapy.kernels.squared_exponential as kern
+import volcapy.grid.covariance_tools as cl
 
 import numpy as np
 import os
@@ -140,18 +140,28 @@ class InverseProblem():
         # compatible with the rest of the data.
         return (rest_forward, rest_data[:, None])
 
-    def build_partial_covariance(self, row_begin, row_end):
+    def build_partial_covariance(self, row_begin, row_end, sigma0, lambda0):
         """ Prepare a function for returning partial rows of the covariance
         matrix.
 
         Warning: should cast, since returns MemoryView.
         """
         n_rows = row_end - row_begin + 1
-        return kern.build_cov(self.cells_coords, row_begin, row_end, sigma_2, lambda_2)
+        print(row_begin)
+
+        dist_mesh = cl.compute_mesh_squared_euclidean_distance(
+                self.cells_coords[row_begin:row_end+1, 0],
+                self.cells_coords[:, 0],
+                self.cells_coords[row_begin:row_end+1, 1],
+                self.cells_coords[:, 1],
+                self.cells_coords[row_begin:row_end+1, 2],
+                self.cells_coords[:, 2])
+        dist_mesh = sigma0 * np.exp(-lambda0 * dist_mesh)
+        return dist_mesh
 
     # TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
     # an implicitly defined one.
-    def compute_covariance_pushforward(self, G):
+    def compute_covariance_pushforward(self, G, sigma0, lambda0):
         """ Compute the matrix product C_m * G^T, which we call the *covariance
         pushforward*.
 
@@ -177,7 +187,8 @@ class InverseProblem():
             print(row_begin)
             start = timer()
             # Get corresponding part of covariance matrix.
-            partial_cov = self.build_partial_covariance(row_begin, row_end)
+            partial_cov = self.build_partial_covariance(row_begin, row_end,
+                    sigma0, lambda0)
 
             mid = timer()
 
@@ -194,6 +205,7 @@ class InverseProblem():
 
     # TODO: Factor out some methods.
     def inverse(self, out_folder, prior_mean, sigma_d,
+            sigma0, lambda0,
             preload_covariance_pushforward=False, cov_pushforward=None,
             compute_post_covariance=False):
         """ Perform inversion.
@@ -222,7 +234,8 @@ class InverseProblem():
             # Compute big matrix product and save.
             print("Computing big matrix product.")
             start = timer()
-            self.covariance_pushforward = self.compute_covariance_pushforward(self.forward)
+            self.covariance_pushforward = self.compute_covariance_pushforward(
+                    self.forward, sigma0, lambda0)
             end = timer()
             print("Done in " + str(end - start))
             np.save('Cm_Gt.npy', self.covariance_pushforward)
@@ -280,6 +293,25 @@ class InverseProblem():
     # TODO: Refactor. Currently accessing stuf oustide its scope.
     def compute_post_covariance(self):
         """ Compute the full posterior covariance matrix.
+        """
+        # AMBITIOUS: Compute the whole (120GB) posterior covariance matrix.
+        print("Computing posterior covariance.")
+        post_cov = np.memmap('post_cov.npy', dtype='float32', mode='w+',
+                shape=(self.n_model, self.n_model))
+
+        # Compute the matrix product line by line.
+        # TODO: Could compute several lines at a time, by chunks.
+        for i in range(self.n_model):
+            print(i)
+            prior_cov = self.build_partial_covariance(i, i)
+            post_cov[i, :] = prior_cov - A[i, :] @ B
+
+        # Flush to disk.
+        del post_cov
+
+    def save_squared_distance_mesh(self, path):
+        """ Computes the matrix of squared euclidean distances betwen all
+        couples and saves to disk.
         """
         # AMBITIOUS: Compute the whole (120GB) posterior covariance matrix.
         print("Computing posterior covariance.")
