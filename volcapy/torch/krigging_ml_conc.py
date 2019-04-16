@@ -25,9 +25,6 @@ device = torch.device('cuda:0')
 
 # GLOBALS
 data_std = 0.1
-lambda0 = 200.0
-sigma0 = 88.95
-m0 = 2200.0
 
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
@@ -51,26 +48,28 @@ del(inverseProblem)
 F = F.to(device)
 data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
-# Distance mesh is horribly expansive, to use half-precision.
-# distance_mesh = distance_mesh.to(torch.device("cpu"))
 
-lambda0 = torch.tensor(lambda0, requires_grad=False).to(device)
-inv_lambda2 = - 1 / (2 * lambda0**2)
+def compute_CM_tilde(lambda0):
+    """ Given lambda0, compute Cm * G.T, without the sigma0^2 prefactor.
 
-n_dims = 3
-tot = torch.Tensor().to(device)
-for i, x in enumerate(torch.chunk(cells_coords, chunks=150, dim=0)):
-    print(i)
-    if i % 80 == 0:
-        torch.cuda.empty_cache()
-    tot = torch.cat((
-            tot,
-            torch.matmul(torch.exp(inv_lambda2
-                * torch.pow(
-                    x.unsqueeze(1).expand(x.shape[0], n_model, n_dims) - 
-                    cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
-                    , 2).sum(2))
-                , F.t())))
+    """
+    lambda0 = torch.tensor(lambda0, requires_grad=False).to(device)
+    inv_lambda2 = - 1 / (2 * lambda0**2)
+    n_dims = 3
+    tot = torch.Tensor().to(device)
+    for i, x in enumerate(torch.chunk(cells_coords, chunks=150, dim=0)):
+        print(i)
+        if i % 80 == 0:
+            torch.cuda.empty_cache()
+        tot = torch.cat((
+                tot,
+                torch.matmul(torch.exp(inv_lambda2
+                    * torch.pow(
+                        x.unsqueeze(1).expand(x.shape[0], n_model, n_dims) - 
+                        cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
+                        , 2).sum(2))
+                    , F.t())))
+    return tot
 
 
 class SquaredExpModel(torch.nn.Module):
@@ -157,6 +156,9 @@ model = model.cuda()
 # model = torch.nn.DataParallel(model).cuda()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
 
+
+lambda0 = 200.0
+tot = compute_CM_tilde(lambda0)
 
 # Forward pass: Compute predicted y by passing
 # x to the model
