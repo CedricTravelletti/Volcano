@@ -9,11 +9,6 @@ from math import floor
 from timeit import default_timer as timer
 
 
-# TODO: Refactor so that InverseProblem has a CovarianceModel member.
-# Globals
-sigma_2 = 50.0**2
-lambda_2 = 130**2
-
 # Unused, just there to remind of the value for Niklas's data.
 sigma_d = 0.1
 
@@ -156,7 +151,7 @@ class InverseProblem():
                 self.cells_coords[:, 1],
                 self.cells_coords[row_begin:row_end+1, 2],
                 self.cells_coords[:, 2])
-        dist_mesh = sigma0 * np.exp(-lambda0 * dist_mesh)
+        dist_mesh = sigma0**2 * np.exp(- 1 / (2 * lambda0**2) * dist_mesh)
         return dist_mesh
 
     # TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
@@ -255,6 +250,7 @@ class InverseProblem():
         m_posterior = (m_prior
                 + self.covariance_pushforward
                 @ inverse @ (self.data_values - self.forward @ m_prior))
+        self.m_posterior = m_posterior
 
         end = timer()
         print("Done in " + str(end - start))
@@ -283,7 +279,7 @@ class InverseProblem():
         # Save the square root standard deviation).
         np.save(
                 "posterior_cov_diag.npy",
-                np.sqrt(np.array([sigma_2] * self.n_model) - Cm_post))
+                np.sqrt(np.array([sigma0] * self.n_model) - Cm_post))
 
         print("DONE")
 
