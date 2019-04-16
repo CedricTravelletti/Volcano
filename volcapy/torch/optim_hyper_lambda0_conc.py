@@ -25,6 +25,7 @@ device = torch.device('cuda:0')
 
 # GLOBALS
 data_std = 0.1
+start_sigma0 = 190.0
 
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
@@ -76,7 +77,7 @@ class SquaredExpModel(torch.nn.Module):
     def __init__(self):
         super(SquaredExpModel, self).__init__()
 
-        self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0).cuda())
+        self.sigma0 = torch.nn.Parameter(torch.tensor(start_sigma0).cuda())
 
         # Empty prior. Will be calculated using concentration formula.
         self.concentrated_m0 = torch.Tensor().to(device)
@@ -154,7 +155,7 @@ class SquaredExpModel(torch.nn.Module):
 model = SquaredExpModel()
 model = model.cuda()
 # model = torch.nn.DataParallel(model).cuda()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.5)
 
 
 lambda0 = 200.0
