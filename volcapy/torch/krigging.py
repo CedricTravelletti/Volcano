@@ -7,9 +7,6 @@ This is an attempt at saving what can be saved, in the aftermath of the April
 Lets hope it works.
 
 """
-
-
-
 from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
 import numpy as np
@@ -28,7 +25,7 @@ device = torch.device('cuda:0')
 
 # GLOBALS
 data_std = 0.1
-lambda0 = 200.0
+lambda0 = np.sqrt(200.0)
 sigma_0 = 88.95
 m0 = 2200.0
 
@@ -47,7 +44,7 @@ print("Size of model after regridding: {} cells.".format(n_model))
 # Careful: we have to make a column vector here.
 d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
 
-cells_coords = torch.as_tensor(inverseProblem.cells_coords).to(device)
+cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach().to(device)
 del(inverseProblem)
 
 # distance_mesh = torch.as_tensor(distance_mesh)
@@ -90,7 +87,7 @@ class SquaredExpModel(torch.nn.Module):
         self.d_obs = d_obs.to(device)
         self.data_cov = data_cov.to(device)
 
-    def forward(self, pushforward_cov):
+    def forward(self, tot):
         # torch.cuda.empty_cache()
         logger.debug("GPU used before forward pass: {} Gb.".format(
                 torch.cuda.memory_allocated(device)/1e9))
@@ -99,7 +96,7 @@ class SquaredExpModel(torch.nn.Module):
                         self.data_cov,
                         torch.mul(
                             self.sigma_0.pow(2),
-                            torch.mm(self.F, pushforward_cov))
+                            torch.mm(self.F, tot))
                         )
         torch.cuda.empty_cache()
 
@@ -121,12 +118,12 @@ class SquaredExpModel(torch.nn.Module):
         m_posterior = torch.add(
                 self.m_prior,
                 torch.mm(
-                        torch.mm(pushforward_cov, inversion_operator),
+                        torch.mm(sigma_0**2 * tot, inversion_operator),
                         prior_misfit)
                 )
-        # Maximum likelyhood estimator of posterior mean, given values
+        # Maximum likelihood estimator of posterior mean, given values
         # of sigma and lambda. Obtained using the concentration formula.
-        log_likelyhood = torch.add(
+        log_likelihood = torch.add(
               log_det,
               torch.mm(
                       prior_misfit.t(),
@@ -135,42 +132,22 @@ class SquaredExpModel(torch.nn.Module):
         logger.debug("GPU at end of forward pass: {} Gb.".format(
                 torch.cuda.memory_allocated(device)/1e9))
 
-        return (log_likelyhood, m_posterior)
+        return (log_likelihood, m_posterior)
 
 
 model = SquaredExpModel()
 model = torch.nn.DataParallel(model).cuda()
-optimizer = torch.optim.Adam(model.parameters(), lr=5.0)
-
-"""
-for epoch in range(100000):
-
-    # Forward pass: Compute predicted y by passing
-    # x to the model
-    log_likelyhood, m_posterior = model(tot)
-
-    # Compute and print loss
-    loss = log_likelyhood
-
-    # Zero gradients, perform a backward pass,
-    # and update the weights.
-    optimizer.zero_grad()
-    loss.backward(retain_graph=True)
-    # loss.backward()
-    optimizer.step()
-
-    # Compute prediction error.
-    criterion = torch.nn.MSELoss()
-
-    train_error = torch.sqrt(criterion(
-            torch.mm(F.to(device), m_posterior), d_obs.to(device)))
-    print("RMSE train error: {}".format(train_error))
-    print("Log-likelihood: {}".format(loss))
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
-print("Saving Results ...")
-torch.save(m_posterior, "posterior_mean.pt")
-torch.save(concentrated_m0, "concentrated_m0.pt")
-torch.save(myModel.sigma_0, "sigma_0.pt")
-torch.save(myModel.length_scale, "length_scale.pt")
-"""
+# Forward pass: Compute predicted y by passing
+# x to the model
+log_likelihood, m_posterior = model(tot)
+
+# Compute prediction error.
+criterion = torch.nn.MSELoss()
+
+train_error = torch.sqrt(criterion(
+    torch.mm(F.to(device), m_posterior), d_obs.to(device)))
+print("RMSE train error: {}".format(train_error.item()))
+print("Log-likelihood: {}".format(log_likelihood.item()))
