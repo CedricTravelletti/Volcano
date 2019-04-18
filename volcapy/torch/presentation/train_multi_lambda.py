@@ -210,7 +210,7 @@ for i, lambda0 in enumerate(lambda0s):
                 model.concentrated_m0.item(), model.sigma0.item()))
     
         # Save data for each lambda.
-        lls.append[i, epoch] = log_likelihood.item()
+        lls[i, epoch] = log_likelihood.item()
         train_rmses[i, epoch] = train_error.item()
         test_rmses[i, epoch] = test_error.item()
         m0s[i, epoch] = model.concentrated_m0.item()
