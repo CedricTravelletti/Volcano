@@ -11,6 +11,11 @@ from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
 import numpy as np
 
+# Monitoring memory usage.
+import os
+import psutil
+process = psutil.Process(os.getpid())
+
 # Set up logging.
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -214,7 +219,7 @@ for i, lambda0 in enumerate(lambda0s):
         train_rmses[i, epoch] = train_error.item()
         test_rmses[i, epoch] = test_error.item()
         m0s[i, epoch] = model.concentrated_m0.item()
-        sigma0[i, epoch] = model.sigma0.item()
+        sigma0s[i, epoch] = model.sigma0.item()
     
         # Zero gradients, perform a backward pass,
         # and update the weights.
@@ -222,8 +227,18 @@ for i, lambda0 in enumerate(lambda0s):
         log_likelihood.backward(retain_graph=True)
         optimizer.step()
 
+    # Save every 4 lambdas.
+    if i % 4 == 0:
+        logger.info("Saving Results at lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
+        logger.info("Current memory usage: {} Gb".format(process.memory_info().rss / (1024**3)))
+        
+        np.save("log_likelihoods_train.npy", lls)
+        np.save("train_rmses_train.npy", train_rmses)
+        np.save("test_rmses_train.npy", test_rmses)
+        np.save("m0s_train.npy", m0s)
+        np.save("sigma0s_train.npy", sigma0s)
+        np.save("lambda0s_train.npy", lambda0s)
 
-print("Saving Results ...")
 np.save("log_likelihoods_train.npy", lls)
 np.save("train_rmses_train.npy", train_rmses)
 np.save("test_rmses_train.npy", test_rmses)

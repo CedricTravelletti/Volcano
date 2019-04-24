@@ -91,3 +91,15 @@ for i in non_nan_inds:
     axarr[2].set_xlabel("log-likelihood")
 plt.legend()
 plt.show()
+
+# Plot final log likelihood.
+f, axarr = plt.subplots(2, sharex=True)
+axarr[0].set_title("Evolution of parameters and test RMSE along training for multiple lambda0s. Train/Test: 450/102.")
+axarr[0].plot(lambda0s[:9], m0s[:9, -1])
+axarr[0].set_xlabel("log-likelihood")
+
+axarr[1].plot(lambda0s[:9], test_rmses[:9, -1])
+axarr[1].set_xlabel("test RMSE")
+
+plt.legend()
+plt.show()
