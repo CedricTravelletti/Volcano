@@ -51,7 +51,6 @@ n_model = inverseProblem.n_model
 n_data = inverseProblem.n_data
 
 F = torch.as_tensor(inverseProblem.forward)
-print(F.shape[0])
 print("Size of model after regridding: {} cells.".format(n_model))
 
 # Careful: we have to make a column vector here.
@@ -74,7 +73,6 @@ def compute_CM_tilde(lambda0):
     n_dims = 3
     tot = torch.Tensor().to(device)
     for i, x in enumerate(torch.chunk(cells_coords, chunks=150, dim=0)):
-        print(i)
         if i % 80 == 0:
             torch.cuda.empty_cache()
         tot = torch.cat((
@@ -172,9 +170,9 @@ model = model.cuda()
 # model = torch.nn.DataParallel(model).cuda()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
 
-lambda0_start = 45.0
-lambda0_stop = 1000.0
-lambda0_step = 50.0
+lambda0_start = 190.0
+lambda0_stop = 245.0
+lambda0_step = 5.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
 print("Number of lambda0s: {}".format(n_lambda0s))
@@ -239,6 +237,7 @@ for i, lambda0 in enumerate(lambda0s):
         np.save("sigma0s_train.npy", sigma0s)
         np.save("lambda0s_train.npy", lambda0s)
 
+logger.info("Finished. Saving results")
 np.save("log_likelihoods_train.npy", lls)
 np.save("train_rmses_train.npy", train_rmses)
 np.save("test_rmses_train.npy", test_rmses)
