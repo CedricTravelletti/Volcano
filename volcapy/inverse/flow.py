@@ -115,9 +115,6 @@ class InverseProblem():
         # Pick indices at random.
         inds = np.random.choice(range(self.n_data), n_keep, replace=False)
 
-        # Dimensions
-        self.n_data = self.forward.shape[0]
-
         # Return the unused part of the forward and of the data so that it can
         # be used as test set.
         rest_forward = np.delete(self.forward, inds, axis=0)
@@ -130,6 +127,9 @@ class InverseProblem():
         self.data_values = self.data_values[inds]
         # We subsetted columns, hence we have to restore C-contiguity by hand.
         self.forward = np.ascontiguousarray(self.forward)
+
+        # New dimensions
+        self.n_data = self.forward.shape[0]
 
         # Note that we return data in a column vector, to make it
         # compatible with the rest of the data.
@@ -277,10 +277,11 @@ class InverseProblem():
         print("Done in " + str(end - start))
 
         # Save the square root standard deviation).
+        """
         np.save(
                 "posterior_cov_diag.npy",
                 np.sqrt(np.array([sigma0] * self.n_model) - Cm_post))
-
+        """
         print("DONE")
 
         if compute_post_covariance:

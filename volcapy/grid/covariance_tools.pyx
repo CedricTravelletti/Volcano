@@ -110,3 +110,4 @@ def save_mesh_squared_euclidean_distance(
     for i in range(dim_1):
         for j in range(dim_2):
             out[i, j] += (coords_z1[i] - coords_z2[j])**2
+    return
