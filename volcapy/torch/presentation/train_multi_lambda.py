@@ -1,10 +1,8 @@
 # File: forward_brute_force.py, Author: Cedric Travelletti, Date: 12.04.2019.
-""" Only do forward pass. Brute force optimization by grid search.
+""" Hyperparameter Optimization.
 
-This is an attempt at saving what can be saved, in the aftermath of the April
-11 discovery that everything was wrong due to test-train split screw up.
-
-Lets hope it works.
+Lambda0 by brute force grid search, m0 by concentration, sigma0 by gradient
+descent.
 
 """
 from volcapy.inverse.flow import InverseProblem
