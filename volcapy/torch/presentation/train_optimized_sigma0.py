@@ -180,11 +180,11 @@ print("Number of lambda0s: {}".format(n_lambda0s))
 n_epochs_short = 2000
 n_epochs_long = 12000
 
-lls = np.zeros((n_lambda0s, n_epochs), dtype=np.float32)
-train_rmses = np.zeros((n_lambda0s, n_epochs), dtype=np.float32)
-test_rmses = np.zeros((n_lambda0s, n_epochs), dtype=np.float32)
-m0s = np.zeros((n_lambda0s, n_epochs), dtype=np.float32)
-sigma0s = np.zeros((n_lambda0s, n_epochs), dtype=np.float32)
+lls = np.zeros((n_lambda0s, n_epochs_long), dtype=np.float32)
+train_rmses = np.zeros((n_lambda0s, n_epochs_long), dtype=np.float32)
+test_rmses = np.zeros((n_lambda0s, n_epochs_long), dtype=np.float32)
+m0s = np.zeros((n_lambda0s, n_epochs_long), dtype=np.float32)
+sigma0s = np.zeros((n_lambda0s, n_epochs_long), dtype=np.float32)
 
 
 for i, lambda0 in enumerate(lambda0s):
