@@ -229,11 +229,13 @@ for i, lambda0 in enumerate(lambda0s):
                 model.concentrated_m0.item(), model.sigma0.item()))
     
         # Save data for each lambda.
-        lls[i, epoch] = log_likelihood.item()
-        train_rmses[i, epoch] = train_error.item()
-        test_rmses[i, epoch] = test_error.item()
-        m0s[i, epoch] = model.concentrated_m0.item()
-        sigma0s[i, epoch] = model.sigma0.item()
+        # Save only every 20 steps.
+        if epoch % 20 == 0:
+            lls[i, epoch/20] = log_likelihood.item()
+            train_rmses[i, epoch/20] = train_error.item()
+            test_rmses[i, epoch/20] = test_error.item()
+            m0s[i, epoch/20] = model.concentrated_m0.item()
+            sigma0s[i, epoch/20] = model.sigma0.item()
     
         # Zero gradients, perform a backward pass,
         # and update the weights.
