@@ -32,6 +32,11 @@ device = torch.device('cuda:0')
 data_std = 0.1
 sigma0 = 20.0
 
+###########
+# IMPORTANT
+###########
+out_folder = /idiap/temp/ctravelletti/out/train
+
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
 # niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
@@ -66,6 +71,8 @@ data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
 def compute_CM_tilde(lambda0):
     """ Given lambda0, compute Cm * G.T, without the sigma0^2 prefactor.
+
+    This is where the kernel is implemented.
 
     """
     lambda0 = torch.tensor(lambda0, requires_grad=False).to(device)
@@ -239,17 +246,17 @@ for i, lambda0 in enumerate(lambda0s):
         logger.info("Saving Results at lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
         logger.info("Current memory usage: {} Gb".format(process.memory_info().rss / (1024**3)))
         
-        np.save("log_likelihoods_train.npy", lls)
-        np.save("train_rmses_train.npy", train_rmses)
-        np.save("test_rmses_train.npy", test_rmses)
-        np.save("m0s_train.npy", m0s)
-        np.save("sigma0s_train.npy", sigma0s)
-        np.save("lambda0s_train.npy", lambda0s)
+        np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
+        np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)
+        np.save(os.path.join(out_folder, "test_rmses_train.npy"), test_rmses)
+        np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
+        np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
+        np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
 
 logger.info("Finished. Saving results")
-np.save("log_likelihoods_train.npy", lls)
-np.save("train_rmses_train.npy", train_rmses)
-np.save("test_rmses_train.npy", test_rmses)
-np.save("m0s_train.npy", m0s)
-np.save("sigma0s_train.npy", sigma0s)
-np.save("lambda0s_train.npy", lambda0s)
+np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
+np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)
+np.save(os.path.join(out_folder, "test_rmses_train.npy"), test_rmses)
+np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
+np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
+np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
