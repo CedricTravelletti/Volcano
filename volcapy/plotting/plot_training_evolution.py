@@ -10,13 +10,15 @@ from volcapy.inverse.flow import InverseProblem
 """
 LOAD
 """
+input_folder = "/idiap/temp/ctravelletti/out/simple_exponential/"
+
 # Training Evolution of Train/Test RMSE for multiple lambdas.
-lambda0s = np.load("/idiap/temp/ctravelletti/tflow/Volcano/volcapy/torch/presentation/lambda0s_train.npy")
-lls = np.load("/idiap/temp/ctravelletti/tflow/Volcano/volcapy/torch/presentation/log_likelihoods_train.npy")
-m0s = np.load("/idiap/temp/ctravelletti/tflow/Volcano/volcapy/torch/presentation/m0s_train.npy")
-sigma0s = np.load("/idiap/temp/ctravelletti/tflow/Volcano/volcapy/torch/presentation/sigma0s_train.npy")
-test_rmses = np.load("/idiap/temp/ctravelletti/tflow/Volcano/volcapy/torch/presentation/test_rmses_train.npy")
-train_rmses = np.load("/idiap/temp/ctravelletti/tflow/Volcano/volcapy/torch/presentation/train_rmses_train.npy")
+lambda0s = np.load(os.path.join(input_folder, "lambda0s_train.npy"))
+lls = np.load(os.path.join(input_folder, "log_likelihoods_train.npy"))
+m0s = np.load(os.path.join(input_folder, "m0s_train.npy"))
+sigma0s = np.load(os.path.join(input_folder, "sigma0s_train.npy"))
+test_rmses = np.load(os.path.join(input_folder, "test_rmses_train.npy"))
+train_rmses = np.load(os.path.join(input_folder, "train_rmses_train.npy"))
 
 """
 Description of data format:
