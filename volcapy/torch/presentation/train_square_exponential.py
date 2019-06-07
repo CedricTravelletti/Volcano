@@ -180,10 +180,10 @@ class SquaredExpModel(torch.nn.Module):
 model = SquaredExpModel()
 model = model.cuda()
 # model = torch.nn.DataParallel(model).cuda()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
 
-lambda0_start = 190.0
-lambda0_stop = 500.0
+lambda0_start = 60.0
+lambda0_stop = 195.0
 lambda0_step = 5.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
@@ -227,12 +227,6 @@ for i, lambda0 in enumerate(lambda0s):
             (d_obs_test - torch.mm(F_test,
                     m_posterior.to(torch.device("cpu"))))**2))
         
-        print("RMSE train error: {}".format(train_error.item()))
-        print("RMSE test error: {}".format(test_error.item()))
-        print("Log-likelihood: {}".format(log_likelihood.item()))
-        print("Params: m0 {}, sigma0 {}.".format(
-                model.concentrated_m0.item(), model.sigma0.item()))
-    
         # Save data for each lambda.
         # Save only every 20 steps.
         if epoch % 20 == 0:
@@ -241,6 +235,13 @@ for i, lambda0 in enumerate(lambda0s):
             test_rmses[i, int(epoch/20)] = test_error.item()
             m0s[i, int(epoch/20)] = model.concentrated_m0.item()
             sigma0s[i, int(epoch/20)] = model.sigma0.item()
+
+            print("Epoch {}".format(epoch))
+            print("RMSE train error: {}".format(train_error.item()))
+            print("RMSE test error: {}".format(test_error.item()))
+            print("Log-likelihood: {}".format(log_likelihood.item()))
+            print("Params: m0 {}, sigma0 {}.".format(
+                    model.concentrated_m0.item(), model.sigma0.item()))
     
         # Zero gradients, perform a backward pass,
         # and update the weights.
