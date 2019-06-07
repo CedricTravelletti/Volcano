@@ -93,7 +93,7 @@ def compute_CM_tilde(lambda0):
                     * torch.pow(
                         x.unsqueeze(1).expand(x.shape[0], n_model, n_dims) - 
                         cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
-                        , 2).sum(2))
+                        , 1).sum(2))
                     , F.t())))
     return tot
 
