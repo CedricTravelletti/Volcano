@@ -40,7 +40,7 @@ sigma0 = 20.0
 ###########
 # IMPORTANT
 ###########
-out_folder = "/idiap/temp/ctravelletti/out/simple_exponential"
+out_folder = "/idiap/temp/ctravelletti/out/square_exponential"
 
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
@@ -183,14 +183,14 @@ model = model.cuda()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
 
 lambda0_start = 60.0
-lambda0_stop = 195.0
+lambda0_stop = 400.0
 lambda0_step = 5.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
 print("Number of lambda0s: {}".format(n_lambda0s))
 
-n_epochs_short = 3000
-n_epochs_long = 14000
+n_epochs_short = 5000
+n_epochs_long = 20000
 
 lls = np.zeros((n_lambda0s, n_epochs_long), dtype=np.float32)
 train_rmses = np.zeros((n_lambda0s, n_epochs_long), dtype=np.float32)
@@ -228,14 +228,8 @@ for i, lambda0 in enumerate(lambda0s):
                     m_posterior.to(torch.device("cpu"))))**2))
         
         # Save data for each lambda.
-        # Save only every 20 steps.
-        if epoch % 20 == 0:
-            lls[i, int(epoch/20)] = log_likelihood.item()
-            train_rmses[i, int(epoch/20)] = train_error.item()
-            test_rmses[i, int(epoch/20)] = test_error.item()
-            m0s[i, int(epoch/20)] = model.concentrated_m0.item()
-            sigma0s[i, int(epoch/20)] = model.sigma0.item()
-
+        # Save only every 100 steps.
+        if epoch % 100 == 0:
             print("Epoch {}".format(epoch))
             print("RMSE train error: {}".format(train_error.item()))
             print("RMSE test error: {}".format(test_error.item()))
@@ -248,6 +242,12 @@ for i, lambda0 in enumerate(lambda0s):
         optimizer.zero_grad()
         log_likelihood.backward(retain_graph=True)
         optimizer.step()
+
+    lls[i] = log_likelihood.item()
+    train_rmses[i] = train_error.item()
+    test_rmses[i] = test_error.item()
+    m0s[i] = model.concentrated_m0.item()
+    sigma0s[i] = model.sigma0.item()
 
     # Save every 4 lambdas.
     if i % 4 == 0:
