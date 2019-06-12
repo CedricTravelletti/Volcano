@@ -62,7 +62,7 @@ d_obs_test = torch.as_tensor(d_obs_test)
 n_model = inverseProblem.n_model
 n_data = inverseProblem.n_data
 
-F = torch.as_tensor(inverseProblem.forward)
+F_train = torch.as_tensor(inverseProblem.forward)
 print("Size of model after regridding: {} cells.".format(n_model))
 
 # Careful: we have to make a column vector here.
@@ -72,11 +72,11 @@ cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach().to(device)
 del(inverseProblem)
 
 # distance_mesh = torch.as_tensor(distance_mesh)
-F = F.to(device)
+F_train = F_train.to(device)
 data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
 
-def compute_K_d(lambda0):
+def compute_K_d(lambda0, F):
     """ Compute the data-side kernel.
 
     """
@@ -108,7 +108,8 @@ class SquaredExpModel(torch.nn.Module):
         self.concentrated_m0 = torch.Tensor().to(device)
 
         # Prior mean on the data side, stripped of the parameter.
-        self.fwd_m0 = torch.mm(F, torch.ones((n_model, 1))).to(device)
+        # TODO: Just implement as a reduction (sum along one axis).
+        self.fwd_m0 = torch.mm(F_train, torch.ones((n_model, 1), device=device))
         self.d_obs = d_obs.to(device)
         self.data_cov = data_cov.to(device)
 
@@ -147,7 +148,7 @@ class SquaredExpModel(torch.nn.Module):
             torch.inverse(
                 torch.mm(
                     torch.mm(self.I_d.t(), inversion_operator),
-                    self.I)),
+                    self.I_d)),
             torch.mm(
                 self.I_d.t(),
                 torch.mm(inversion_operator, self.d_obs)))
@@ -155,7 +156,7 @@ class SquaredExpModel(torch.nn.Module):
         m_prior_d = self.concentrated_m0 * self.fwd_m0
         prior_misfit = torch.sub(self.d_obs, m_prior_d)
 
-        weights = torch.mm(inversion_operator), prior_misfit)
+        weights = torch.mm(inversion_operator, prior_misfit)
 
         m_posterior_d = torch.add(
                 m_prior_d,
@@ -173,7 +174,7 @@ class SquaredExpModel(torch.nn.Module):
                 torch.cuda.memory_allocated(device)/1e9))
 
 
-        return (log_likelihood, m_posterior)
+        return (log_likelihood, m_posterior_d)
 
     def loo_predict(self, loo_index):
         """ Leave one out krigging prediction.
@@ -214,7 +215,7 @@ sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 for i, lambda0 in enumerate(lambda0s):
     print("Current lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
     # Correpsonding Cm tilde.
-    K_d = compute_K_d(lambda0)
+    K_d = compute_K_d(lambda0, F_train)
 
     # Perform the first training in full.
     # For the subsequent one, we can initialize sigma0 with the final value
@@ -228,23 +229,17 @@ for i, lambda0 in enumerate(lambda0s):
     for epoch in range(n_epochs):
         # Forward pass: Compute predicted y by passing
         # x to the model
-        log_likelihood, m_posterior = model(tot)
+        log_likelihood, m_posterior = model(K_d)
 
         # Compute train error.
         train_error = torch.sqrt(torch.mean(
-            (d_obs.to(device) - torch.mm(F.to(device), m_posterior))**2))
-
-        # Compute test error.
-        test_error = torch.sqrt(torch.mean(
-            (d_obs_test - torch.mm(F_test,
-                    m_posterior.to(torch.device("cpu"))))**2))
+            (d_obs.to(device) - m_posterior)**2))
 
         # Save data for each lambda.
         # Save only every 100 steps.
         if epoch % 100 == 0:
             print("Epoch {}".format(epoch))
             print("RMSE train error: {}".format(train_error.item()))
-            print("RMSE test error: {}".format(test_error.item()))
             print("Log-likelihood: {}".format(log_likelihood.item()))
             print("Params: m0 {}, sigma0 {}.".format(
                     model.concentrated_m0.item(), model.sigma0.item()))
@@ -257,9 +252,12 @@ for i, lambda0 in enumerate(lambda0s):
 
     lls[i] = log_likelihood.item()
     train_rmses[i] = train_error.item()
-    test_rmses[i] = test_error.item()
+    # test_rmses[i] = test_error.item()
     m0s[i] = model.concentrated_m0.item()
     sigma0s[i] = model.sigma0.item()
+
+    # Print Test Error.
+    # TODO: IMPLEMENT.
 
     # Save every 4 lambdas.
     if i % 4 == 0:
@@ -268,7 +266,7 @@ for i, lambda0 in enumerate(lambda0s):
 
         np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
         np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)
-        np.save(os.path.join(out_folder, "test_rmses_train.npy"), test_rmses)
+        # np.save(os.path.join(out_folder, "test_rmses_train.npy"), test_rmses)
         np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
         np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
         np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
@@ -276,7 +274,7 @@ for i, lambda0 in enumerate(lambda0s):
 logger.info("Finished. Saving results")
 np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
 np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)
-np.save(os.path.join(out_folder, "test_rmses_train.npy"), test_rmses)
+# np.save(os.path.join(out_folder, "test_rmses_train.npy"), test_rmses)
 np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
 np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
 np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
