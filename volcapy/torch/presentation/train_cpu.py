@@ -320,12 +320,11 @@ class SquaredExpModel(torch.nn.Module):
         return np.sqrt((tot_error / len(self.d_obs)))
 
 
-
 # ---------------------------------------------------
 # Train multiple lambdas
 # ---------------------------------------------------
 # Range for the grid search.
-lambda0_start = 1005.0
+lambda0_start = 50.0
 lambda0_stop = 1400.0
 lambda0_step = 50.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)

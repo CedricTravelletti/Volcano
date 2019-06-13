@@ -45,6 +45,7 @@ data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
 cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach().to(device)
 del(inverseProblem)
+print("Everything Loaded.")
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -74,7 +75,7 @@ def compute_K_d(lambda0, F):
     tot = torch.Tensor().to(device)
 
     # Compute K * F^T chunk by chunk.
-    for i, x in enumerate(torch.chunk(cells_coords, chunks=120, dim=0)):
+    for i, x in enumerate(torch.chunk(cells_coords, chunks=140, dim=0)):
         print(i)
         # Empty cache every so often. Otherwise we get out of memory errors.
         if i % 10 == 0:
@@ -324,12 +325,11 @@ class SquaredExpModel(torch.nn.Module):
         return np.sqrt((tot_error / len(self.d_obs)))
 
 
-
 # ---------------------------------------------------
 # Train multiple lambdas
 # ---------------------------------------------------
 # Range for the grid search.
-lambda0_start = 1005.0
+lambda0_start = 50.0
 lambda0_stop = 1400.0
 lambda0_step = 50.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
@@ -348,8 +348,8 @@ sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 # on sigma0). The next lambda0s will have optimal sigma0s that vary
 # continouslty, hence we can initialize with the last optimal sigma0 and train
 # for a shorter time.
-n_epochs_short = 10000
-n_epochs_long = 20000
+n_epochs_short = 5000
+n_epochs_long = 15000
 
 # Run gradient descent for every lambda0.
 from timeit import default_timer as timer

@@ -6,6 +6,7 @@ cross validation error.
 from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
 import numpy as np
+import os
 
 # Set up logging.
 import logging
@@ -44,6 +45,7 @@ data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
 cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach().to(device)
 del(inverseProblem)
+print("Everything Loaded.")
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -375,9 +377,13 @@ for i, lambda0 in enumerate(lambda0s):
     train_error = torch.sqrt(torch.mean(
         (model.d_obs - m_posterior_d)**2))
 
+    # Compute LOOCV RMSE.
+    loocv_rmse = model.loo_error()
+
     # Save the final ll, train/test error and hyperparams for each lambda.
     lls[i] = log_likelihood.item()
     train_rmses[i] = train_error.item()
+    loocv_rmses[i] = loocv_rmse.item()
     m0s[i] = model.m0
     sigma0s[i] = model.sigma0.item()
 
@@ -388,6 +394,7 @@ print(end - start)
 logger.info("Finished. Saving results")
 np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
 np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)
+np.save(os.path.join(out_folder, "loocv_rmses_train.npy"), loocv_rmses)
 np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
 np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
 np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
