@@ -22,7 +22,7 @@ device = torch.device('cuda:0')
 ###########
 # IMPORTANT
 ###########
-out_folder = "/idiap/temp/ctravelletti/out/cpu"
+out_folder = "/idiap/temp/ctravelletti/out/matern52/"
 
 # ----------------------------------------------------------------------------#
 #      LOAD NIKLAS DATA
@@ -66,7 +66,8 @@ def compute_K_d(lambda0, F):
 
     """
     lambda0 = torch.tensor(lambda0, requires_grad=False).to(device)
-    inv_lambda2 = - 1 / (2 * lambda0**2)
+    inv_lambda2 = - np.sqrt(5) / (lambda0)
+
     n_dims = 3
 
     # Array to hold the results. We will compute line by line and concatenate.
@@ -79,20 +80,23 @@ def compute_K_d(lambda0, F):
         if i % 10 == 0:
             pass
             # torch.cuda.empty_cache()
-
+        # (squared) Euclidean distance.
+        d = torch.pow(
+            x.unsqueeze(1).expand(x.shape[0], n_model, n_dims) - 
+            cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
+            , 2).sum(2)
         tot = torch.cat((
                 tot,
-                torch.matmul(torch.exp(inv_lambda2
-                    * torch.pow(
-                        x.unsqueeze(1).expand(x.shape[0], n_model, n_dims) -
-                        cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
-                        , 2).sum(2))
-                    , F.t())))
-    print("Computing final.")
+                torch.matmul(
+                    (1 - inv_lambda2 * torch.sqrt(d) + (1/3) * inv_lambda2**2 * d)
+                    * torch.exp(inv_lambda2 * torch.sqrt(d)),
+                    F.t())))
+
     final = torch.mm(F, tot)
+
+    # Close thread and empty cache to make sure we do not get OOM errors.
     torch.cuda.synchronize()
     torch.cuda.empty_cache()
-    print("Computed final.")
 
     # Send back to CPU.
     return final.cpu()
