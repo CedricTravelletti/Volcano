@@ -384,6 +384,16 @@ for i, lambda0 in enumerate(lambda0s):
     m0s[i] = model.m0
     sigma0s[i] = model.sigma0.item()
 
+    # Save every 4 lambda0s in case.
+    if i % 4 == 0:
+        logger.info("Saving Results at lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
+        np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
+        np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)
+        np.save(os.path.join(out_folder, "loocv_rmses_train.npy"), loocv_rmses)
+        np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
+        np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
+        np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
+
 print("Elapsed time:")
 end = timer()
 print(end - start)
