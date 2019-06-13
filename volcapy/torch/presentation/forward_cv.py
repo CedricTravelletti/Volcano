@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Now torch in da place.
 import torch
-torch.set_num_threads(4)
+torch.set_num_threads(1)
 # Choose between CPU and GPU.
 device = torch.device('cuda:0')
 
@@ -46,7 +46,7 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0 = 700.0
+sigma0_init = 700.0
 m0 = 2000.0
 lambda0 = 200.0
 # ----------------------------------------------------------------------------#
@@ -86,6 +86,7 @@ def compute_K_d(lambda0, F):
     print("Computing final.")
     final = torch.mm(F, tot)
     torch.cuda.synchronize()
+    torch.cuda.empty_cache()
     print("Computed final.")
 
     # Send back to CPU.
@@ -96,6 +97,10 @@ class SquaredExpModel(torch.nn.Module):
     def __init__(self, F):
         super(SquaredExpModel, self).__init__()
 
+        # Store the sigma0 after optimization, since can be used as starting
+        # point for next optim.
+        self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0_init))
+
         # Prior mean (vector) on the data side.
         self.mu0_d_stripped = torch.mm(F, torch.ones((n_model, 1)))
 
@@ -105,7 +110,7 @@ class SquaredExpModel(torch.nn.Module):
         # Identity vector. Need for concentration.
         self.I_d = torch.ones((n_data, 1), dtype=torch.float32)
 
-    def forward(self, K_d, m0, sigma0):
+    def forward(self, K_d, sigma0, m0=0.1, concentrate=False):
         logger.debug("GPU used before forward pass: {} Gb.".format(
                 torch.cuda.memory_allocated(device)/1e9))
 
@@ -126,7 +131,20 @@ class SquaredExpModel(torch.nn.Module):
                 torch.cuda.memory_allocated(device)/1e9))
         del inv_inversion_operator
 
+        if concentrate:
+            # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
+            m0 = torch.mm(
+                torch.inverse(
+                    torch.mm(
+                        torch.mm(self.mu0_d_stripped.t(), self.inversion_operator),
+                        self.mu0_d_stripped)),
+                torch.mm(
+                    self.mu0_d_stripped.t(),
+                    torch.mm(self.inversion_operator, self.d_obs)))
+
         self.mu0_d = m0 * self.mu0_d_stripped
+        # Store m0 in case we want to print it later.
+        self.m0 = m0
         self. prior_misfit = torch.sub(self.d_obs, self.mu0_d)
         weights = torch.mm(self.inversion_operator, self.prior_misfit)
 
@@ -146,6 +164,48 @@ class SquaredExpModel(torch.nn.Module):
                 torch.cuda.memory_allocated(device)/1e9))
 
         return (log_likelihood, m_posterior_d)
+
+    def optimize(self, K_d, n_epochs):
+        """ Given lambda0, optimize the two remaining hyperparams via MLE.
+        Here, instead of giving lambda0, we give a (stripped) covariance
+        matrix. Stripped means without sigma0.
+
+        Parameters
+        ----------
+        K_d: 2D Tensor
+            (stripped) Covariance matrix in data space.
+        sigma0_init: float
+            Starting value for gradient descent.
+        n_epochs: int
+            Number of training epochs.
+
+        """
+        # Send everything to GPU first.
+        self.sigma0 = self.sigma0.to(device)
+        self.mu0_d_stripped = self.mu0_d_stripped.to(device)
+        self.d_obs = self.d_obs.to(device)
+        self.data_cov = self.data_cov.to(device)
+        self.I_d = self.I_d.to(device)
+
+        optimizer = torch.optim.Adam(self.parameters(), lr=0.5)
+        for epoch in range(n_epochs):
+            # Forward pass: Compute predicted y by passing
+            # x to the model
+            log_likelihood, m_posterior_d = model(K_d, self.sigma0, concentrate=True)
+
+            # Zero gradients, perform a backward pass,
+            # and update the weights.
+            optimizer.zero_grad()
+            log_likelihood.backward(retain_graph=True)
+            optimizer.step()
+
+            # Compute train error.
+            train_error = torch.sqrt(torch.mean(
+                (self.d_obs - m_posterior_d)**2))
+            
+            print("Log-likelihood: {}".format(log_likelihood.item()))
+            print("RMSE train error: {}".format(train_error.item()))
+
 
     def loo_predict(self, loo_ind):
         """ Leave one out krigging prediction.
@@ -215,12 +275,25 @@ K_d = compute_K_d(lambda0, F)
 model = SquaredExpModel(F_cpu)
 
 # Predict
-log_likelihood, m_posterior_d = model(K_d, m0=2200.0, sigma0=500.0)
+log_likelihood, m_posterior_d = model(K_d, sigma0=500.0, m0=2200.0)
 print("Log-likelihood: {}".format(log_likelihood.item()))
+
+# Predict with concentration.
+log_likelihood, m_posterior_d = model(K_d, sigma0=250.0, concentrate=True)
+print("Log-likelihood: {}".format(log_likelihood.item()))
+print("m0: {}".format(model.m0))
 
 # Compute train error.
 train_error = torch.sqrt(torch.mean(
     (model.d_obs - m_posterior_d)**2))
 print("RMSE train error: {}".format(train_error.item()))
 
-print(model.loo_predict(10))
+
+from timeit import default_timer as timer
+model = model.cuda()
+start = timer()
+model.optimize(K_d.to(device), 1000)
+end = timer()
+print(end - start)
+
+# print(model.loo_predict(10))
