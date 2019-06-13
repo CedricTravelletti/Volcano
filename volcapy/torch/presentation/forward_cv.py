@@ -7,6 +7,11 @@ from volcapy.inverse.flow import InverseProblem
 import volcapy.grid.covariance_tools as cl
 import numpy as np
 
+# Set up logging.
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Now torch in da place.
 import torch
 torch.set_num_threads(4)
@@ -25,9 +30,11 @@ niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 n_model = inverseProblem.n_model
 n_data = inverseProblem.n_data
-F = torch.as_tensor(inverseProblem.forward).to(device)
+F_cpu = torch.as_tensor(inverseProblem.forward).detach()
+F = F_cpu.to(device)
 
 # Careful: we have to make a column vector here.
+data_std = 0.1
 d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
 data_cov = torch.mul(data_std**2, torch.eye(n_data))
 
@@ -39,7 +46,6 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-data_std = 0.1
 sigma0 = 700.0
 m0 = 2000.0
 lambda0 = 200.0
@@ -62,10 +68,12 @@ def compute_K_d(lambda0, F):
     tot = torch.Tensor().to(device)
 
     # Compute K * F^T chunk by chunk.
-    for i, x in enumerate(torch.chunk(cells_coords, chunks=150, dim=0)):
+    for i, x in enumerate(torch.chunk(cells_coords, chunks=120, dim=0)):
+        print(i)
         # Empty cache every so often. Otherwise we get out of memory errors.
-        if i % 80 == 0:
-            torch.cuda.empty_cache()
+        if i % 10 == 0:
+            pass
+            # torch.cuda.empty_cache()
 
         tot = torch.cat((
                 tot,
@@ -75,90 +83,144 @@ def compute_K_d(lambda0, F):
                         cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
                         , 2).sum(2))
                     , F.t())))
+    print("Computing final.")
+    final = torch.mm(F, tot)
+    torch.cuda.synchronize()
+    print("Computed final.")
 
-    return torch.mm(F, tot)
+    # Send back to CPU.
+    return final.cpu()
 
 
 class SquaredExpModel(torch.nn.Module):
-    def __init__(self, m0, sigma0, K_d, F):
+    def __init__(self, F):
         super(SquaredExpModel, self).__init__()
 
-        self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0).cuda())
-
         # Prior mean (vector) on the data side.
-        self.mu0_d = torch.mm(F, torch.ones((n_model, 1), device=device))
+        self.mu0_d_stripped = torch.mm(F, torch.ones((n_model, 1)))
 
-        self.d_obs = d_obs.to(device)
-        self.data_cov = data_cov.to(device)
+        self.d_obs = d_obs
+        self.data_cov = data_cov
 
         # Identity vector. Need for concentration.
-        self.I_d = torch.ones((n_data, 1), dtype=torch.float32,
-                        device=device)
+        self.I_d = torch.ones((n_data, 1), dtype=torch.float32)
 
-    def forward(self, K_d):
-        # torch.cuda.empty_cache()
+    def forward(self, K_d, m0, sigma0):
         logger.debug("GPU used before forward pass: {} Gb.".format(
                 torch.cuda.memory_allocated(device)/1e9))
 
         inv_inversion_operator = torch.add(
                         self.data_cov,
-                        self.sigma0**2 * K_d)
-        torch.cuda.empty_cache()
+                        sigma0**2 * K_d)
 
         logger.debug("GPU used after computing inv_inversion_operator: {} Gb.".format(
                 torch.cuda.memory_allocated(device)/1e9))
 
-        inversion_operator = torch.inverse(inv_inversion_operator)
-        torch.cuda.empty_cache()
+        # Compute inversion operator and store once and for all.
+        self.inversion_operator = torch.inverse(inv_inversion_operator)
+
+        # Need to do it this way, otherwise rounding errors kill everything.
+        log_det = - torch.logdet(self.inversion_operator)
 
         logger.debug("GPU used after computing inversion_operator: {} Gb.".format(
                 torch.cuda.memory_allocated(device)/1e9))
         del inv_inversion_operator
 
-        prior_misfit = torch.sub(self.d_obs, mu0_d)
-        weights = torch.mm(inversion_operator, prior_misfit)
+        self.mu0_d = m0 * self.mu0_d_stripped
+        self. prior_misfit = torch.sub(self.d_obs, self.mu0_d)
+        weights = torch.mm(self.inversion_operator, self.prior_misfit)
 
         m_posterior_d = torch.add(
-                m_prior_d,
-                torch.mm(self.sigma0**2 * K_d, weights))
+                self.mu0_d,
+                torch.mm(sigma0**2 * K_d, weights))
 
         # Maximum likelihood estimator of posterior mean, given values
         # of sigma and lambda. Obtained using the concentration formula.
         log_likelihood = torch.add(
               log_det,
               torch.mm(
-                      prior_misfit.t(),
-                      torch.mm(inversion_operator, prior_misfit)))
+                      self.prior_misfit.t(),
+                      torch.mm(self.inversion_operator, self.prior_misfit)))
 
         logger.debug("GPU at end of forward pass: {} Gb.".format(
                 torch.cuda.memory_allocated(device)/1e9))
 
-
         return (log_likelihood, m_posterior_d)
 
-    def loo_predict(self, loo_index):
+    def loo_predict(self, loo_ind):
         """ Leave one out krigging prediction.
 
         Take the trained hyperparameters. Remove one point from the
         training set, krig/condition on the remaining point and predict
         the left out point.
 
+        WARNING: Should have run the forward pass of the model once before,
+        otherwise some of the operators we need (inversion operator) won't have
+        been computed. Also should re-run the forward pass when updating
+        hyperparameters.
+
         Parameters
         ----------
-        loo_index: int
+        loo_ind: int
             Index (in the training set) of the data point to leave out.
 
+        Returns
+        -------
+        float
+            Prediction at left out data point.
+
         """
+        # Index of the not removed data points.
+        in_inds = list(range(len(self.d_obs)))
+        in_inds.remove(loo_ind)
+
+        # Note that for the dot product, we should have one-dimensional
+        # vectors, hence the strange indexing with the zero.
+        loo_pred = (self.mu0_d[loo_ind] -
+                1/self.inversion_operator[loo_ind, loo_ind] *
+                torch.dot(
+                    self.inversion_operator[loo_ind, in_inds],
+                    self.prior_misfit[in_inds, 0]))
+
+        return loo_pred
+
+    def loo_error(self):
+        """ Leave one out cross validation RMSE.
+
+        Take the trained hyperparameters. Remove one point from the
+        training set, krig/condition on the remaining point and predict
+        the left out point.
+        Compute the squared error, repeat for all data points (leaving one out
+        at a time) and average.
+
+        WARNING: Should have run the forward pass of the model once before,
+        otherwise some of the operators we need (inversion operator) won't have
+        been computed. Also should re-run the forward pass when updating
+        hyperparameters.
+
+        Returns
+        -------
+        float
+            RMSE cross-validation error.
+
+        """
+        tot_error = 0
+        for loo_ind in range(len(self.d_obs)):
+            loo_prediction = self.loo_predict(loo_ind)
+            tot_error += (self.d_obs[loo_ind].item() - loo_prediction**2)
+
+        return np.sqrt((tot_error / len(self.d_obs)))
 
 K_d = compute_K_d(lambda0, F)
-model = SquaredExpModel(K_d, F)
-model = model.cuda()
+model = SquaredExpModel(F_cpu)
 
-# Correpsonding Cm tilde.
-
-log_likelihood, m_posterior_d = model(K_d)
+# Predict
+log_likelihood, m_posterior_d = model(K_d, m0=2200.0, sigma0=500.0)
+print("Log-likelihood: {}".format(log_likelihood.item()))
 
 # Compute train error.
 train_error = torch.sqrt(torch.mean(
-    (d_obs.to(device) - m_posterior)**2))
+    (model.d_obs - m_posterior_d)**2))
+print("RMSE train error: {}".format(train_error.item()))
 
+print(model.loo_predict(10))
