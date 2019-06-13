@@ -186,8 +186,8 @@ model = model.cuda()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.3)
 
 # Range for the grid search.
-lambda0_start = 405.0
-lambda0_stop = 2000.0
+lambda0_start = 1005.0
+lambda0_stop = 2500.0
 lambda0_step = 50.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)

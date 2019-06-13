@@ -18,6 +18,10 @@ torch.set_num_threads(4)
 # Choose between CPU and GPU.
 device = torch.device('cuda:0')
 
+###########
+# IMPORTANT
+###########
+out_folder = "/idiap/temp/ctravelletti/out/gpu"
 
 # ----------------------------------------------------------------------------#
 #      LOAD NIKLAS DATA
@@ -31,7 +35,7 @@ inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 n_model = inverseProblem.n_model
 n_data = inverseProblem.n_data
 F_cpu = torch.as_tensor(inverseProblem.forward).detach()
-F = F_cpu.to(device)
+F_gpu = F_cpu.to(device)
 
 # Careful: we have to make a column vector here.
 data_std = 0.1
@@ -102,7 +106,8 @@ class SquaredExpModel(torch.nn.Module):
         self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0_init))
 
         # Prior mean (vector) on the data side.
-        self.mu0_d_stripped = torch.mm(F, torch.ones((n_model, 1)))
+        self.mu0_d_stripped = torch.mm(F, torch.ones((n_model, 1),
+                device=device))
 
         self.d_obs = d_obs
         self.data_cov = data_cov
@@ -314,35 +319,75 @@ class SquaredExpModel(torch.nn.Module):
 
         return np.sqrt((tot_error / len(self.d_obs)))
 
-K_d = compute_K_d(lambda0, F)
-model = SquaredExpModel(F_cpu)
 
-# Predict
-log_likelihood, m_posterior_d = model(K_d, sigma0=500.0, m0=2200.0)
-print("Log-likelihood: {}".format(log_likelihood.item()))
+# ---------------------------------------------------
+# Train multiple lambdas
+# ---------------------------------------------------
+# Range for the grid search.
+lambda0_start = 1005.0
+lambda0_stop = 1400.0
+lambda0_step = 50.0
+lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
+n_lambda0s = len(lambda0s)
+print("Number of lambda0s: {}".format(n_lambda0s))
 
-# Predict with concentration.
-log_likelihood, m_posterior_d = model(K_d, sigma0=250.0, concentrate=True)
-print("Log-likelihood: {}".format(log_likelihood.item()))
-print("m0: {}".format(model.m0))
+# Arrays to save the results.
+lls = np.zeros((n_lambda0s), dtype=np.float32)
+train_rmses = np.zeros((n_lambda0s), dtype=np.float32)
+m0s = np.zeros((n_lambda0s), dtype=np.float32)
+sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 
-# Compute train error.
-train_error = torch.sqrt(torch.mean(
-    (model.d_obs - m_posterior_d)**2))
-print("RMSE train error: {}".format(train_error.item()))
+# OPTIMIZER LOGIC
+# The first lambda0 will be trained longer (that is, for the gradient descent
+# on sigma0). The next lambda0s will have optimal sigma0s that vary
+# continouslty, hence we can initialize with the last optimal sigma0 and train
+# for a shorter time.
+n_epochs_short = 10000
+n_epochs_long = 20000
 
-
+# Run gradient descent for every lambda0.
 from timeit import default_timer as timer
 start = timer()
-model.optimize_cpu(K_d, 5000)
-end = timer()
-print(end - start)
-
+model = SquaredExpModel(F_gpu)
 model = model.cuda()
-start = timer()
-model.optimize_gpu(K_d.to(device), 5000)
+for i, lambda0 in enumerate(lambda0s):
+    print("Current lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
+
+    # Compute the data-side covariance matrix
+    K_d = compute_K_d(lambda0, F_gpu)
+    K_d_gpu = K_d.to(device)
+    
+    # Perform the first training in full.
+    # For the subsequent one, we can initialize sigma0 with the final value
+    # from last training, since the optimum varies continuously in lambda0.
+    # Hence, subsequent trainings can be shorter.
+    if i > 0:
+        n_epochs = n_epochs_short
+    else: n_epochs = n_epochs_long
+
+    # Run gradient descent.
+    model.optimize_gpu(K_d_gpu, n_epochs)
+        
+    # Once finished, run a forward pass.
+    log_likelihood, m_posterior_d = model(K_d_gpu, sigma0=model.sigma0, concentrate=True)
+
+    # Compute train error.
+    train_error = torch.sqrt(torch.mean(
+        (model.d_obs - m_posterior_d)**2))
+
+    # Save the final ll, train/test error and hyperparams for each lambda.
+    lls[i] = log_likelihood.item()
+    train_rmses[i] = train_error.item()
+    m0s[i] = model.m0
+    sigma0s[i] = model.sigma0.item()
+
+print("Elapsed time:")
 end = timer()
 print(end - start)
-
-
-# print(model.loo_predict(10))
+# When everything done, save everything.
+logger.info("Finished. Saving results")
+np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
+np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)
+np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
+np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
+np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)

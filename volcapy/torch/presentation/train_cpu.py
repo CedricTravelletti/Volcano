@@ -285,12 +285,12 @@ class SquaredExpModel(torch.nn.Module):
         # Note that for the dot product, we should have one-dimensional
         # vectors, hence the strange indexing with the zero.
         loo_pred = (self.mu0_d[loo_ind] -
-                1/self.inversion_operator[loo_ind, loo_ind] *
+                1/self.inversion_operator[loo_ind, loo_ind].detach() *
                 torch.dot(
-                    self.inversion_operator[loo_ind, in_inds],
-                    self.prior_misfit[in_inds, 0]))
+                    self.inversion_operator[loo_ind, in_inds].detach(),
+                    self.prior_misfit[in_inds, 0].detach()))
 
-        return loo_pred
+        return loo_pred.detach()
 
     def loo_error(self):
         """ Leave one out cross validation RMSE.
