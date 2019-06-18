@@ -73,12 +73,12 @@ def compute_K_d(lambda0, F):
     tot = torch.Tensor().to(device)
 
     # Compute K * F^T chunk by chunk.
-    for i, x in enumerate(torch.chunk(cells_coords, chunks=120, dim=0)):
+    for i, x in enumerate(torch.chunk(cells_coords, chunks=140, dim=0)):
         print(i)
         # Empty cache every so often. Otherwise we get out of memory errors.
-        if i % 10 == 0:
-            pass
-            # torch.cuda.empty_cache()
+        if i % 50 == 0:
+            torch.cuda.synchronize()
+            torch.cuda.empty_cache()
 
         tot = torch.cat((
                 tot,
@@ -88,11 +88,11 @@ def compute_K_d(lambda0, F):
                         cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
                         , 2).sum(2))
                     , F.t())))
-    print("Computing final.")
+    logger.info("Computing final.")
     final = torch.mm(F, tot)
     torch.cuda.synchronize()
     torch.cuda.empty_cache()
-    print("Computed final.")
+    logger.info("Computed final.")
 
     # Send back to CPU.
     return final.cpu()
@@ -192,7 +192,7 @@ class SquaredExpModel(torch.nn.Module):
         self.data_cov = self.data_cov.to(device)
         self.I_d = self.I_d.to(device)
 
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.5)
+        optimizer = torch.optim.Adam(self.parameters(), lr=0.002)
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
@@ -204,14 +204,15 @@ class SquaredExpModel(torch.nn.Module):
             log_likelihood.backward(retain_graph=True)
             optimizer.step()
 
-            # Compute train error.
-            train_error = torch.sqrt(torch.mean(
-                (self.d_obs - m_posterior_d)**2))
-            
-            """
-            print("Log-likelihood: {}".format(log_likelihood.item()))
-            print("RMSE train error: {}".format(train_error.item()))
-            """
+            # Periodically print informations.
+            if epoch % 100 == 0:
+                # Compute train error.
+                train_error = torch.sqrt(torch.mean(
+                    (self.d_obs - m_posterior_d)**2))
+                
+                logger.info("Log-likelihood: {}".format(log_likelihood.item()))
+                logger.info("RMSE train error: {}".format(train_error.item()))
+
         print("Log-likelihood: {}".format(log_likelihood.item()))
         print("RMSE train error: {}".format(train_error.item()))
 
@@ -230,7 +231,7 @@ class SquaredExpModel(torch.nn.Module):
             Number of training epochs.
 
         """
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.5)
+        optimizer = torch.optim.Adam(self.parameters(), lr=0.002)
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
@@ -242,17 +243,17 @@ class SquaredExpModel(torch.nn.Module):
             log_likelihood.backward(retain_graph=True)
             optimizer.step()
 
-            # Compute train error.
-            train_error = torch.sqrt(torch.mean(
-                (self.d_obs - m_posterior_d)**2))
-            
-            """
-            print("Log-likelihood: {}".format(log_likelihood.item()))
-            print("RMSE train error: {}".format(train_error.item()))
-            """
+            # Periodically print informations.
+            if epoch % 100 == 0:
+                # Compute train error.
+                train_error = torch.sqrt(torch.mean(
+                    (self.d_obs - m_posterior_d)**2))
+                
+                logger.info("Log-likelihood: {}".format(log_likelihood.item()))
+                logger.info("RMSE train error: {}".format(train_error.item()))
 
-        print("Log-likelihood: {}".format(log_likelihood.item()))
-        print("RMSE train error: {}".format(train_error.item()))
+        logger.info("Log-likelihood: {}".format(log_likelihood.item()))
+        logger.info("RMSE train error: {}".format(train_error.item()))
 
 
     def loo_predict(self, loo_ind):
@@ -315,7 +316,7 @@ class SquaredExpModel(torch.nn.Module):
         tot_error = 0
         for loo_ind in range(len(self.d_obs)):
             loo_prediction = self.loo_predict(loo_ind)
-            tot_error += (self.d_obs[loo_ind].item() - loo_prediction**2)
+            tot_error += (self.d_obs[loo_ind].item() - loo_prediction)**2
 
         return np.sqrt((tot_error / len(self.d_obs)))
 
@@ -325,11 +326,11 @@ class SquaredExpModel(torch.nn.Module):
 # ---------------------------------------------------
 # Range for the grid search.
 lambda0_start = 50.0
-lambda0_stop = 1400.0
+lambda0_stop = 800.0
 lambda0_step = 50.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
-print("Number of lambda0s: {}".format(n_lambda0s))
+logger.info("Number of lambda0s: {}".format(n_lambda0s))
 
 # Arrays to save the results.
 lls = np.zeros((n_lambda0s), dtype=np.float32)
@@ -343,15 +344,15 @@ sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 # on sigma0). The next lambda0s will have optimal sigma0s that vary
 # continouslty, hence we can initialize with the last optimal sigma0 and train
 # for a shorter time.
-n_epochs_short = 10000
-n_epochs_long = 20000
+n_epochs_short = 40000
+n_epochs_long = 60000
 
 # Run gradient descent for every lambda0.
 from timeit import default_timer as timer
 start = timer()
 model = SquaredExpModel(F_cpu)
 for i, lambda0 in enumerate(lambda0s):
-    print("Current lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
+    logger.info("Current lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
 
     # Compute the data-side covariance matrix
     K_d = compute_K_d(lambda0, F_gpu)
