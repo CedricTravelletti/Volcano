@@ -46,7 +46,7 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 350.0
+sigma0_init = 100.0
 m0 = 2000.0
 lambda0 = 200.0
 # ----------------------------------------------------------------------------#
@@ -268,7 +268,7 @@ class SquaredExpModel(torch.nn.Module):
 
         return (log_likelihood, self.mu_post_m, self.mu_post_d)
 
-    def optimize_gpu(self, K_d, n_epochs):
+    def optimize_gpu(self, K_d, n_epochs, sigma0_init=None, lr=0.007):
         """ Given lambda0, optimize the two remaining hyperparams via MLE.
         Here, instead of giving lambda0, we give a (stripped) covariance
         matrix. Stripped means without sigma0.
@@ -290,7 +290,11 @@ class SquaredExpModel(torch.nn.Module):
         self.data_cov = self.data_cov.to(device)
         self.I_d = self.I_d.to(device)
 
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.007)
+        # Initialize sigma0.
+        if sigma0_init is not None:
+            self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0_init)).to(device)
+
+        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
@@ -314,7 +318,7 @@ class SquaredExpModel(torch.nn.Module):
         logger.info("Log-likelihood: {}".format(log_likelihood.item()))
         logger.info("RMSE train error: {}".format(train_error.item()))
 
-    def optimize_cpu(self, K_d, n_epochs):
+    def optimize_cpu(self, K_d, n_epochs, sigma0_init=None, lr=0.007):
         """ Given lambda0, optimize the two remaining hyperparams via MLE.
         Here, instead of giving lambda0, we give a (stripped) covariance
         matrix. Stripped means without sigma0.
@@ -329,11 +333,15 @@ class SquaredExpModel(torch.nn.Module):
             Number of training epochs.
 
         """
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.007)
+        # Initialize sigma0.
+        if sigma0_init is not None:
+            self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0_init)).to(device)
+
+        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
-            log_likelihood, m_posterior_d = model(K_d, self.sigma0, concentrate=True)
+            log_likelihood, m_posterior_d = self.forward(K_d, self.sigma0, concentrate=True)
 
             # Zero gradients, perform a backward pass,
             # and update the weights.
@@ -440,7 +448,7 @@ def main(out_folder, lambda0, sigma0):
             cov_pushfwd, F_cpu, sigma0, concentrate=True)
     
     # Compute train_error
-    train_error = model.train_error
+    train_error = model.train_error()
     logger.info("Train error: {}".format(train_error.item()))
 
     # Compute LOOCV RMSE.
@@ -448,5 +456,5 @@ def main(out_folder, lambda0, sigma0):
     logger.info("LOOCV error: {}".format(loocv_rmse.item()))
     
     # Save
-    filename = "m_post_" + str(lambda0) + "_sqexp.npy"
+    filename = "m_post_" + str(lambda0) + "_matern.npy"
     np.save(os.path.join(out_folder, filename), m_post_m)
