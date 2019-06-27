@@ -70,8 +70,8 @@ class GaussianProcess(torch.nn.Module):
         self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0_init))
 
         # Sizes
-        n_model = F.shape[0]
-        n_data = F.shape[1]
+        n_model = F.shape[1]
+        n_data = F.shape[0]
 
         # Prior mean (vector) on the data side.
         self.mu0_d_stripped = torch.mm(F, torch.ones((n_model, 1)))
