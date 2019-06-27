@@ -12,7 +12,7 @@ from volcapy.inverse.flow import InverseProblem
 LOAD
 """
 # input_folder = "/idiap/temp/ctravelletti/out/simple_exponential/"
-input_folder = "/home/cedric/PHD/run_results/sq_exp_small_lambdas/"
+input_folder = "/home/cedric/PHD/run_results/matern/"
 
 # Training Evolution of Train/Test RMSE for multiple lambdas.
 lambda0s = np.load(os.path.join(input_folder, "lambda0s_train.npy"))

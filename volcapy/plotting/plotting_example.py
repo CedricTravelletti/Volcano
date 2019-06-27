@@ -4,22 +4,27 @@ import matplotlib.pyplot as plt
 from volcapy.inverse.flow import InverseProblem
 
 
-# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
-niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
+niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+# niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 data = ld.load_niklas(niklas_data_path)
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 coords = data['coords'].astype(dtype=np.float32, order='C', copy=False)
 
-data = np.load("/home/cedric/PHD/Dev/Volcano/volcapy/plotting/m_post_wend_400m.npy")
-data_100m = np.load("/home/cedric/PHD/Dev/Volcano/volcapy/plotting/m_post_wend_100m.npy")
+# data = np.load("/home/cedric/PHD/Dev/Volcano/volcapy/plotting/m_post_wend_400m.npy")
+# data_100m = np.load("/home/cedric/PHD/Dev/Volcano/volcapy/plotting/m_post_wend_100m.npy")
+
+data = np.load("/home/cedric/PHD/run_results/forwards/m_post_250.0_sqexp.npy")
+data2 = np.load("/home/cedric/PHD/run_results/forwards/m_post_200_matern.npy")
 
 import volcapy.plotting.plot as myplt
 
-plt.plot_z_slice([0], data_100m.reshape(-1), coords)
+myplt.plot_z_slice([0], data.reshape(-1), coords)
+myplt.plot_z_slice([0, 500, 800], data2.reshape(-1), coords)
 
 # BASIS FUNCTIONS
 data_basis_200m = np.load("/home/cedric/PHD/Dev/Volcano/volcapy/plotting/m_post_basis_200m.npy")
 myplt.plot_z_slice([0], data_basis_200m.reshape(-1), coords)
+myplt.plot_z_slice([0, 500], data.reshape(-1), coords)
 
 data_basis_1000m = np.load("/home/cedric/PHD/Dev/Volcano/volcapy/plotting/m_post_basis_1000m.npy")
 myplt.plot_z_slice([0], data_basis_1000m.reshape(-1), coords)
