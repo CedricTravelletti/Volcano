@@ -9,8 +9,11 @@ torch.set_num_threads(8)
 gpu = torch.device('cuda:0')
 cpu = torch.device('cpu')
 
+from timeit import default_timer as timer
 
-def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200):
+
+def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
+        n_flush=50):
     """ Compute the covariance pushforward.
 
     The covariance pushforward is just KF^T, where K is the model
@@ -29,12 +32,19 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200):
     n_chunks: int
         Number of chunks to split the matrix into.
         Default is 200. Increase if get OOM errors.
+    n_flush: int
+        Synchronize threads and flush GPU cache every *n_flush* iterations.
+        This is necessary to avoid OOM errors.
+        Default is 50.
 
     Returns
     -------
     Tensor
         n_model * n_data covariance pushforward K F^t.
     """
+    start = timer()
+
+
     # Transfer everything to device.
     lambda0 = torch.tensor(lambda0, requires_grad=False).to(device)
     F = F.to(device)
@@ -42,6 +52,7 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200):
 
     inv_lambda2 = - 1 / (2 * lambda0**2)
     n_dims = 3
+    n_model = F.shape[1]
 
     # Array to hold the results. We will compute line by line and concatenate.
     tot = torch.Tensor().to(device)
@@ -52,7 +63,7 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200):
     # concatenate.
     for i, x in enumerate(torch.chunk(cells_coords, chunks=n_chunks, dim=0)):
         # Empty cache every so often. Otherwise we get out of memory errors.
-        if i % 50 == 0:
+        if i % n_flush == 0:
             torch.cuda.synchronize()
             torch.cuda.empty_cache()
 
@@ -71,6 +82,10 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200):
     torch.cuda.empty_cache()
 
     # Send back to CPU.
+
+    end = timer()
+    print((end - start)/60.0)
+
     return tot.cpu()
 
 def compute_K_d(lambda0, F, cells_coords, device, n_chunks=200):
@@ -98,6 +113,8 @@ def compute_K_d(lambda0, F, cells_coords, device, n_chunks=200):
     Tensor
         n_model * n_data covariance pushforward K F^t.
     """
+    start = timer()
+
     # Transfer everything to device.
     lambda0 = torch.tensor(lambda0, requires_grad=False).to(device)
     F = F.to(device)
@@ -137,4 +154,8 @@ def compute_K_d(lambda0, F, cells_coords, device, n_chunks=200):
     torch.cuda.empty_cache()
 
     # Send back to CPU.
+
+    end = timer()
+    print((end - start)/60.0)
+
     return tot.cpu()
