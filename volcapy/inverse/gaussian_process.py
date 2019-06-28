@@ -45,6 +45,8 @@ product once and for all. We call it the *covariance pushforward*.
 
 """
 import torch
+gpu = torch.device('cuda:0')
+cpu = torch.device('cpu')
 
 
 class GaussianProcess(torch.nn.Module):
@@ -70,32 +72,48 @@ class GaussianProcess(torch.nn.Module):
         self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0_init))
 
         # Sizes
-        n_model = F.shape[1]
-        n_data = F.shape[0]
+        self.n_model = F.shape[1]
+        self.n_data = F.shape[0]
 
         # Prior mean (vector) on the data side.
-        self.mu0_d_stripped = torch.mm(F, torch.ones((n_model, 1)))
+        self.mu0_d_stripped = torch.mm(F, torch.ones((self.n_model, 1)))
 
         self.d_obs = d_obs
         self.data_cov = data_cov
 
         # Identity vector. Need for concentration.
-        self.I_d = torch.ones((n_data, 1), dtype=torch.float32)
+        self.I_d = torch.ones((self.n_data, 1), dtype=torch.float32)
 
-    def neg_log_likelihood(self, log_det):
-        """ Computes the negative log-likelihood of the current state of the
-        model.
+    def to_device(self, device):
+        """ Transfer all model attributes to the given device.
+        Can be used to switch between cpu and gpu.
 
         Parameters
         ----------
-        log_det: float Tensor
-            Log det term of the log likelihood:  - log det R^-1.
+        device: torch.Device
+
+        """
+        self.sigma0 = self.sigma0.to(device)
+        self.mu0_d_stripped = self.mu0_d_stripped.to(device)
+        self.d_obs = self.d_obs.to(device)
+        self.data_cov = self.data_cov.to(device)
+        self.I_d = self.I_d.to(device)
+
+    def neg_log_likelihood(self):
+        """ Computes the negative log-likelihood of the current state of the
+        model.
+        Note that this function should be called AFTER having run a
+        conditioning, since it depends on the inversion operator computed
+        there.
 
         Returns
         -------
         float
 
         """
+        # Need to do it this way, otherwise rounding errors kill everything.
+        log_det = - torch.logdet(self.inversion_operator)
+
         nll = torch.add(
                 log_det,
                 torch.mm(
@@ -147,9 +165,6 @@ class GaussianProcess(torch.nn.Module):
         # Compute inversion operator and store once and for all.
         self.inversion_operator = torch.inverse(inv_inversion_operator)
 
-        # Need to do it this way, otherwise rounding errors kill everything.
-        log_det = - torch.logdet(self.inversion_operator)
-
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
             m0 = self.concentrate_m0()
@@ -163,6 +178,8 @@ class GaussianProcess(torch.nn.Module):
         mu_post_d = torch.add(
                 self.mu0_d,
                 torch.mm(sigma0**2 * K_d, weights))
+        # Store in case.
+        self.mu_post_d = mu_post_d
 
         return mu_post_d
 
@@ -198,16 +215,13 @@ class GaussianProcess(torch.nn.Module):
         # Compute inversion operator and store once and for all.
         self.inversion_operator = torch.inverse(inv_inversion_operator)
 
-        # Need to do it this way, otherwise rounding errors kill everything.
-        log_det = - torch.logdet(self.inversion_operator)
-
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
             m0 = self.concentrate_m0()
 
         # Prior mean for data and model.
         self.mu0_d = m0 * self.mu0_d_stripped
-        self.mu0_m = m0 * torch.ones((n_model, 1))
+        self.mu0_m = m0 * torch.ones((self.n_model, 1))
 
         # Store m0 in case we want to print it later.
         self.m0 = m0
@@ -252,11 +266,8 @@ class GaussianProcess(torch.nn.Module):
 
         """
         # Send everything to the correct device.
-        self.sigma0 = self.sigma0.to(device)
-        self.mu0_d_stripped = self.mu0_d_stripped.to(device)
-        self.d_obs = self.d_obs.to(device)
-        self.data_cov = self.data_cov.to(device)
-        self.I_d = self.I_d.to(device)
+        self.to_device(device)
+        K_d = K_d.to(device)
 
         # Initialize sigma0.
         if sigma0_init is not None:
@@ -266,8 +277,8 @@ class GaussianProcess(torch.nn.Module):
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
-            m_posterior_d = model(K_d, self.sigma0, concentrate=True)
-            log_likelihood = model.log_likelihood()
+            m_posterior_d = self.condition_data(K_d, self.sigma0, concentrate=True)
+            log_likelihood = self.neg_log_likelihood()
 
             # Zero gradients, perform a backward pass,
             # and update the weights.
@@ -278,12 +289,15 @@ class GaussianProcess(torch.nn.Module):
             # Periodically print informations.
             if epoch % 100 == 0:
                 # Compute train error.
-                train_RMSE = model.train_RMSE()
+                train_RMSE = self.train_RMSE()
                 logger.info("Log-likelihood: {}".format(log_likelihood.item()))
-                logger.info("RMSE train error: {}".format(train_error.item()))
+                logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
         logger.info("Log-likelihood: {}".format(log_likelihood.item()))
-        logger.info("RMSE train error: {}".format(train_error.item()))
+        logger.info("RMSE train error: {}".format(train_RMSE.item()))
+
+        # Send everything back to cpu.
+        self.to_device(cpu)
 
         return
 

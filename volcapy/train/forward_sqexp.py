@@ -17,9 +17,11 @@ logger = logging.getLogger(__name__)
 
 # Now torch in da place.
 import torch
-torch.set_num_threads(4)
-# Choose between CPU and GPU.
-device = torch.device('cuda:0')
+
+# General torch settings and devices.
+torch.set_num_threads(8)
+gpu = torch.device('cuda:0')
+cpu = torch.device('cpu')
 
 # ----------------------------------------------------------------------------#
 #      LOAD NIKLAS DATA
@@ -45,8 +47,8 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 100.0
-m0 = 2000.0
+sigma0_init = 200.0
+m0 = 2200.0
 lambda0 = 200.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
@@ -64,21 +66,24 @@ def main(out_folder, lambda0, sigma0):
     # Create the covariance pushforward.
     cov_pushfwd = cl.compute_cov_pushforward(
             lambda0, F, cells_coords, gpu, n_chunks=200,
-            n_flush=50):
+            n_flush=50)
 
     # Once finished, run a forward pass.
-    m_post_m, m_post_d = myGP.forward_model(
+    m_post_m, m_post_d = myGP.condition_model(
             cov_pushfwd, F, sigma0, concentrate=True)
 
     # Compute train_error
-    train_error = model.train_error()
+    train_error = myGP.train_RMSE()
 
     logger.info("Train error: {}".format(train_error.item()))
 
     # Compute LOOCV RMSE.
-    loocv_rmse = model.loo_error()
+    loocv_rmse = myGP.loo_error()
     logger.info("LOOCV error: {}".format(loocv_rmse.item()))
 
     # Save
-    # filename = "m_post_" + str(lambda0) + "_matern.npy"
-    # np.save(os.path.join(out_folder, filename), m_post_m)
+    filename = "m_post_" + str(lambda0) + "_sqexp.npy"
+    np.save(os.path.join(out_folder, filename), m_post_m)
+
+if __name__ == "__main__":
+    main(out_folder, lambda0, sigma0_init)

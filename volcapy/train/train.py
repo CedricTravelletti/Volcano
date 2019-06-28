@@ -17,9 +17,11 @@ logger = logging.getLogger(__name__)
 
 # Now torch in da place.
 import torch
+
+# General torch settings and devices.
 torch.set_num_threads(8)
-# Choose between CPU and GPU.
-device = torch.device('cuda:0')
+gpu = torch.device('cuda:0')
+cpu = torch.device('cpu')
 
 # ----------------------------------------------------------------------------#
 #      LOAD NIKLAS DATA
@@ -85,7 +87,6 @@ n_epochs_long = 20000
 from timeit import default_timer as timer
 start = timer()
 
-model = model.cuda()
 # Create the GP model.
 myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init)
 myGP.cuda()
@@ -96,7 +97,7 @@ for i, lambda0 in enumerate(lambda0s):
     # Compute the compute_covariance_pushforward and data-side covariance matrix
     cov_pushfwd = cl.compute_cov_pushforward(
             lambda0, F, cells_coords, gpu, n_chunks=200,
-            n_flush=50):
+            n_flush=50)
     K_d = torch.mm(F, cov_pushfwd)
     
     # Perform the first training in full.
@@ -108,7 +109,10 @@ for i, lambda0 in enumerate(lambda0s):
     else: n_epochs = n_epochs_long
 
     # Run gradient descent.
-    myGP.optimize(K_d, n_epochs, device, logger, sigma0_init=None, lr=0.007)
+    myGP.optimize(K_d, n_epochs, gpu, logger, sigma0_init=None, lr=0.1)
+
+    # Send everything back to cpu.
+    myGP.to_device(cpu)
         
     # Once finished, run a forward pass.
     m_post_d = myGP.condition_data(K_d, sigma0=myGP.sigma0, concentrate=True)
