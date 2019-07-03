@@ -79,8 +79,8 @@ sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 # on sigma0). The next lambda0s will have optimal sigma0s that vary
 # continouslty, hence we can initialize with the last optimal sigma0 and train
 # for a shorter time.
-n_epochs_short = 10000
-n_epochs_long = 20000
+n_epochs_short = 6000
+n_epochs_long = 15000
 
 # Run gradient descent for every lambda0.
 from timeit import default_timer as timer
@@ -127,6 +127,16 @@ for i, lambda0 in enumerate(lambda0s):
     loocv_rmses[i] = loocv_rmse.item()
     m0s[i] = myGP.m0
     sigma0s[i] = myGP.sigma0.item()
+
+    # Save results every 5 iterations.
+    if i % 5 == 0:
+        logger.info("Saving at lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
+        np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
+        np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)
+        np.save(os.path.join(out_folder, "loocv_rmses_train.npy"), loocv_rmses)
+        np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
+        np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
+        np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
 
 logger.info("Elapsed time:")
 end = timer()
