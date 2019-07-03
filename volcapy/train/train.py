@@ -65,11 +65,12 @@ lambda0_stop = 2000.0
 lambda0_step = 30.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
-print("Number of lambda0s: {}".format(n_lambda0s))
+logger.info("Number of lambda0s: {}".format(n_lambda0s))
 
 # Arrays to save the results.
 lls = np.zeros((n_lambda0s), dtype=np.float32)
 train_rmses = np.zeros((n_lambda0s), dtype=np.float32)
+loocv_rmses = np.zeros((n_lambda0s), dtype=np.float32)
 m0s = np.zeros((n_lambda0s), dtype=np.float32)
 sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 
@@ -90,7 +91,7 @@ myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init)
 myGP.cuda()
 
 for i, lambda0 in enumerate(lambda0s):
-    print("Current lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
+    logger.info("Current lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
 
     # Compute the compute_covariance_pushforward and data-side covariance matrix
     cov_pushfwd = cl.compute_cov_pushforward(
@@ -118,7 +119,7 @@ for i, lambda0 in enumerate(lambda0s):
     ll = myGP.neg_log_likelihood()
 
     # Compute LOOCV RMSE.
-    loocv_rmse = model.loo_error()
+    loocv_rmse = myGP.loo_error()
 
     # Save the final ll, train/test error and hyperparams for each lambda.
     lls[i] = ll.item()
@@ -127,9 +128,9 @@ for i, lambda0 in enumerate(lambda0s):
     m0s[i] = myGP.m0
     sigma0s[i] = myGP.sigma0.item()
 
-print("Elapsed time:")
+logger.info("Elapsed time:")
 end = timer()
-print(end - start)
+logger.info(end - start)
 # When everything done, save everything.
 logger.info("Finished. Saving results")
 np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
