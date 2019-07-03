@@ -72,6 +72,11 @@ def main(out_folder, lambda0, sigma0):
     m_post_m, m_post_d = myGP.condition_model(
             cov_pushfwd, F, sigma0, concentrate=True)
 
+    # Compute diagonal of posterior covariance.
+    post_cov_diag = myGP.compute_post_cov_diag(
+            cov_pushfwd, cells_coords, lambda0, sigma0)
+
+
     # Compute train_error
     train_error = myGP.train_RMSE()
 
@@ -84,6 +89,9 @@ def main(out_folder, lambda0, sigma0):
     # Save
     filename = "m_post_" + str(lambda0) + "_sqexp.npy"
     np.save(os.path.join(out_folder, filename), m_post_m)
+
+    filename = "post_cov_diag" + str(lambda0) + "_sqexp.npy"
+    np.save(os.path.join(out_folder, filename), post_cov_diag)
 
 if __name__ == "__main__":
     main(out_folder, lambda0, sigma0_init)

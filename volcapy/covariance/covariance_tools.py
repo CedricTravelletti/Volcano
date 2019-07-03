@@ -122,6 +122,6 @@ def compute_cov(lambda0, cells_coords, i, j):
     # Squared euclidean distance.
     d_2 = torch.pow(
             cells_coords[i, :] - cells_coords[j, :]
-            , 2).sum(2)
+            , 2).sum()
 
     return torch.exp(inv_lambda2 * d_2)

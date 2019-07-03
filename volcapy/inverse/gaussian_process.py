@@ -44,6 +44,8 @@ it only shows up in the form K * F^t. It is thus sufficient to compute this
 product once and for all. We call it the *covariance pushforward*.
 
 """
+import volcapy.covariance.covariance_tools as cl
+import numpy as np
 import torch
 gpu = torch.device('cuda:0')
 cpu = torch.device('cpu')
@@ -324,13 +326,24 @@ class GaussianProcess(torch.nn.Module):
         post_cov
 
         """
-        cov = compute_cov(lambda0, cells_coords, i, j)
+        cov = cl.compute_cov(lambda0, cells_coords, i, j)
         post_cov = sigma0**2 * (cov -
                 torch.mm(
-                    cov_pushfwd[i, :],
-                    torch.mm(self.inversion_operator, cov_pushfwd[j, :].t())))
+                    cov_pushfwd[i, :].reshape(1, -1),
+                    torch.mm(
+                        self.inversion_operator, cov_pushfwd[j, :].reshape(-1, 1))))
 
         return post_cov
+
+    def compute_post_cov_diag(self, cov_pushfwd, cells_coords, lambda0, sigma0):
+        n_cells = cells_coords.shape[0]
+        post_cov_diag = np.zeros(n_cells)
+
+        for i in range(n_cells):
+            post_cov_diag[i] = self.post_cov(
+                    cov_pushfwd, cells_coords, lambda0, sigma0, i, i)
+
+        return post_cov_diag
 
     def loo_predict(self, loo_ind):
         """ Leave one out krigging prediction.
