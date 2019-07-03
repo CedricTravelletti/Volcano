@@ -93,7 +93,7 @@ class GaussianProcess(torch.nn.Module):
         device: torch.Device
 
         """
-        self.sigma0 = self.sigma0.to(device)
+        self.sigma0 = torch.nn.Parameter(self.sigma0.to(device))
         self.mu0_d_stripped = self.mu0_d_stripped.to(device)
         self.d_obs = self.d_obs.to(device)
         self.data_cov = self.data_cov.to(device)
