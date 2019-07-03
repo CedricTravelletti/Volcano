@@ -1,6 +1,10 @@
 """ Tools to compute covariance matrix (data side) and covariance pushforward,
 on GPU.
 
+IMPORTANT: Note that we always strip the variance parameter sigma0 from the
+covariance matrix. Hence, when using the covariance pushforward computed here,
+one has to manually multiply by sigma0^2 for expressions to make sense.
+
 """
 import torch
 
@@ -18,6 +22,9 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
 
     The covariance pushforward is just KF^T, where K is the model
     covariance matrix.
+
+    Note that the sigam0^2 is not included, and one has to manually add it when
+    using the covariance pushforward computed here.
 
     Parameters
     ----------
@@ -78,12 +85,43 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
                     torch.exp(inv_lambda2 * d_2)
                     , F.t())))
 
+    # Wait for all threads to complete.
     torch.cuda.synchronize()
     torch.cuda.empty_cache()
-
-    # Send back to CPU.
 
     end = timer()
     print((end - start)/60.0)
 
     return tot.cpu()
+
+def compute_cov(lambda0, cells_coords, i, j):
+    """ Compute the covariance between two points.
+
+    Note that, as always, sigma0 has been stripped.
+
+    Parameters
+    ----------
+    lambda0: float
+        Lenght-scale parameter
+    cells_coords: tensor
+        n_cells * n_dims: cells coordinates
+    i: int
+        Index of first cell (index in the cells_coords array).
+    j: int
+        Index of second cell.
+
+    Returns
+    -------
+    Tensor
+        (Stripped) covariance between cell nr i and cell nr j.
+    """
+    # Convert to torch.
+    lambda0 = torch.tensor(lambda0, requires_grad=False)
+    inv_lambda2 = - 1 / (2 * lambda0**2)
+
+    # Squared euclidean distance.
+    d_2 = torch.pow(
+            cells_coords[i, :] - cells_coords[j, :]
+            , 2).sum(2)
+
+    return torch.exp(inv_lambda2 * d_2)

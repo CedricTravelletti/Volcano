@@ -301,6 +301,37 @@ class GaussianProcess(torch.nn.Module):
 
         return
 
+    def post_cov(self, cov_pushfwd, cells_coords, lambda0, sigma0, i, j):
+        """ Condition model on the model side.
+
+        Parameters
+        ----------
+        cov_pushfwd
+            Pushforwarded covariance matrix, i.e. K F^T
+        cells_coords: tensor
+            n_cells * n_dims: cells coordinates
+        lambda0: float
+            Lenght-scale parameter
+        sigma0: float
+            Prior variance.
+        i: int
+            Index of first cell (index in the cells_coords array).
+        j: int
+            Index of second cell.
+
+        Returns
+        -------
+        post_cov
+
+        """
+        cov = compute_cov(lambda0, cells_coords, i, j)
+        post_cov = sigma0**2 * (cov -
+                torch.mm(
+                    cov_pushfwd[i, :],
+                    torch.mm(self.inversion_operator, cov_pushfwd[j, :].t())))
+
+        return post_cov
+
     def loo_predict(self, loo_ind):
         """ Leave one out krigging prediction.
 
