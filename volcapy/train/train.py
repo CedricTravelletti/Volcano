@@ -48,8 +48,6 @@ del(inverseProblem)
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
 sigma0_init = 100.0
-m0 = 2000.0
-lambda0 = 200.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -62,9 +60,9 @@ out_folder = "/idiap/temp/ctravelletti/out/train/"
 # Train multiple lambdas
 # ---------------------------------------------------
 # Range for the grid search.
-lambda0_start = 1005.0
-lambda0_stop = 1400.0
-lambda0_step = 50.0
+lambda0_start = 2.0
+lambda0_stop = 2000.0
+lambda0_step = 30.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
 print("Number of lambda0s: {}".format(n_lambda0s))
