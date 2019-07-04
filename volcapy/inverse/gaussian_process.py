@@ -121,8 +121,14 @@ class GaussianProcess(torch.nn.Module):
 
         """
         # Need to do it this way, otherwise rounding errors kill everything.
-        log_det = (- torch.logdet(self.sigma0**2 * self.inversion_operator)
-            + 2 * torch.log(self.sigma0))
+        """
+        log_det = (
+                - torch.logdet(self.stripped_inv)
+                + 2 * torch.log(self.sigma0))
+        """
+        # Note that for some reason, the above doesnt work the same.
+        # We should really check the implementation of logdet.
+        log_det = - torch.logdet(self.inversion_operator)
 
         nll = torch.add(
                 log_det,
@@ -174,9 +180,12 @@ class GaussianProcess(torch.nn.Module):
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones, K_d)
 
+        # Store for the logdet. Should refactor later.
+        self.stripped_inv = torch.inverse(inv_inversion_operator)
+
         # Compute inversion operator and store once and for all.
         self.inversion_operator = (
-                (1 / sigma0**2) * torch.inverse(inv_inversion_operator))
+                (1 / sigma0**2) * self.stripped_inv)
 
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
@@ -228,9 +237,12 @@ class GaussianProcess(torch.nn.Module):
                         NtV * self.data_ones,
                         torch.mm(F, cov_pushfwd))
 
+        # Store for the logdet. Should refactor later.
+        self.stripped_inv = torch.inverse(inv_inversion_operator)
+
         # Compute inversion operator and store once and for all.
         self.inversion_operator = (
-                (1 / sigma0**2) * torch.inverse(inv_inversion_operator))
+                (1 / sigma0**2) * self.stripped_inv)
 
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
@@ -307,6 +319,7 @@ class GaussianProcess(torch.nn.Module):
             if epoch % 100 == 0:
                 # Compute train error.
                 train_RMSE = self.train_RMSE()
+                logger.info("sigma0: {}".format(self.sigma0.item()))
                 logger.info("Log-likelihood: {}".format(log_likelihood.item()))
                 logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
