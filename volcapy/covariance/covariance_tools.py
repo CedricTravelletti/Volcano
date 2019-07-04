@@ -70,7 +70,7 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
     # concatenate.
     for i, x in enumerate(torch.chunk(cells_coords, chunks=n_chunks, dim=0)):
         # Empty cache every so often. Otherwise we get out of memory errors.
-        if i % n_flush == 0:
+        if i % n_flush == 0 and torch.cuda.is_available():
             torch.cuda.synchronize()
             torch.cuda.empty_cache()
 
@@ -86,8 +86,9 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
                     , F.t())))
 
     # Wait for all threads to complete.
-    torch.cuda.synchronize()
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
 
     end = timer()
     print((end - start)/60.0)
