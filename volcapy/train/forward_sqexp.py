@@ -76,7 +76,6 @@ def main(out_folder, lambda0, sigma0):
     post_cov_diag = myGP.compute_post_cov_diag(
             cov_pushfwd, cells_coords, lambda0, sigma0)
 
-
     # Compute train_error
     train_error = myGP.train_RMSE()
 
@@ -92,6 +91,9 @@ def main(out_folder, lambda0, sigma0):
 
     filename = "post_cov_diag" + str(lambda0) + "_sqexp.npy"
     np.save(os.path.join(out_folder, filename), post_cov_diag)
+
+    filename = "cov_pushfwd" + str(lambda0) + "_sqexp.npy"
+    np.save(os.path.join(out_folder, filename), cov_pushfwd)
 
 if __name__ == "__main__":
     main(out_folder, lambda0, sigma0_init)
