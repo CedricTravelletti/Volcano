@@ -38,7 +38,7 @@ F = torch.as_tensor(inverseProblem.forward).detach()
 # Careful: we have to make a column vector here.
 data_std = 0.1
 d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
-data_cov = torch.mul(data_std**2, torch.eye(n_data))
+data_cov = torch.eye(n_data)
 cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
 del(inverseProblem)
 # ----------------------------------------------------------------------------#
@@ -47,7 +47,7 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 100.0
+sigma0_init = 50.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -61,8 +61,8 @@ out_folder = "/idiap/temp/ctravelletti/out/train/"
 # ---------------------------------------------------
 # Range for the grid search.
 lambda0_start = 2.0
-lambda0_stop = 2000.0
-lambda0_step = 30.0
+lambda0_stop = 600.0
+lambda0_step = 20.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
 logger.info("Number of lambda0s: {}".format(n_lambda0s))
@@ -79,8 +79,8 @@ sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 # on sigma0). The next lambda0s will have optimal sigma0s that vary
 # continouslty, hence we can initialize with the last optimal sigma0 and train
 # for a shorter time.
-n_epochs_short = 6000
-n_epochs_long = 15000
+n_epochs_short = 4000
+n_epochs_long = 10000
 
 # Run gradient descent for every lambda0.
 from timeit import default_timer as timer
@@ -108,7 +108,7 @@ for i, lambda0 in enumerate(lambda0s):
     else: n_epochs = n_epochs_long
 
     # Run gradient descent.
-    myGP.optimize(K_d, n_epochs, gpu, logger, sigma0_init=None, lr=0.1)
+    myGP.optimize(K_d, n_epochs, gpu, logger, sigma0_init=None, lr=0.5)
 
     # Send everything back to cpu.
     myGP.to_device(cpu)
@@ -129,7 +129,7 @@ for i, lambda0 in enumerate(lambda0s):
     sigma0s[i] = myGP.sigma0.item()
 
     # Save results every 5 iterations.
-    if i % 5 == 0:
+    if i % 4 == 0:
         logger.info("Saving at lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
         np.save(os.path.join(out_folder, "log_likelihoods_train.npy"), lls)
         np.save(os.path.join(out_folder, "train_rmses_train.npy"), train_rmses)

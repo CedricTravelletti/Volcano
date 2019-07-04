@@ -51,8 +51,15 @@ gpu = torch.device('cuda:0')
 cpu = torch.device('cpu')
 
 
+# Noise to Variance ratio.
+# NtV = (0.001)**2
+
+# Data standard deviation.
+epsilon = 0.1
+
+
 class GaussianProcess(torch.nn.Module):
-    def __init__(self, F, d_obs, data_cov, sigma0_init):
+    def __init__(self, F, d_obs, data_ones, sigma0_init):
         """
 
         Parameters
@@ -61,7 +68,7 @@ class GaussianProcess(torch.nn.Module):
             Forward operator matrix
         d_obs
             Observed data vector.
-        data_cov
+        data_one
             Data (observations) covariance matrix.
         sigma0_init
             Original value of the sigma0 parameter to use when starting
@@ -81,7 +88,7 @@ class GaussianProcess(torch.nn.Module):
         self.mu0_d_stripped = torch.mm(F, torch.ones((self.n_model, 1)))
 
         self.d_obs = d_obs
-        self.data_cov = data_cov
+        self.data_ones = data_ones
 
         # Identity vector. Need for concentration.
         self.I_d = torch.ones((self.n_data, 1), dtype=torch.float32)
@@ -98,7 +105,7 @@ class GaussianProcess(torch.nn.Module):
         self.sigma0 = torch.nn.Parameter(self.sigma0.to(device))
         self.mu0_d_stripped = self.mu0_d_stripped.to(device)
         self.d_obs = self.d_obs.to(device)
-        self.data_cov = self.data_cov.to(device)
+        self.data_ones = self.data_ones.to(device)
         self.I_d = self.I_d.to(device)
 
     def neg_log_likelihood(self):
@@ -114,6 +121,13 @@ class GaussianProcess(torch.nn.Module):
 
         """
         # Need to do it this way, otherwise rounding errors kill everything.
+        """
+        log_det = (
+                - torch.logdet(self.stripped_inv)
+                + 2 * torch.log(self.sigma0))
+        """
+        # Note that for some reason, the above doesnt work the same.
+        # We should really check the implementation of logdet.
         log_det = - torch.logdet(self.inversion_operator)
 
         nll = torch.add(
@@ -160,12 +174,18 @@ class GaussianProcess(torch.nn.Module):
             Posterior mean data vector
 
         """
+        # Noise to Variance ratio.
+        NtV = (epsilon / sigma0)**2
+
         inv_inversion_operator = torch.add(
-                        self.data_cov,
-                        sigma0**2 * K_d)
+                        NtV * self.data_ones, K_d)
+
+        # Store for the logdet. Should refactor later.
+        self.stripped_inv = torch.inverse(inv_inversion_operator)
 
         # Compute inversion operator and store once and for all.
-        self.inversion_operator = torch.inverse(inv_inversion_operator)
+        self.inversion_operator = (
+                (1 / sigma0**2) * self.stripped_inv)
 
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
@@ -210,12 +230,19 @@ class GaussianProcess(torch.nn.Module):
             Posterior mean data vector
 
         """
+        # Noise to Variance ratio.
+        NtV = (epsilon / sigma0)**2
+
         inv_inversion_operator = torch.add(
-                        self.data_cov,
-                        sigma0**2 * torch.mm(F, cov_pushfwd))
+                        NtV * self.data_ones,
+                        torch.mm(F, cov_pushfwd))
+
+        # Store for the logdet. Should refactor later.
+        self.stripped_inv = torch.inverse(inv_inversion_operator)
 
         # Compute inversion operator and store once and for all.
-        self.inversion_operator = torch.inverse(inv_inversion_operator)
+        self.inversion_operator = (
+                (1 / sigma0**2) * self.stripped_inv)
 
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
@@ -292,6 +319,7 @@ class GaussianProcess(torch.nn.Module):
             if epoch % 100 == 0:
                 # Compute train error.
                 train_RMSE = self.train_RMSE()
+                logger.info("sigma0: {}".format(self.sigma0.item()))
                 logger.info("Log-likelihood: {}".format(log_likelihood.item()))
                 logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
@@ -436,8 +464,11 @@ class GaussianProcess(torch.nn.Module):
             Condition number of the inversion matrix R.
 
         """
+        # Noise to Variance ratio.
+        NtV = (epsilon / sigma0)**2
+
         inv_inversion_operator = torch.add(
-                        self.data_cov,
-                        sigma0**2 * torch.mm(F, cov_pushfwd))
+                        NtV * self.data_ones,
+                        torch.mm(F, cov_pushfwd))
 
         return np.linalg.cond(inv_inversion_operator.detach().numpy())
