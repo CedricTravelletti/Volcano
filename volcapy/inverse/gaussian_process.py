@@ -415,3 +415,29 @@ class GaussianProcess(torch.nn.Module):
         """
         return torch.sqrt(torch.mean(
             (self.d_obs - self.mu_post_d)**2))
+
+    def condition_number(self, cov_pushfwd, F, sigma0):
+        """ Compute condition number of the inversion matrix R.
+
+        Used to detect numerical instability.
+
+        Parameters
+        ----------
+        cov_pushfwd
+            Pushforwarded covariance matrix, i.e. K F^T
+        F
+            Forward operator
+        sigma0
+            Standard deviation parameter for the kernel.
+
+        Returns
+        -------
+        float
+            Condition number of the inversion matrix R.
+
+        """
+        inv_inversion_operator = torch.add(
+                        self.data_cov,
+                        sigma0**2 * torch.mm(F, cov_pushfwd))
+
+        return np.linalg.cond(inv_inversion_operator.detach().numpy())
