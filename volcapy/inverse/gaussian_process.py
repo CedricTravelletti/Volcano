@@ -143,7 +143,7 @@ class GaussianProcess(torch.nn.Module):
         Note that the inversion operator should have been updated first.
 
         """
-        conc_m0_cond = torch.mm(
+        conc_m0 = torch.mm(
                 torch.inverse(
                     torch.mm(
                         torch.mm(self.mu0_d_stripped.t(), self.stripped_inv),
