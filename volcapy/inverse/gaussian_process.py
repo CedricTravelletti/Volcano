@@ -68,7 +68,7 @@ class GaussianProcess(torch.nn.Module):
             Forward operator matrix
         d_obs
             Observed data vector.
-        data_one
+        data_ones
             Data (observations) covariance matrix.
         sigma0_init
             Original value of the sigma0 parameter to use when starting
@@ -88,7 +88,7 @@ class GaussianProcess(torch.nn.Module):
         self.mu0_d_stripped = torch.mm(F, torch.ones((self.n_model, 1)))
 
         self.d_obs = d_obs
-        self.data_ones = data_ones
+        self.data_ones = torch.ones((self.n_data, self.n_data))
 
         # Identity vector. Need for concentration.
         self.I_d = torch.ones((self.n_data, 1), dtype=torch.float32)
