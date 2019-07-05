@@ -88,7 +88,7 @@ class GaussianProcess(torch.nn.Module):
         self.mu0_d_stripped = torch.mm(F, torch.ones((self.n_model, 1)))
 
         self.d_obs = d_obs
-        self.data_ones = torch.ones((self.n_data, self.n_data))
+        self.data_ones = torch.eye(self.n_data)
 
         # Identity vector. Need for concentration.
         self.I_d = torch.ones((self.n_data, 1), dtype=torch.float32)
@@ -143,6 +143,7 @@ class GaussianProcess(torch.nn.Module):
         Note that the inversion operator should have been updated first.
 
         """
+        """
         conc_m0 = torch.mm(
                 torch.inverse(
                     torch.mm(
@@ -151,7 +152,16 @@ class GaussianProcess(torch.nn.Module):
                 torch.mm(
                     self.mu0_d_stripped.t(),
                     torch.mm(self.inversion_operator, self.d_obs)))
-        return conc_m0
+        """
+        conc_m0 = torch.mm(
+                torch.inverse(
+                    torch.mm(
+                        torch.mm(self.mu0_d_stripped.t(), self.stripped_inv),
+                        self.mu0_d_stripped)),
+                torch.mm(
+                    self.mu0_d_stripped.t(),
+                    torch.mm(self.stripped_inv, self.d_obs)))
+        return (1 / self.sigma0**4) * conc_m0
 
     def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False):
         """ Condition model on the data side.
