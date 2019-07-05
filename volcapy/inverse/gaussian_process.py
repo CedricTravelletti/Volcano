@@ -143,7 +143,6 @@ class GaussianProcess(torch.nn.Module):
         Note that the inversion operator should have been updated first.
 
         """
-        """
         conc_m0 = torch.mm(
                 torch.inverse(
                     torch.mm(
@@ -152,16 +151,8 @@ class GaussianProcess(torch.nn.Module):
                 torch.mm(
                     self.mu0_d_stripped.t(),
                     torch.mm(self.inversion_operator, self.d_obs)))
-        """
-        conc_m0 = torch.mm(
-                torch.inverse(
-                    torch.mm(
-                        torch.mm(self.mu0_d_stripped.t(), self.stripped_inv),
-                        self.mu0_d_stripped)),
-                torch.mm(
-                    self.mu0_d_stripped.t(),
-                    torch.mm(self.stripped_inv, self.d_obs)))
-        return (1 / self.sigma0**4) * conc_m0
+
+        return conc_m0
 
     def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False):
         """ Condition model on the data side.
@@ -277,7 +268,7 @@ class GaussianProcess(torch.nn.Module):
                 self.mu0_m,
                 torch.mm(sigma0**2 * cov_pushfwd, weights))
 
-        return self.mu_post_m, self.mu_post_d
+        return self.mu_post_m.detach(), self.mu_post_d
 
     def optimize(self, K_d, n_epochs, device, logger, sigma0_init=None, lr=0.007):
         """ Given lambda0, optimize the two remaining hyperparams via MLE.
