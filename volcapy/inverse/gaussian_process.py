@@ -132,9 +132,9 @@ class GaussianProcess(torch.nn.Module):
 
         nll = torch.add(
                 log_det,
-                torch.mm(
+                (1 / self.sigma0**2) * torch.mm(
                       self.prior_misfit.t(),
-                      torch.mm(self.inversion_operator, self.prior_misfit)))
+                      torch.mm(self.stripped_inv, self.prior_misfit)))
         return nll
 
     def concentrate_m0(self):
@@ -143,14 +143,16 @@ class GaussianProcess(torch.nn.Module):
         Note that the inversion operator should have been updated first.
 
         """
-        conc_m0 = torch.mm(
+        a = 
+
+        conc_m0_cond = torch.mm(
                 torch.inverse(
                     torch.mm(
-                        torch.mm(self.mu0_d_stripped.t(), self.inversion_operator),
+                        torch.mm(self.mu0_d_stripped.t(), self.stripped_inv),
                         self.mu0_d_stripped)),
                 torch.mm(
                     self.mu0_d_stripped.t(),
-                    torch.mm(self.inversion_operator, self.d_obs)))
+                    torch.mm(self.stripped_inv, self.d_obs)))
 
         return conc_m0
 
