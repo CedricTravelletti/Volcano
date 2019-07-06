@@ -154,7 +154,8 @@ class GaussianProcess(torch.nn.Module):
 
         return conc_m0
 
-    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False, NtV=-1.0):
+    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False,
+            NtV_crit=-1.0):
         """ Condition model on the data side.
 
         Parameters
@@ -168,10 +169,10 @@ class GaussianProcess(torch.nn.Module):
         concentrate
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
-        NtV:
-            Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
+        NtV_crit:
+            Critical Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
             numerical instability in the matrix inversion.
-            Default value is -1, which means it wont be used.
+            If provided, will not allow to go below the critical value.
 
         Returns
         -------
@@ -181,8 +182,9 @@ class GaussianProcess(torch.nn.Module):
         """
         # Noise to Variance ratio.
         # If not specified, then do not modify it.
-        if NtV <= 0.0:
-            NtV = (epsilon / sigma0)**2
+        NtV = (epsilon / sigma0)**2
+        if NtV < NtV_crit:
+            NtV = NtV_crit
 
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones, K_d)
@@ -212,7 +214,8 @@ class GaussianProcess(torch.nn.Module):
 
         return mu_post_d
 
-    def condition_model(self, cov_pushfwd, F, sigma0, m0=0.1, concentrate=False):
+    def condition_model(self, cov_pushfwd, F, sigma0, m0=0.1,
+            concentrate=False, NtV_crit=-1.0):
         """ Condition model on the model side.
 
         Parameters
@@ -228,10 +231,10 @@ class GaussianProcess(torch.nn.Module):
         concentrate
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
-        NtV:
-            Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
+        NtV_crit:
+            Critical Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
             numerical instability in the matrix inversion.
-            Default value is -1, which means it wont be used.
+            If provided, will not allow to go below the critical value.
 
         Returns
         -------
@@ -243,8 +246,9 @@ class GaussianProcess(torch.nn.Module):
         """
         # Noise to Variance ratio.
         # If not specified, then do not modify it.
-        if NtV <= 0.0:
-            NtV = (epsilon / sigma0)**2
+        NtV = (epsilon / sigma0)**2
+        if NtV < NtV_crit:
+            NtV = NtV_crit
 
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones,
@@ -282,7 +286,8 @@ class GaussianProcess(torch.nn.Module):
 
         return self.mu_post_m.detach(), self.mu_post_d
 
-    def optimize(self, K_d, n_epochs, device, logger, sigma0_init=None, lr=0.007):
+    def optimize(self, K_d, n_epochs, device, logger, sigma0_init=None,
+            lr=0.007, NtV_crit=-1.0):
         """ Given lambda0, optimize the two remaining hyperparams via MLE.
         Here, instead of giving lambda0, we give a (stripped) covariance
         matrix. Stripped means without sigma0.
@@ -319,7 +324,9 @@ class GaussianProcess(torch.nn.Module):
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
-            m_posterior_d = self.condition_data(K_d, self.sigma0, concentrate=True)
+            m_posterior_d = self.condition_data(K_d, self.sigma0,
+                    concentrate=True,
+                    NtV_crit=NtV_crit)
             log_likelihood = self.neg_log_likelihood()
 
             # Zero gradients, perform a backward pass,
