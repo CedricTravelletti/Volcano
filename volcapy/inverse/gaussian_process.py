@@ -154,7 +154,7 @@ class GaussianProcess(torch.nn.Module):
 
         return conc_m0
 
-    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False):
+    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False, NtV=-1.0):
         """ Condition model on the data side.
 
         Parameters
@@ -168,6 +168,10 @@ class GaussianProcess(torch.nn.Module):
         concentrate
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
+        NtV:
+            Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
+            numerical instability in the matrix inversion.
+            Default value is -1, which means it wont be used.
 
         Returns
         -------
@@ -176,7 +180,9 @@ class GaussianProcess(torch.nn.Module):
 
         """
         # Noise to Variance ratio.
-        NtV = (epsilon / sigma0)**2
+        # If not specified, then do not modify it.
+        if NtV <= 0.0:
+            NtV = (epsilon / sigma0)**2
 
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones, K_d)
@@ -222,6 +228,10 @@ class GaussianProcess(torch.nn.Module):
         concentrate
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
+        NtV:
+            Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
+            numerical instability in the matrix inversion.
+            Default value is -1, which means it wont be used.
 
         Returns
         -------
@@ -232,7 +242,9 @@ class GaussianProcess(torch.nn.Module):
 
         """
         # Noise to Variance ratio.
-        NtV = (epsilon / sigma0)**2
+        # If not specified, then do not modify it.
+        if NtV <= 0.0:
+            NtV = (epsilon / sigma0)**2
 
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones,
