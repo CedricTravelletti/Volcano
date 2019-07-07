@@ -34,6 +34,16 @@ cpu = torch.device('cpu')
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
 niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
+
+
+# ----------------------------------------------------------------------------#
+# SUBSETTING
+# ----------------------------------------------------------------------------#
+F_test, d_obs_test = inverseProblem.subset_data(350)
+F_test = torch.from_numpy(F_test)
+d_obs_test = torch.from_numpy(d_obs_test)
+
+
 n_data = inverseProblem.n_data
 F = torch.as_tensor(inverseProblem.forward).detach()
 
@@ -92,6 +102,12 @@ def main(out_folder, lambda0, sigma0, cov_pushfwd_path):
     
         # Compute LOOCV RMSE.
         loocv_rmses[i] = myGP.loo_error().item()
+
+        # Compute test_error
+        test_rmse = torch.sqrt(torch.mean(
+            (d_obs_test - torch.mm(F_test, m_post_m))**2))
+        
+        test_rmses[i] = test_rmse.item()
 
         print("Log-likelihood: {}".format(lls[i]))
         print("Train RMSE: {}".format(train_rmses[i]))
