@@ -144,3 +144,20 @@ class GaussianProcess():
         excursion_probs = self.compute_excursion_probs(threshold)
         return np.sum(excursion_probs)
 
+    def vorobev_deviation(self, set_inds, threshold):
+        """ Compute the Vorob'ev deviation of a given set.
+        Parameters
+        ----------
+        set_inds: List[int]
+            Indices of the cells belonging to the set.
+        threshold: float
+            Excursion threshold.
+
+        Returns
+        -------
+        float
+            Vorob'ev deviation of the set.
+
+        """
+        excursion_probs = self.compute_excursion_probs(threshold)
+        return np.sum(1 - excursion_probs[set_inds]) + np.sum(np.delete(excursion_probs, set_inds)
