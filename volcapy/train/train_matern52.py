@@ -47,7 +47,7 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 200.0
+sigma0_init = 280.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -60,9 +60,9 @@ out_folder = "/idiap/temp/ctravelletti/out/matern52/"
 # Train multiple lambdas
 # ---------------------------------------------------
 # Range for the grid search.
-lambda0_start = 200.0
-lambda0_stop = 600.0
-lambda0_step = 20.0
+lambda0_start = 5.0
+lambda0_stop = 800.0
+lambda0_step = 50.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
 logger.info("Number of lambda0s: {}".format(n_lambda0s))
@@ -90,6 +90,9 @@ start = timer()
 myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init)
 myGP.cuda()
 
+######
+NtV_crit = (0.1/200.0)**2
+
 for i, lambda0 in enumerate(lambda0s):
     logger.info("Current lambda0 {} , {} / {}".format(lambda0, i, n_lambda0s))
 
@@ -108,13 +111,15 @@ for i, lambda0 in enumerate(lambda0s):
     else: n_epochs = n_epochs_long
 
     # Run gradient descent.
-    myGP.optimize(K_d, n_epochs, gpu, logger, sigma0_init=None, lr=0.5)
+    myGP.optimize(K_d, n_epochs, gpu, logger, sigma0_init=None, lr=0.5,
+            NtV_crit=NtV_crit)
 
     # Send everything back to cpu.
     myGP.to_device(cpu)
         
     # Once finished, run a forward pass.
-    m_post_d = myGP.condition_data(K_d, sigma0=myGP.sigma0, concentrate=True)
+    m_post_d = myGP.condition_data(K_d, sigma0=myGP.sigma0, concentrate=True,
+            NtV_crit=NtV_crit)
     train_RMSE = myGP.train_RMSE()
     ll = myGP.neg_log_likelihood()
 

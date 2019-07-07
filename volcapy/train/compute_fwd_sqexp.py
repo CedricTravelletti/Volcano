@@ -47,9 +47,9 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 200.0
+sigma0_init = 280.0
 m0 = 2200.0
-lambda0 = 542.0
+lambda0 = 342.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -67,14 +67,32 @@ def main(out_folder, lambda0, sigma0):
     cov_pushfwd = cl.compute_cov_pushforward(
             lambda0, F, cells_coords, gpu, n_chunks=200,
             n_flush=50)
+    K_d = torch.mm(F, cov_pushfwd)
 
+    """
     # Once finished, run a forward pass.
     m_post_m, m_post_d = myGP.condition_model(
             cov_pushfwd, F, sigma0, concentrate=True)
+    """
+    m_post_d = myGP.condition_data(
+            K_d, sigma0, concentrate=True)
 
     # Compute diagonal of posterior covariance.
     post_cov_diag = myGP.compute_post_cov_diag(
             cov_pushfwd, cells_coords, lambda0, sigma0)
+
+    # Compute train_error
+    train_error = myGP.train_RMSE()
+
+    logger.info("Train error: {}".format(train_error.item()))
+
+    # Compute LOOCV RMSE.
+    loocv_rmse = myGP.loo_error()
+    logger.info("LOOCV error: {}".format(loocv_rmse.item()))
+
+    # Once finished, run a forward pass.
+    m_post_m, m_post_d = myGP.condition_model(
+            cov_pushfwd, F, sigma0, concentrate=True)
 
     # Compute train_error
     train_error = myGP.train_RMSE()
