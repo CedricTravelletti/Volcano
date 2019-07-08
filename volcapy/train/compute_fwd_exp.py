@@ -5,7 +5,7 @@ cross validation error.
 """
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
-import volcapy.covariance.covariance_tools as cl
+import volcapy.covariance.exponential as cl
 
 import numpy as np
 import os
@@ -47,9 +47,9 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 200.0
+sigma0_init = 216.0
 m0 = 2200.0
-lambda0 = 225.0
+lambda0 = 252.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -104,13 +104,13 @@ def main(out_folder, lambda0, sigma0):
     logger.info("LOOCV error: {}".format(loocv_rmse.item()))
 
     # Save
-    filename = "m_post_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "m_post_" + str(int(lambda0)) + "_exp.npy"
     np.save(os.path.join(out_folder, filename), m_post_m)
 
-    filename = "post_cov_diag_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "post_cov_diag_" + str(int(lambda0)) + "_exp.npy"
     np.save(os.path.join(out_folder, filename), post_cov_diag)
 
-    filename = "cov_pushfwd_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "cov_pushfwd_" + str(int(lambda0)) + "_exp.npy"
     np.save(os.path.join(out_folder, filename), cov_pushfwd)
 
 if __name__ == "__main__":

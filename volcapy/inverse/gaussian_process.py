@@ -44,7 +44,6 @@ it only shows up in the form K * F^t. It is thus sufficient to compute this
 product once and for all. We call it the *covariance pushforward*.
 
 """
-import volcapy.covariance.covariance_tools as cl
 import numpy as np
 import torch
 gpu = torch.device('cuda:0')
@@ -351,7 +350,7 @@ class GaussianProcess(torch.nn.Module):
 
         return
 
-    def post_cov(self, cov_pushfwd, cells_coords, lambda0, sigma0, i, j):
+    def post_cov(self, cov_pushfwd, cells_coords, lambda0, sigma0, i, j, cl):
         """ Condition model on the model side.
 
         Parameters
@@ -377,19 +376,20 @@ class GaussianProcess(torch.nn.Module):
         cov = cl.compute_cov(lambda0, cells_coords, i, j)
         post_cov = sigma0**2 * (cov -
                 torch.mm(
-                    cov_pushfwd[i, :].reshape(1, -1),
+                    sigma0**2 * cov_pushfwd[i, :].reshape(1, -1),
                     torch.mm(
                         self.inversion_operator, cov_pushfwd[j, :].reshape(-1, 1))))
 
         return post_cov
 
-    def compute_post_cov_diag(self, cov_pushfwd, cells_coords, lambda0, sigma0):
+    def compute_post_cov_diag(self, cov_pushfwd, cells_coords, lambda0, sigma0,
+            cl):
         n_cells = cells_coords.shape[0]
         post_cov_diag = np.zeros(n_cells)
 
         for i in range(n_cells):
             post_cov_diag[i] = self.post_cov(
-                    cov_pushfwd, cells_coords, lambda0, sigma0, i, i)
+                    cov_pushfwd, cells_coords, lambda0, sigma0, i, i, cl)
 
         return post_cov_diag
 
@@ -492,3 +492,44 @@ class GaussianProcess(torch.nn.Module):
                         torch.mm(F, cov_pushfwd))
 
         return np.linalg.cond(inv_inversion_operator.detach().numpy())
+
+    def subset_data(self, n_keep):
+        """ Subset an inverse problem by only keeping n_keep data
+        points selected at random.
+
+        The effect of this method is to directly modify the attributes of the
+        class to adapt them to the smaller problem.
+
+        Parameters
+        ----------
+        n_keep: int
+            Only keep n_keep data points.
+
+        Returns
+        -------
+        (rest_forward, rest_data)
+
+
+        """
+        # Pick indices at random.
+        inds = np.random.choice(range(self.n_data), n_keep, replace=False)
+
+        # Return the unused part of the forward and of the data so that it can
+        # be used as test set.
+        rest_forward = np.delete(self.forward, inds, axis=0)
+        rest_data = np.delete(self.data_values, inds, axis=0)
+        rest_data_points = np.delete(self.data_points, inds, axis=0)
+
+        # Now subset
+        self.forward = self.forward[inds, :]
+        self.data_points = self.data_points[inds, :]
+        self.data_values = self.data_values[inds]
+        # We subsetted columns, hence we have to restore C-contiguity by hand.
+        self.forward = np.ascontiguousarray(self.forward)
+
+        # New dimensions
+        self.n_data = self.forward.shape[0]
+
+        # Note that we return data in a column vector, to make it
+        # compatible with the rest of the data.
+        return (rest_forward, rest_data[:, None])
