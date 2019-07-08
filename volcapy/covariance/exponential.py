@@ -5,11 +5,8 @@ IMPORTANT: Note that we always strip the variance parameter sigma0 from the
 covariance matrix. Hence, when using the covariance pushforward computed here,
 one has to manually multiply by sigma0^2 for expressions to make sense.
 
-THIS ONE COMPUTES MATERN 52.
-
 """
 import torch
-import numpy as np
 
 # General torch settings and devices.
 torch.set_num_threads(8)
@@ -60,7 +57,7 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
     F = F.to(device)
     cells_coords = cells_coords.to(device)
 
-    inv_lambda2 = - np.sqrt(5) / lambda0
+    inv_lambda2 = - 1 / (2 * lambda0**2)
     n_dims = 3
     n_model = F.shape[1]
 
@@ -77,20 +74,15 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
             torch.cuda.synchronize()
             torch.cuda.empty_cache()
 
-        # Euclidean distance.
-        d = torch.sqrt(torch.pow(
+        # Squared euclidean distance.
+        d_2 = torch.sqrt(torch.pow(
             x.unsqueeze(1).expand(x.shape[0], n_model, n_dims)
             - cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
             , 2).sum(2))
         tot = torch.cat((
                 tot,
                 torch.matmul(
-                    torch.mul(
-                        (
-                            torch.ones(d.shape, device=device)
-                            - inv_lambda2 * d
-                            + (1/3) * inv_lambda2**2 * d**2),
-                        torch.exp(inv_lambda2 * d))
+                    torch.exp(inv_lambda2 * d_2)
                     , F.t())))
 
     # Wait for all threads to complete.
@@ -126,11 +118,11 @@ def compute_cov(lambda0, cells_coords, i, j):
     """
     # Convert to torch.
     lambda0 = torch.tensor(lambda0, requires_grad=False)
-    inv_lambda2 = - np.sqrt(3) / lambda0
+    inv_lambda2 = - 1 / (2 * lambda0**2)
 
-    # Euclidean distance.
-    d = torch.sqrt(torch.pow(
+    # Squared euclidean distance.
+    d_2 = torch.sqrt(torch.pow(
             cells_coords[i, :] - cells_coords[j, :]
             , 2).sum())
 
-    return (1 - inv_lambda2 * d + (1/3) * inv_lambda2**2 * d**2) * torch.exp(inv_lambda2 * d)
+    return torch.exp(inv_lambda2 * d_2)
