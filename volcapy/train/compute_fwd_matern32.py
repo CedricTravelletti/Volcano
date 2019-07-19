@@ -5,7 +5,7 @@ cross validation error.
 """
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
-import volcapy.covariance.covariance_tools as cl
+import volcapy.covariance.matern32 as cl
 
 import numpy as np
 import os
@@ -44,12 +44,17 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
+NtV_crit = (0.1/200.0)**2
+
+
+
+
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 200.0
+sigma0_init = 199.0
 m0 = 2200.0
-lambda0 = 225.0
+lambda0 = 475.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -75,11 +80,12 @@ def main(out_folder, lambda0, sigma0):
             cov_pushfwd, F, sigma0, concentrate=True)
     """
     m_post_d = myGP.condition_data(
-            K_d, sigma0, concentrate=True)
+            K_d, sigma0, concentrate=True,
+            NtV_crit=NtV_crit)
 
     # Compute diagonal of posterior covariance.
     post_cov_diag = myGP.compute_post_cov_diag(
-            cov_pushfwd, cells_coords, lambda0, sigma0, cl)
+            cov_pushfwd, cells_coords, lambda0, myGP.sigma0, cl)
 
     # Compute train_error
     train_error = myGP.train_RMSE()
@@ -92,7 +98,8 @@ def main(out_folder, lambda0, sigma0):
 
     # Once finished, run a forward pass.
     m_post_m, m_post_d = myGP.condition_model(
-            cov_pushfwd, F, sigma0, concentrate=True)
+            cov_pushfwd, F, sigma0, concentrate=True,
+            NtV_crit=NtV_crit)
 
     # Compute train_error
     train_error = myGP.train_RMSE()
@@ -104,13 +111,13 @@ def main(out_folder, lambda0, sigma0):
     logger.info("LOOCV error: {}".format(loocv_rmse.item()))
 
     # Save
-    filename = "m_post_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "m_post_" + str(int(lambda0)) + "_matern32.npy"
     np.save(os.path.join(out_folder, filename), m_post_m)
 
-    filename = "post_cov_diag_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "post_cov_diag_" + str(int(lambda0)) + "_matern32.npy"
     np.save(os.path.join(out_folder, filename), post_cov_diag)
 
-    filename = "cov_pushfwd_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "cov_pushfwd_" + str(int(lambda0)) + "_matern32.npy"
     np.save(os.path.join(out_folder, filename), cov_pushfwd)
 
 if __name__ == "__main__":
