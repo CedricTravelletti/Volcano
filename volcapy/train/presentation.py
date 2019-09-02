@@ -30,10 +30,11 @@ cpu = torch.device('cpu')
 # ----------------------------------------------------------------------------#
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
-# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
-niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
+# niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
+print(inverseProblem.data_values.shape)
 
 
 # ----------------------------------------------------------------------------#
@@ -59,17 +60,43 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
+# Squared exp.
+"""
 sigma0_init = 200.0
 m0 = 2200.0
 lambda0 = 225.0
+
+# Exp.
+sigma0_init = 172.4
+m0 = 2200.0
+lambda0 = 102.0
+# Matern 32
+sigma0_init = 199.0
+m0 = 2040.0
+lambda0 = 475.0
+"""
+
+# Matern 52
+sigma0_init = 199.0
+m0 = 2068.0
+lambda0 = 375.0
+
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
 ###########
 # IMPORTANT
 ###########
-# out_folder = "/idiap/temp/ctravelletti/out/profiles/"
+out_folder = "/idiap/temp/ctravelletti/out/profiles/"
+"""
 cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_225_sqexp.npy"
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd"
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_225_sqexp.npy"
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_225_sqexp.npy"
+"""
+# cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_475_matern32.npy"
+# cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_475_matern32.npy"
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_375_matern52.npy"
 
 # Create the GP model.
 myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init)
@@ -83,7 +110,9 @@ loocv_rmses = np.zeros((n_sigma0s), dtype=np.float32)
 
 def main(out_folder, lambda0, sigma0, cov_pushfwd_path):
     # Load the covariance pushforward.
-    cov_pushfwd = torch.from_numpy(np.load(cov_pushfwd_path)[:, inds])
+    tmp = np.load(cov_pushfwd_path)
+    print(tmp.shape)
+    cov_pushfwd = torch.from_numpy(tmp[:, inds])
 
     # Run a forward pass.
     m_post_m, m_post_d = myGP.condition_model(
