@@ -33,6 +33,18 @@ cpu = torch.device('cpu')
 niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 n_data = inverseProblem.n_data
+
+
+# ---------------------------------------------------------------
+# ---------------------------------------------------------------
+# NEW
+# ---------------------------------------------------------------
+# ---------------------------------------------------------------
+reg_cells_inds = get_regularization_cells_inds(inverseProblem)
+# Delete the cells.
+inverseProblem.forward[:, reg_cells_inds] = 0.0
+
+
 F = torch.as_tensor(inverseProblem.forward).detach()
 
 # Careful: we have to make a column vector here.
