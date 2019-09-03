@@ -51,7 +51,8 @@ class GaussianProcess():
             Probability that value of the field at point is above the
             threshold.
         """
-        return (1 - norm.cdf(threshold, loc=self.mean[i], scale=self.var[i]))
+        return (1 - norm.cdf(threshold, loc=self.mean[i],
+                scale=np.sqrt(self.var[i])))
 
     def compute_excursion_probs(self, threshold):
         """ Computes once and for all the probability of excursion above
@@ -118,6 +119,7 @@ class GaussianProcess():
         """
         excursion_probs = self.compute_excursion_probs(threshold)
         expected_measure = self.expected_excursion_measure(threshold)
+        print("Expected measure: {}".format(expected_measure))
 
         # TODO: Refactor into dichotomic search.
         # Loop over confidence levels, increase till smaller than expected
@@ -131,6 +133,7 @@ class GaussianProcess():
 
             # If smaller than expected measure, then continue, else return.
             if measure < expected_measure:
+                print("alpha: {}".format(alpha))
                 return vorb_inds
 
     # TODO: The following behaves as if all cells had size one. In the future:
@@ -144,3 +147,23 @@ class GaussianProcess():
         excursion_probs = self.compute_excursion_probs(threshold)
         return np.sum(excursion_probs)
 
+    def vorobev_deviation(self, set_inds, threshold):
+        """ Compute the Vorob'ev deviation of a given set.
+        Parameters
+        ----------
+        set_inds: List[int]
+            Indices of the cells belonging to the set.
+        threshold: float
+            Excursion threshold.
+
+        Returns
+        -------
+        float
+            Vorob'ev deviation of the set.
+
+        """
+        excursion_probs = self.compute_excursion_probs(threshold)
+        a = 1 - excursion_probs[set_inds]
+        b = np.delete(excursion_probs, set_inds)
+        dev = np.sum(a) + np.sum(b)
+        return dev

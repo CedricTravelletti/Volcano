@@ -30,16 +30,17 @@ cpu = torch.device('cpu')
 # ----------------------------------------------------------------------------#
 # Initialize an inverse problem from Niklas's data.
 # This gives us the forward and the coordinates of the inversion cells.
-# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
-niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
+# niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
+print(inverseProblem.data_values.shape)
 
 
 # ----------------------------------------------------------------------------#
 # SUBSETTING
 # ----------------------------------------------------------------------------#
-F_test, d_obs_test = inverseProblem.subset_data(350)
+F_test, d_obs_test, inds = inverseProblem.subset_data(350)
 F_test = torch.from_numpy(F_test)
 d_obs_test = torch.from_numpy(d_obs_test)
 
@@ -50,7 +51,7 @@ F = torch.as_tensor(inverseProblem.forward).detach()
 # Careful: we have to make a column vector here.
 data_std = 10.0
 d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
-data_cov = torch.mul(data_std**2, torch.eye(n_data))
+data_cov = torch.eye(n_data)
 cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
 del(inverseProblem)
 # ----------------------------------------------------------------------------#
@@ -59,9 +60,27 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
+# Squared exp.
+"""
 sigma0_init = 200.0
 m0 = 2200.0
-lambda0 = 542.0
+lambda0 = 225.0
+
+# Exp.
+sigma0_init = 172.4
+m0 = 2200.0
+lambda0 = 102.0
+# Matern 32
+sigma0_init = 199.0
+m0 = 2040.0
+lambda0 = 475.0
+"""
+
+# Matern 52
+sigma0_init = 199.0
+m0 = 2068.0
+lambda0 = 375.0
+
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -69,7 +88,15 @@ lambda0 = 542.0
 # IMPORTANT
 ###########
 out_folder = "/idiap/temp/ctravelletti/out/profiles/"
-cov_pushfwd_path = "/idiap/temp/ctravelletti/out/forwards/cov_pushfwd200.0_sqexp.npy"
+"""
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_225_sqexp.npy"
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd"
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_225_sqexp.npy"
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_225_sqexp.npy"
+"""
+# cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_475_matern32.npy"
+# cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_475_matern32.npy"
+cov_pushfwd_path = "/home/cedric/PHD/run_results/forwards/cov_pushfwd_375_matern52.npy"
 
 # Create the GP model.
 myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init)
@@ -83,41 +110,44 @@ loocv_rmses = np.zeros((n_sigma0s), dtype=np.float32)
 
 def main(out_folder, lambda0, sigma0, cov_pushfwd_path):
     # Load the covariance pushforward.
-    cov_pushfwd = torch.from_numpy(np.load(cov_pushfwd_path))
+    tmp = np.load(cov_pushfwd_path)
+    print(tmp.shape)
+    cov_pushfwd = torch.from_numpy(tmp[:, inds])
 
-    for i, sigma0 in enumerate(sigma0s):
-        print(i)
-        # Run a forward pass.
-        m_post_m, m_post_d = myGP.condition_model(
-                cov_pushfwd, F, sigma0, concentrate=True)
+    # Run a forward pass.
+    m_post_m, m_post_d = myGP.condition_model(
+            cov_pushfwd, F, sigma0, concentrate=True)
 
-        cond = myGP.condition_number(
-                cov_pushfwd, F, sigma0)
-        print("Condition number: {}".format(cond))
+    cond = myGP.condition_number(
+            cov_pushfwd, F, sigma0)
+    print("Condition number: {}".format(cond))
 
-        lls[i] = myGP.neg_log_likelihood().item()
+    ll = myGP.neg_log_likelihood().item()
+
+    # Compute train_error
+    train_rmse = myGP.train_RMSE().item()
+
+    # Compute LOOCV RMSE.
+    loocv_rmse = myGP.loo_error().item()
+
+    # Compute test_error
+    test_rmse = torch.sqrt(torch.mean(
+        (d_obs_test - torch.mm(F_test, m_post_m))**2))
     
-        # Compute train_error
-        train_rmses[i] = myGP.train_RMSE().item()
-    
-        # Compute LOOCV RMSE.
-        loocv_rmses[i] = myGP.loo_error().item()
+    test_rmse = test_rmse.item()
 
-        # Compute test_error
-        test_rmse = torch.sqrt(torch.mean(
-            (d_obs_test - torch.mm(F_test, m_post_m))**2))
-        
-        test_rmses[i] = test_rmse.item()
-
-        print("Log-likelihood: {}".format(lls[i]))
-        print("Train RMSE: {}".format(train_rmses[i]))
-        print("Loocv RMSE: {}".format(loocv_rmses[i]))
+    print("Log-likelihood: {}".format(ll))
+    print("Train RMSE: {}".format(train_rmse))
+    print("Test RMSE: {}".format(test_rmse))
+    print("Loocv RMSE: {}".format(loocv_rmse))
 
     # Save
+    """
     np.save(os.path.join(out_folder, "sigma0s.npy"), sigma0s)
     np.save(os.path.join(out_folder, "lls.npy"), lls)
     np.save(os.path.join(out_folder, "train_rmses.npy"), train_rmses)
     np.save(os.path.join(out_folder, "loocv_rmses.npy"), loocv_rmses)
+    """
 
 if __name__ == "__main__":
     main(out_folder, lambda0, sigma0_init, cov_pushfwd_path)

@@ -44,7 +44,6 @@ it only shows up in the form K * F^t. It is thus sufficient to compute this
 product once and for all. We call it the *covariance pushforward*.
 
 """
-import volcapy.covariance.covariance_tools as cl
 import numpy as np
 import torch
 gpu = torch.device('cuda:0')
@@ -68,7 +67,7 @@ class GaussianProcess(torch.nn.Module):
             Forward operator matrix
         d_obs
             Observed data vector.
-        data_one
+        data_ones
             Data (observations) covariance matrix.
         sigma0_init
             Original value of the sigma0 parameter to use when starting
@@ -88,7 +87,7 @@ class GaussianProcess(torch.nn.Module):
         self.mu0_d_stripped = torch.mm(F, torch.ones((self.n_model, 1)))
 
         self.d_obs = d_obs
-        self.data_ones = data_ones
+        self.data_ones = torch.eye(self.n_data)
 
         # Identity vector. Need for concentration.
         self.I_d = torch.ones((self.n_data, 1), dtype=torch.float32)
@@ -132,9 +131,9 @@ class GaussianProcess(torch.nn.Module):
 
         nll = torch.add(
                 log_det,
-                torch.mm(
+                (1 / self.sigma0**2) * torch.mm(
                       self.prior_misfit.t(),
-                      torch.mm(self.inversion_operator, self.prior_misfit)))
+                      torch.mm(self.stripped_inv, self.prior_misfit)))
         return nll
 
     def concentrate_m0(self):
@@ -146,14 +145,16 @@ class GaussianProcess(torch.nn.Module):
         conc_m0 = torch.mm(
                 torch.inverse(
                     torch.mm(
-                        torch.mm(self.mu0_d_stripped.t(), self.inversion_operator),
+                        torch.mm(self.mu0_d_stripped.t(), self.stripped_inv),
                         self.mu0_d_stripped)),
                 torch.mm(
                     self.mu0_d_stripped.t(),
-                    torch.mm(self.inversion_operator, self.d_obs)))
+                    torch.mm(self.stripped_inv, self.d_obs)))
+
         return conc_m0
 
-    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False):
+    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False,
+            NtV_crit=-1.0):
         """ Condition model on the data side.
 
         Parameters
@@ -167,6 +168,10 @@ class GaussianProcess(torch.nn.Module):
         concentrate
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
+        NtV_crit:
+            Critical Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
+            numerical instability in the matrix inversion.
+            If provided, will not allow to go below the critical value.
 
         Returns
         -------
@@ -175,7 +180,10 @@ class GaussianProcess(torch.nn.Module):
 
         """
         # Noise to Variance ratio.
+        # If not specified, then do not modify it.
         NtV = (epsilon / sigma0)**2
+        if NtV < NtV_crit:
+            NtV = NtV_crit
 
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones, K_d)
@@ -205,7 +213,8 @@ class GaussianProcess(torch.nn.Module):
 
         return mu_post_d
 
-    def condition_model(self, cov_pushfwd, F, sigma0, m0=0.1, concentrate=False):
+    def condition_model(self, cov_pushfwd, F, sigma0, m0=0.1,
+            concentrate=False, NtV_crit=-1.0):
         """ Condition model on the model side.
 
         Parameters
@@ -221,6 +230,10 @@ class GaussianProcess(torch.nn.Module):
         concentrate
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
+        NtV_crit:
+            Critical Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
+            numerical instability in the matrix inversion.
+            If provided, will not allow to go below the critical value.
 
         Returns
         -------
@@ -231,7 +244,10 @@ class GaussianProcess(torch.nn.Module):
 
         """
         # Noise to Variance ratio.
+        # If not specified, then do not modify it.
         NtV = (epsilon / sigma0)**2
+        if NtV < NtV_crit:
+            NtV = NtV_crit
 
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones,
@@ -267,9 +283,10 @@ class GaussianProcess(torch.nn.Module):
                 self.mu0_m,
                 torch.mm(sigma0**2 * cov_pushfwd, weights))
 
-        return self.mu_post_m, self.mu_post_d
+        return self.mu_post_m.detach(), self.mu_post_d
 
-    def optimize(self, K_d, n_epochs, device, logger, sigma0_init=None, lr=0.007):
+    def optimize(self, K_d, n_epochs, device, logger, sigma0_init=None,
+            lr=0.007, NtV_crit=-1.0):
         """ Given lambda0, optimize the two remaining hyperparams via MLE.
         Here, instead of giving lambda0, we give a (stripped) covariance
         matrix. Stripped means without sigma0.
@@ -306,7 +323,9 @@ class GaussianProcess(torch.nn.Module):
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
-            m_posterior_d = self.condition_data(K_d, self.sigma0, concentrate=True)
+            m_posterior_d = self.condition_data(K_d, self.sigma0,
+                    concentrate=True,
+                    NtV_crit=NtV_crit)
             log_likelihood = self.neg_log_likelihood()
 
             # Zero gradients, perform a backward pass,
@@ -331,7 +350,7 @@ class GaussianProcess(torch.nn.Module):
 
         return
 
-    def post_cov(self, cov_pushfwd, cells_coords, lambda0, sigma0, i, j):
+    def post_cov(self, cov_pushfwd, cells_coords, lambda0, sigma0, i, j, cl):
         """ Condition model on the model side.
 
         Parameters
@@ -357,19 +376,20 @@ class GaussianProcess(torch.nn.Module):
         cov = cl.compute_cov(lambda0, cells_coords, i, j)
         post_cov = sigma0**2 * (cov -
                 torch.mm(
-                    cov_pushfwd[i, :].reshape(1, -1),
+                    sigma0**2 * cov_pushfwd[i, :].reshape(1, -1),
                     torch.mm(
                         self.inversion_operator, cov_pushfwd[j, :].reshape(-1, 1))))
 
         return post_cov
 
-    def compute_post_cov_diag(self, cov_pushfwd, cells_coords, lambda0, sigma0):
+    def compute_post_cov_diag(self, cov_pushfwd, cells_coords, lambda0, sigma0,
+            cl):
         n_cells = cells_coords.shape[0]
         post_cov_diag = np.zeros(n_cells)
 
         for i in range(n_cells):
             post_cov_diag[i] = self.post_cov(
-                    cov_pushfwd, cells_coords, lambda0, sigma0, i, i)
+                    cov_pushfwd, cells_coords, lambda0, sigma0, i, i, cl)
 
         return post_cov_diag
 
@@ -472,3 +492,44 @@ class GaussianProcess(torch.nn.Module):
                         torch.mm(F, cov_pushfwd))
 
         return np.linalg.cond(inv_inversion_operator.detach().numpy())
+
+    def subset_data(self, n_keep):
+        """ Subset an inverse problem by only keeping n_keep data
+        points selected at random.
+
+        The effect of this method is to directly modify the attributes of the
+        class to adapt them to the smaller problem.
+
+        Parameters
+        ----------
+        n_keep: int
+            Only keep n_keep data points.
+
+        Returns
+        -------
+        (rest_forward, rest_data)
+
+
+        """
+        # Pick indices at random.
+        inds = np.random.choice(range(self.n_data), n_keep, replace=False)
+
+        # Return the unused part of the forward and of the data so that it can
+        # be used as test set.
+        rest_forward = np.delete(self.forward, inds, axis=0)
+        rest_data = np.delete(self.data_values, inds, axis=0)
+        rest_data_points = np.delete(self.data_points, inds, axis=0)
+
+        # Now subset
+        self.forward = self.forward[inds, :]
+        self.data_points = self.data_points[inds, :]
+        self.data_values = self.data_values[inds]
+        # We subsetted columns, hence we have to restore C-contiguity by hand.
+        self.forward = np.ascontiguousarray(self.forward)
+
+        # New dimensions
+        self.n_data = self.forward.shape[0]
+
+        # Note that we return data in a column vector, to make it
+        # compatible with the rest of the data.
+        return (rest_forward, rest_data[:, None])

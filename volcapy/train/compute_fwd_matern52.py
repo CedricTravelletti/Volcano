@@ -5,8 +5,7 @@ cross validation error.
 """
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
-from volcapy.compatibility_layer import get_regularization_cells_inds
-import volcapy.covariance.covariance_tools as cl
+import volcapy.covariance.matern52 as cl
 
 import numpy as np
 import os
@@ -34,23 +33,12 @@ cpu = torch.device('cpu')
 niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 n_data = inverseProblem.n_data
-
-
-# ---------------------------------------------------------------
-# ---------------------------------------------------------------
-# NEW
-# ---------------------------------------------------------------
-# ---------------------------------------------------------------
-reg_cells_inds = get_regularization_cells_inds(inverseProblem)
-# Delete the cells.
-inverseProblem.forward[:, reg_cells_inds] = 0.0
-
 F = torch.as_tensor(inverseProblem.forward).detach()
 
 # Careful: we have to make a column vector here.
 data_std = 0.1
 d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
-data_cov = torch.mul(data_std**2, torch.eye(n_data))
+data_cov = torch.eye(n_data)
 cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
 del(inverseProblem)
 # ----------------------------------------------------------------------------#
@@ -59,9 +47,9 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 200.0
+sigma0_init = 199.0
 m0 = 2200.0
-lambda0 = 200.0
+lambda0 = 375.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -79,14 +67,32 @@ def main(out_folder, lambda0, sigma0):
     cov_pushfwd = cl.compute_cov_pushforward(
             lambda0, F, cells_coords, gpu, n_chunks=200,
             n_flush=50)
+    K_d = torch.mm(F, cov_pushfwd)
+
+    """
+    # Once finished, run a forward pass.
+    m_post_m, m_post_d = myGP.condition_model(
+            cov_pushfwd, F, sigma0, concentrate=True)
+    """
+    m_post_d = myGP.condition_data(
+            K_d, sigma0, concentrate=True)
+
+    # Compute diagonal of posterior covariance.
+    post_cov_diag = myGP.compute_post_cov_diag(
+            cov_pushfwd, cells_coords, lambda0, sigma0, cl)
+
+    # Compute train_error
+    train_error = myGP.train_RMSE()
+
+    logger.info("Train error: {}".format(train_error.item()))
+
+    # Compute LOOCV RMSE.
+    loocv_rmse = myGP.loo_error()
+    logger.info("LOOCV error: {}".format(loocv_rmse.item()))
 
     # Once finished, run a forward pass.
     m_post_m, m_post_d = myGP.condition_model(
             cov_pushfwd, F, sigma0, concentrate=True)
-
-    # Compute diagonal of posterior covariance.
-    post_cov_diag = myGP.compute_post_cov_diag(
-            cov_pushfwd, cells_coords, lambda0, sigma0)
 
     # Compute train_error
     train_error = myGP.train_RMSE()
@@ -98,13 +104,13 @@ def main(out_folder, lambda0, sigma0):
     logger.info("LOOCV error: {}".format(loocv_rmse.item()))
 
     # Save
-    filename = "m_post_" + str(lambda0) + "_sqexp.npy"
+    filename = "m_post_" + str(int(lambda0)) + "_matern52.npy"
     np.save(os.path.join(out_folder, filename), m_post_m)
 
-    filename = "post_cov_diag" + str(lambda0) + "_sqexp.npy"
+    filename = "post_cov_diag_" + str(int(lambda0)) + "_matern52.npy"
     np.save(os.path.join(out_folder, filename), post_cov_diag)
 
-    filename = "cov_pushfwd" + str(lambda0) + "_sqexp.npy"
+    filename = "cov_pushfwd_" + str(int(lambda0)) + "_matern52.npy"
     np.save(os.path.join(out_folder, filename), cov_pushfwd)
 
 if __name__ == "__main__":
