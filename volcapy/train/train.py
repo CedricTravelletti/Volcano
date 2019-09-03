@@ -5,6 +5,7 @@ cross validation error.
 """
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
+from volcapy.compatibility_layer import get_regularization_cells_inds
 import volcapy.covariance.covariance_tools as cl
 
 import numpy as np
