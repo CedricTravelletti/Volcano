@@ -8,6 +8,7 @@ To effectively delete the cells, we just put the corresponding elements of the
 forward to 0, which prevents changing the size of the arrays.
 
 """
+import numpy as np
 
 
 def get_regularization_cells_inds(inverseProblem):
