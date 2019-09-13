@@ -58,7 +58,7 @@ epsilon = 0.1
 
 
 class GaussianProcess(torch.nn.Module):
-    def __init__(self, F, d_obs, data_ones, sigma0_init):
+    def __init__(self, F, d_obs, data_ones, sigma0_init, data_std=0.1):
         """
 
         Parameters
@@ -84,10 +84,12 @@ class GaussianProcess(torch.nn.Module):
         self.n_data = F.shape[0]
 
         # Prior mean (vector) on the data side.
-        self.mu0_d_stripped = torch.mm(F, torch.ones((self.n_model, 1)))
+        self.mu0_d_stripped = torch.mm(F, torch.ones((self.n_model, 1),
+                dtype=torch.float32))
 
         self.d_obs = d_obs
-        self.data_ones = torch.eye(self.n_data)
+        self.data_ones = torch.eye(self.n_data, dtype=torch.float32)
+        self.data_std = data_std
 
         # Identity vector. Need for concentration.
         self.I_d = torch.ones((self.n_data, 1), dtype=torch.float32)
@@ -181,7 +183,7 @@ class GaussianProcess(torch.nn.Module):
         """
         # Noise to Variance ratio.
         # If not specified, then do not modify it.
-        NtV = (epsilon / sigma0)**2
+        NtV = (self.data_std / sigma0)**2
         if NtV < NtV_crit:
             NtV = NtV_crit
 
@@ -245,7 +247,7 @@ class GaussianProcess(torch.nn.Module):
         """
         # Noise to Variance ratio.
         # If not specified, then do not modify it.
-        NtV = (epsilon / sigma0)**2
+        NtV = (self.data_std / sigma0)**2
         if NtV < NtV_crit:
             NtV = NtV_crit
 
@@ -272,6 +274,22 @@ class GaussianProcess(torch.nn.Module):
         self.m0 = m0
         self. prior_misfit = torch.sub(self.d_obs, self.mu0_d)
         weights = torch.mm(self.inversion_operator, self.prior_misfit)
+
+        # -----------------------------------------
+        # -----------------------------------------
+        # WARNING
+        # We try to compute inverse matrix - vector product using Cholesky.
+        # See if its better.
+        # -----------------------------------------
+        # -----------------------------------------
+        u = torch.cholesky(inv_inversion_operator)
+        z2, _ = torch.triangular_solve(self.prior_misfit, u, upper=False)
+        y2, _ = torch.triangular_solve(z2, u.T, upper=True)
+        weights = (1 / sigma0**2) * y2
+
+
+
+
 
         # Posterior data mean.
         self.mu_post_d = torch.add(
@@ -485,7 +503,7 @@ class GaussianProcess(torch.nn.Module):
 
         """
         # Noise to Variance ratio.
-        NtV = (epsilon / sigma0)**2
+        NtV = (self.data_std / sigma0)**2
 
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones,
