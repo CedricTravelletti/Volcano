@@ -30,7 +30,7 @@ density[(
         & (coords[:, 1] > 20) & (coords[:, 1] < 22)
         & (coords[:, 2] > 10) & (coords[:, 2] < 40))] = 2400.0
 
-density[0] = 2800
+# density[0] = 2800
 
 """
 density[(
