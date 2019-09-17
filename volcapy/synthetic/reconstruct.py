@@ -36,6 +36,7 @@ cpu = torch.device('cpu')
 # ----------------------------------------------------------------------------#
 data_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/out/"
 cells_coords = np.load(os.path.join(data_folder, "coords_synth.npy"))
+volcano_inds = np.load(os.path.join(data_folder, "volcano_inds_synth.npy"))
 data_values = np.load(os.path.join(data_folder, "data_values_synth.npy"))
 F = np.load(os.path.join(data_folder, "F_synth.npy"))
 
@@ -45,11 +46,11 @@ n_data = data_values.shape[0]
 data_std = 0.1
 
 d_obs = data_values.astype(np.float32)
-cells_coords = cells_coords.astype(np.float32)
+volcano_coords = cells_coords.astype(np.float32)[volcano_inds]
 F = F.astype(np.float32)
 
 d_obs = torch.as_tensor(data_values[:, None]).float()
-cells_coords = torch.as_tensor(cells_coords).detach().float()
+volcano_coords = torch.as_tensor(volcano_coords).detach().float()
 F = torch.as_tensor(F).float()
 
 data_cov = torch.eye(n_data, dtype=torch.float32)
@@ -60,8 +61,8 @@ data_cov = torch.eye(n_data, dtype=torch.float32)
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
 sigma0_init = 200.0
-m0 = 2200.0
-lambda0 = 100.0
+m0 = 1500.0
+lambda0 = 1.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -79,7 +80,7 @@ myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
 def main(out_folder, lambda0, sigma0):
     # Create the covariance pushforward.
     cov_pushfwd = cl.compute_cov_pushforward(
-            lambda0, F, cells_coords, cpu, n_chunks=200,
+            lambda0, F, volcano_coords, cpu, n_chunks=200,
             n_flush=50)
     K_d = torch.mm(F, cov_pushfwd)
 
@@ -93,7 +94,7 @@ def main(out_folder, lambda0, sigma0):
 
     # Compute diagonal of posterior covariance.
     post_cov_diag = myGP.compute_post_cov_diag(
-            cov_pushfwd, cells_coords, lambda0, sigma0, cl)
+            cov_pushfwd, volcano_coords, lambda0, sigma0, cl)
 
     # Compute train_error
     train_error = myGP.train_RMSE()
@@ -133,7 +134,10 @@ def main(out_folder, lambda0, sigma0):
     # Save to VTK format..
     from volcapy.synthetic.vtkutils import save_vtk
 
-    save_vtk(m_post_m.numpy(), (nx, ny, nz), res_x, res_y, res_z, "test.mhd")
+    # Have to put back in rectangular grid.
+    m_post_reg = np.zeros(cells_coords.shape[0])
+    m_post_reg[volcano_inds] = m_post_m.numpy().reshape(-1)
+    save_vtk(m_post_reg, (nx, ny, nz), res_x, res_y, res_z, "test.mhd")
 
 if __name__ == "__main__":
     main(out_folder, lambda0, sigma0_init)

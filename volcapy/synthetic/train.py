@@ -42,8 +42,6 @@ F = np.load(os.path.join(data_folder, "F_synth.npy"))
 
 n_data = data_values.shape[0]
 
-# Careful: we have to make a column vector here.
-data_std = 0.1
 
 d_obs = data_values.astype(np.float32)
 cells_coords = cells_coords.astype(np.float32)
@@ -62,7 +60,6 @@ data_cov = torch.eye(n_data, dtype=torch.float32)
 # ----------------------------------------------------------------------------#
 sigma0_init = 200.0
 m0 = 2200.0
-lambda0 = 100.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -71,8 +68,6 @@ lambda0 = 100.0
 ###########
 out_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/forwards"
 
-
-sigma0_init = 50.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
