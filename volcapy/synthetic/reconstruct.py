@@ -10,12 +10,13 @@ import numpy as np
 import os
 
 
-nx = 50
-ny = 50
-nz = 50
-res_x = 1
-res_y = 1
-res_z = 1
+# Should be loaded from metadata file.
+nx = 80
+ny = 80
+nz = 80
+res_x = 50
+res_y = 50
+res_z = 50
 
 
 # Set up logging.
@@ -34,7 +35,9 @@ cpu = torch.device('cpu')
 # ----------------------------------------------------------------------------#
 #      LOAD DATA
 # ----------------------------------------------------------------------------#
-data_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/out/"
+# data_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/out/"
+data_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/out"
+
 cells_coords = np.load(os.path.join(data_folder, "coords_synth.npy"))
 volcano_inds = np.load(os.path.join(data_folder, "volcano_inds_synth.npy"))
 data_values = np.load(os.path.join(data_folder, "data_values_synth.npy"))
@@ -69,7 +72,8 @@ lambda0 = 1.0
 ###########
 # IMPORTANT
 ###########
-out_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/forwards"
+# out_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/forwards"
+out_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/forwards"
 
 # Create the GP model.
 data_std = 1000.0
@@ -80,7 +84,7 @@ myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
 def main(out_folder, lambda0, sigma0):
     # Create the covariance pushforward.
     cov_pushfwd = cl.compute_cov_pushforward(
-            lambda0, F, volcano_coords, cpu, n_chunks=200,
+            lambda0, F, volcano_coords, gpu, n_chunks=200,
             n_flush=50)
     K_d = torch.mm(F, cov_pushfwd)
 

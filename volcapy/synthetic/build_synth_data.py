@@ -4,12 +4,12 @@ import os
 
 
 # Generate gridded cube.
-nx = 50
-ny = 50
-nz = 50
-res_x = 1
-res_y = 1
-res_z = 1
+nx = 80
+ny = 80
+nz = 80
+res_x = 50
+res_y = 50
+res_z = 50
 coords = gd.build_cube(nx, res_x, ny, res_y, nz, res_z)
 
 # Put evenly spaced measurement sites on the surface of the cube.
@@ -32,9 +32,9 @@ irreg_density[:] = 1500
 
 # Add an overdensity.
 irreg_density[(
-        (volcano_coords[:, 0] > 10) & (volcano_coords[:, 0] < 20)
-        & (volcano_coords[:, 1] > 20) & (volcano_coords[:, 1] < 22)
-        & (volcano_coords[:, 2] > 10) & (volcano_coords[:, 2] < 40))] = 2000.0
+        (volcano_coords[:, 0] > 500) & (volcano_coords[:, 0] < 1000)
+        & (volcano_coords[:, 1] > 1000) & (volcano_coords[:, 1] < 22)
+        & (volcano_coords[:, 2] > 500) & (volcano_coords[:, 2] < 2000))] = 2000.0
 
 density[cone_inds] = irreg_density
 """
