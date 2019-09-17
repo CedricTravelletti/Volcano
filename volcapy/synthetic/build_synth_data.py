@@ -15,32 +15,40 @@ coords = gd.build_cube(nx, res_x, ny, res_y, nz, res_z)
 # Put evenly spaced measurement sites on the surface of the cube.
 max_x = np.max(coords[:, 0])
 
-data_coords = gd.generate_regular_surface_datapoints(
-        0.0, max_x, 5, 0.0, max_x, 5, 0.0, max_x, 5, offset=0.1)
-
-# Compute the forward operator.
-F = gd.compute_forward(coords, res_x, res_y, res_z, data_coords)
 
 # Put matter inside the cube.
 density = np.zeros((coords.shape[0],))
-density[:] = 1500.0
 
-density[(
-        (coords[:, 0] > 10) & (coords[:, 0] < 20)
-        & (coords[:, 1] > 20) & (coords[:, 1] < 22)
-        & (coords[:, 2] > 10) & (coords[:, 2] < 40))] = 2400.0
+# Put matter in a cone.
+cone_inds, surface_inds = gd.build_random_cone(coords, nx, ny, nz)
+density[cone_inds] = 1500.0
+density[surface_inds] = 1500.0
 
-# density[0] = 2800
-
-"""
+# Add an overdensity.
 density[(
         (coords[:, 0] > 10) & (coords[:, 0] < 20)
         & (coords[:, 1] > 20) & (coords[:, 1] < 22)
         & (coords[:, 2] > 10) & (coords[:, 2] < 40))] = 2000.0
 
-density[0] = 2800
-"""
 
+"""
+data_coords = gd.generate_regular_surface_datapoints(
+        0.0, max_x, 5, 0.0, max_x, 5, 0.0, max_x, 5, offset=0.1)
+"""
+# -------
+# WARNING
+# -------
+# We put measurements close to the surface by randomly selecting surface cells
+# and adding a small vertical shift.
+n_data = 20
+data_inds = np.random.choice(surface_inds, n_data, replace=False)
+data_coords = coords[data_inds]
+
+offset = 0.05 * res_z
+data_coords[:, 2] = data_coords[:, 2] + offset
+
+# Compute the forward operator.
+F = gd.compute_forward(coords, res_x, res_y, res_z, data_coords)
 
 # Generate artificial measurements.
 data_values = F @ density
@@ -58,4 +66,5 @@ np.save(os.path.join(out_folder,"density_synth.npy"), density)
 # -------------------------------------------------------------------
 from volcapy.synthetic.vtkutils import save_vtk
 
-save_vtk(density, (nx, ny, nz), res_x, res_y, res_z, os.path.join(out_folder, "density_synth.mhd"))
+save_vtk(density, (nx, ny, nz), res_x, res_y, res_z,
+        os.path.join(out_folder, "density_synth.mhd"))

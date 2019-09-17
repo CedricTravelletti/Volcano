@@ -80,7 +80,7 @@ def compute_forward(coords, res_x, res_y, res_z, data_coords):
             yl = cell[1] - res_y / 2.0
             zh = cell[2] + res_z / 2.0
             zl = cell[2] - res_z / 2.0
-            
+
             F[j, i] = banerjee(
                     xh, xl, yh, yl, zh, zl,
                     data[0],  data[1],  data[2])
@@ -152,3 +152,96 @@ def generate_regular_surface_datapoints(
         for y in np.linspace(yl - offset, yh + offset, ny):
             data_coords.append([x, y, zh + offset])
     return np.array(data_coords)
+
+def build_cone(coords):
+    """ Given a cubic grid, turn it into a cone.
+
+    Parameters
+    ----------
+    coords: ndarray
+        Array of size n_cells * 3.
+        Contains the coordinates of the center of each cell.
+
+    Returns
+    -------
+    ndarray
+        1 dimensional array containing indices of cells belonging to the cone.
+
+    """
+    # Center in the x-y plane.
+    x_center = np.mean(coords[:, 0])
+    y_center = np.mean(coords[:, 1])
+
+    x_radius = (np.max(coords[:, 0]) - np.min(coords[:, 0])) / 2.0
+    y_radius = (np.max(coords[:, 1]) - np.min(coords[:, 1])) / 2.0
+
+    # Take as radius of the cone the mean of the two radiuses.
+    R = (x_radius + y_radius) / 2.0
+
+    # z-extent.
+    z_min = np.min(coords[:, 2])
+    z_max = np.max(coords[:, 2])
+
+    # Cone condition.
+    cone_inds = np.where(
+            (coords[:, 0] - x_center)**2 + (coords[:, 1] - y_center)**2
+            <= R**2 * (1 - (coords[:, 2] - z_min) / (z_max - z_min))**2)[0]
+
+    return cone_inds
+
+def build_random_cone(coords, nx, ny, nz):
+    """ Given a cubic grid, turn it into a cone.
+
+    Parameters
+    ----------
+    coords: ndarray
+        Array of size n_cells * 3.
+        Contains the coordinates of the center of each cell.
+    nx: int
+        Number of cells along x-dimension.
+    ny: int
+    nz: int
+
+    Returns
+    -------
+    ndarray
+        1 dimensional array containing indices of cells belonging to the cone.
+
+    """
+    cone_inds = build_cone(coords)
+
+    # Get the indices of the surfcace.
+    tmp = np.zeros(coords[:, 0].shape)
+    tmp[cone_inds] = 1
+    tmp = np.reshape(tmp, (nx, ny, nz))
+
+    # For eax x-y point, find highest z and mark it.
+    for i in range(tmp.shape[0]):
+        for j in range(tmp.shape[1]):
+            for k in range(tmp.shape[2]):
+                # Soon as we detect a zero (soon as we transition out of the
+                # volcano), we mark the last encountered cell (along
+                # z-direction) as a surface cell.
+                if tmp[i, j , k] == 0:
+                    if tmp[i , j, k - 1] == 1:
+                        tmp[i , j, k - 1] = 2
+                        break
+    
+    # Reshape to normal grid.
+    tmp = np.reshape(tmp, (-1))
+    surface_inds = np.where(tmp[:] == 2)[0]
+
+    return np.array(cone_inds), np.array(surface_inds)
+
+def meshgrid_from_coords(coords, nx, ny, nz):
+    """ Turns a list of coordinates (in regular grid)
+    into a meshgrid.
+
+    """
+    return np.reshape(coords, (nx, ny, nz, 3))
+
+def coords_from_meshgrid(meshgrid):
+    """ Inverse operation of the above.
+
+    """
+    return np.reshape(meshgrid, (-1, 3))
