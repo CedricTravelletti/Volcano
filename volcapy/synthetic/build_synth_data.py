@@ -33,7 +33,7 @@ irreg_density[:] = 1500
 # Add an overdensity.
 irreg_density[(
         (volcano_coords[:, 0] > 500) & (volcano_coords[:, 0] < 1000)
-        & (volcano_coords[:, 1] > 1000) & (volcano_coords[:, 1] < 22)
+        & (volcano_coords[:, 1] > 1000) & (volcano_coords[:, 1] < 1100)
         & (volcano_coords[:, 2] > 500) & (volcano_coords[:, 2] < 2000))] = 2000.0
 
 density[cone_inds] = irreg_density
