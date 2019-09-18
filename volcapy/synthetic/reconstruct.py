@@ -141,7 +141,8 @@ def main(out_folder, lambda0, sigma0):
     # Have to put back in rectangular grid.
     m_post_reg = np.zeros(cells_coords.shape[0])
     m_post_reg[volcano_inds] = m_post_m.numpy().reshape(-1)
-    save_vtk(m_post_reg, (nx, ny, nz), res_x, res_y, res_z, "test.mhd")
+    save_vtk(m_post_reg, (nx, ny, nz), res_x, res_y, res_z,
+            "reconstructed_density.mhd")
 
 if __name__ == "__main__":
     main(out_folder, lambda0, sigma0_init)

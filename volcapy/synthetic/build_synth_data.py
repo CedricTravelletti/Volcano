@@ -36,6 +36,12 @@ irreg_density[(
         & (volcano_coords[:, 1] > 1000) & (volcano_coords[:, 1] < 1100)
         & (volcano_coords[:, 2] > 500) & (volcano_coords[:, 2] < 2000))] = 2000.0
 
+# UnderDensity on top of volcano.
+irreg_density[(
+        (volcano_coords[:, 0] > 0) & (volcano_coords[:, 0] < 2000)
+        & (volcano_coords[:, 1] > 0) & (volcano_coords[:, 1] < 2000)
+        & (volcano_coords[:, 2] > 3000) & (volcano_coords[:, 2] < 4500))] = 1000.0
+
 density[cone_inds] = irreg_density
 """
 data_coords = gd.generate_regular_surface_datapoints(
@@ -46,7 +52,7 @@ data_coords = gd.generate_regular_surface_datapoints(
 # -------
 # We put measurements close to the surface by randomly selecting surface cells
 # and adding a small vertical shift.
-n_data = 20
+n_data = 500
 data_inds = np.random.choice(surface_inds, n_data, replace=False)
 data_coords = coords[data_inds]
 
