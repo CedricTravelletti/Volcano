@@ -32,15 +32,37 @@ irreg_density[:] = 1500
 
 # Add an overdensity.
 irreg_density[(
-        (volcano_coords[:, 0] > 500) & (volcano_coords[:, 0] < 1000)
-        & (volcano_coords[:, 1] > 1000) & (volcano_coords[:, 1] < 1100)
-        & (volcano_coords[:, 2] > 500) & (volcano_coords[:, 2] < 2000))] = 2000.0
+        (volcano_coords[:, 0] > 500) & (volcano_coords[:, 0] < 2000)
+        & (volcano_coords[:, 1] > 1000) & (volcano_coords[:, 1] < 2000)
+        & (volcano_coords[:, 2] > 0) & (volcano_coords[:, 2] < 2000))] = 1700.0
 
 # UnderDensity on top of volcano.
 irreg_density[(
-        (volcano_coords[:, 0] > 0) & (volcano_coords[:, 0] < 2000)
-        & (volcano_coords[:, 1] > 0) & (volcano_coords[:, 1] < 2000)
-        & (volcano_coords[:, 2] > 3000) & (volcano_coords[:, 2] < 4500))] = 1000.0
+        (volcano_coords[:, 0] > 0) & (volcano_coords[:, 0] < 5000)
+        & (volcano_coords[:, 1] > 0) & (volcano_coords[:, 1] < 5000)
+        & (volcano_coords[:, 2] > 2500) & (volcano_coords[:, 2] < 4500))] = 1200.0
+
+# Middle layer is way heavier.
+irreg_density[(volcano_coords[:, 2] > 1500) & (volcano_coords[:, 2] < 3000)] = 2000.0
+
+# ------------------------------------
+# Create a chimney inside the volcano.
+# ------------------------------------
+# Center in the x-y plane.
+x_center = np.mean(coords[:, 0])
+y_center = np.mean(coords[:, 1])
+
+x_radius = (np.max(coords[:, 0]) - np.min(coords[:, 0])) / 2.0
+y_radius = (np.max(coords[:, 1]) - np.min(coords[:, 1])) / 2.0
+
+# Take as radius of the cone the mean of the two radiuses.
+R = (x_radius + y_radius) / 2.0
+
+irreg_density[(
+        (volcano_coords[:, 0] - x_center)**2
+        + (volcano_coords[:, 1] - y_center)**2 < (0.4 * R)**2)] = 1000.0
+
+print("Mean density {}".format(np.mean(irreg_density)))
 
 density[cone_inds] = irreg_density
 """
