@@ -109,7 +109,7 @@ class GaussianProcess(torch.nn.Module):
         self.data_ones = self.data_ones.to(device)
         self.I_d = self.I_d.to(device)
 
-    def neg_log_likelihood(self):
+    def neg_log_likelihood(self, sigma0):
         """ Computes the negative log-likelihood of the current state of the
         model.
         Note that this function should be called AFTER having run a
@@ -129,7 +129,10 @@ class GaussianProcess(torch.nn.Module):
         """
         # Note that for some reason, the above doesnt work the same.
         # We should really check the implementation of logdet.
+        """
         log_det = - torch.logdet(self.inversion_operator)
+        """
+        log_det = -2*torch.log(self.sigma0) - torch.logdet(self.stripped_inv)
 
         nll = torch.add(
                 log_det,
