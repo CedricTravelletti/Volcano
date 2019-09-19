@@ -7,6 +7,10 @@ import numpy as np
 from volcapy.niklas.banerjee import banerjee
 
 
+# Gravitational constant.
+G = 6.67e-6       #Transformation factor to get result in mGal
+
+
 def build_cube(nr_x, res_x, nr_y, res_y, nr_z, res_z):
     """ Builds a gridded cube.
 
@@ -81,7 +85,7 @@ def compute_forward(coords, res_x, res_y, res_z, data_coords):
             zh = cell[2] + res_z / 2.0
             zl = cell[2] - res_z / 2.0
 
-            F[j, i] = banerjee(
+            F[j, i] = G * banerjee(
                     xh, xl, yh, yl, zh, zl,
                     data[0],  data[1],  data[2])
     return F
