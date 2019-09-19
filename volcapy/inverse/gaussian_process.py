@@ -132,7 +132,7 @@ class GaussianProcess(torch.nn.Module):
         """
         log_det = - torch.logdet(self.inversion_operator)
         """
-        log_det = -2*torch.log(self.sigma0) - torch.logdet(self.stripped_inv)
+        log_det = 2*torch.log(self.sigma0) + torch.logdet(self.stripped_inv_inv)
 
         nll = torch.add(
                 log_det,
@@ -192,6 +192,7 @@ class GaussianProcess(torch.nn.Module):
 
         inv_inversion_operator = torch.add(
                         NtV * self.data_ones, K_d)
+        self.stripped_inv_inv = inv_inversion_operator
 
         # Store for the logdet. Should refactor later.
         self.stripped_inv = torch.inverse(inv_inversion_operator)
