@@ -109,7 +109,7 @@ class GaussianProcess(torch.nn.Module):
         self.data_ones = self.data_ones.to(device)
         self.I_d = self.I_d.to(device)
 
-    def neg_log_likelihood(self, sigma0):
+    def neg_log_likelihood(self):
         """ Computes the negative log-likelihood of the current state of the
         model.
         Note that this function should be called AFTER having run a
