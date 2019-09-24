@@ -8,6 +8,7 @@ To effectively delete the cells, we just put the corresponding elements of the
 forward to 0, which prevents changing the size of the arrays.
 
 """
+import volcapy.synthetic.grid as gd
 import numpy as np
 
 
@@ -47,3 +48,61 @@ def get_regularization_cells_inds(inverseProblem):
             ind_min_z], axis=0)
 
     return inds
+
+def match_grids(inverseProblem):
+    # Get normal cells only (so we have a regular grid).
+    coords = np.delete(inverseProblem.cells_coords,
+            get_regularization_cells_inds(inverseProblem), axis=0)
+
+    min_x = np.min(coords[:, 0])
+    max_x = np.max(coords[:, 0])
+    min_y = np.min(coords[:, 1])
+    max_y = np.max(coords[:, 1])
+    min_z = np.min(coords[:, 2])
+    max_z = np.max(coords[:, 2])
+
+    res_x = 50
+    res_y = 50
+    res_z = 50
+
+    # Check resolution compatible with grid extent.
+    if (((max_x - min_x) % res_x == 0)
+            and ((max_y - min_y) % res_y == 0)
+            and ((max_z - min_z) % res_z == 0)):
+        nx = int((max_x - min_x) / res_x) + 1
+        ny = int((max_y - min_y) / res_y) + 1
+        nz = int((max_z - min_z) / res_z) + 1
+    else:
+        raise ValueError(
+            "Grid extent not divisible by resolution -> unregular grid.")
+
+    # Build coresponding regular grid.
+    reg_coords = gd.build_cube(nx, res_x, ny, res_y, nz, res_z)
+
+    # Shift cells so the begin at zero.
+    # Note, since we are using centroids, we have to move past zero.
+    coords[:, 0] = coords[:, 0] - min_x + res_x / 2.0
+    coords[:, 1] = coords[:, 1] - min_y + res_y / 2.0
+    coords[:, 2] = coords[:, 2] - min_z + res_z / 2.0
+
+    reg_inds = np.zeros(coords.shape[0], dtype=np.int)
+    for i, cell in enumerate(coords):
+        reg_inds[i] = index_in_reg_grid(cell, nx, ny, nz, res_x, res_y, res_z)
+
+    # Return some metadata.
+    grid_metadata = {'nx': nx, 'ny': ny, 'nz': nz}
+    return reg_inds, reg_coords, coords, grid_metadata
+
+def index_in_reg_grid(cell, nx, ny, nz, res_x, res_y, res_z):
+    """ Given coordinates, find index in regular array.
+
+    """
+    # Correct for centroid.
+    x = cell[0] - res_x / 2.0
+    y = cell[1] - res_y / 2.0
+    z = cell[2] - res_z / 2.0
+    ind = (x / res_x) * (ny * nz) + (y / res_y) * nz + (z / res_z)
+
+    if not ind.is_integer():
+        raise ValueError("Non-integer index. Resolutions must be wrong.")
+    return int(ind)
