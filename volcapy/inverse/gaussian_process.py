@@ -132,7 +132,9 @@ class GaussianProcess(torch.nn.Module):
         """
         log_det = - torch.logdet(self.inversion_operator)
         """
-        log_det = 2*torch.log(self.sigma0) + torch.logdet(self.stripped_inv_inv)
+        # WARNING!!! determinant is not linear! Taking constants outside adds
+        # power to them.
+        log_det = 2 * self.n_data * torch.log(self.sigma0) + torch.logdet(self.stripped_inv_inv)
 
         nll = torch.add(
                 log_det,
@@ -259,7 +261,6 @@ class GaussianProcess(torch.nn.Module):
                         NtV * self.data_ones,
                         torch.mm(F, cov_pushfwd))
 
-        # Store for the logdet. Should refactor later.
         self.stripped_inv = torch.inverse(inv_inversion_operator)
 
         # Compute inversion operator and store once and for all.
@@ -286,14 +287,23 @@ class GaussianProcess(torch.nn.Module):
         # See if its better.
         # -----------------------------------------
         # -----------------------------------------
-        u = torch.cholesky(inv_inversion_operator)
+        for attempt in range(10):
+            try:
+                u = torch.cholesky(inv_inversion_operator)
+            except RuntimeError:
+                print("Cholesky failed: Singular Matrix.")
+                # Increase NtV in steps of 10%.
+                newNtV = 1.1 * NtV
+                print("Increasing NtV from original {} to {} and retrying.".format(NtV, newNtV))
+                inv_inversion_operator = torch.add(
+                    0.1 * NtV * self.data_ones,
+                    inv_inversion_operator)
+            else:
+                break
+
         z2, _ = torch.triangular_solve(self.prior_misfit, u, upper=False)
-        y2, _ = torch.triangular_solve(z2, u.T, upper=True)
+        y2, _ = torch.triangular_solve(z2, u.t(), upper=True)
         weights = (1 / sigma0**2) * y2
-
-
-
-
 
         # Posterior data mean.
         self.mu_post_d = torch.add(
