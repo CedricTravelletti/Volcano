@@ -4,7 +4,8 @@ cross validation error.
 
 """
 from volcapy.inverse.gaussian_process import GaussianProcess
-import volcapy.covariance.covariance_tools as cl
+# import volcapy.covariance.covariance_tools as cl
+import volcapy.covariance.matern32 as cl
 
 import numpy as np
 import os
@@ -38,7 +39,8 @@ cpu = torch.device('cpu')
 data_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/out/"
 # data_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/out"
 
-cells_coords = np.load(os.path.join(data_folder, "coords_synth.npy"))
+# Regular grid.
+reg_coords = np.load(os.path.join(data_folder, "reg_coords_synth.npy"))
 volcano_inds = np.load(os.path.join(data_folder, "volcano_inds_synth.npy"))
 data_values = np.load(os.path.join(data_folder, "data_values_synth.npy"))
 F = np.load(os.path.join(data_folder, "F_synth.npy"))
@@ -49,7 +51,9 @@ n_data = data_values.shape[0]
 data_std = 0.1
 
 d_obs = data_values.astype(np.float32)
-volcano_coords = cells_coords.astype(np.float32)[volcano_inds]
+
+# Indices of the volcano inside the regular grid.
+volcano_coords = reg_coords.astype(np.float32)[volcano_inds]
 F = F.astype(np.float32)
 
 d_obs = torch.as_tensor(data_values[:, None]).float()
@@ -63,9 +67,9 @@ data_cov = torch.eye(n_data, dtype=torch.float32)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 200.0
-m0 = 1500.0
-lambda0 = 1.0
+sigma0_init = 193.85703
+m0 = 1439.846
+lambda0 = 422.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -76,7 +80,7 @@ out_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/forwards"
 # out_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/forwards"
 
 # Create the GP model.
-data_std = 1000.0
+data_std = 0.1
 myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
         data_std)
 
@@ -139,7 +143,7 @@ def main(out_folder, lambda0, sigma0):
     from volcapy.synthetic.vtkutils import save_vtk
 
     # Have to put back in rectangular grid.
-    m_post_reg = np.zeros(cells_coords.shape[0])
+    m_post_reg = np.zeros(reg_coords.shape[0])
     m_post_reg[volcano_inds] = m_post_m.numpy().reshape(-1)
     save_vtk(m_post_reg, (nx, ny, nz), res_x, res_y, res_z,
             "reconstructed_density.mhd")
