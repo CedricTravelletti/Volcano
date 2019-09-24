@@ -36,7 +36,7 @@ def save_vtk(data, shape, res_x, res_y, res_z, filename):
     writer.SetInputData(imdata)
     writer.Write()
 
-def ndarray_to__vtk(data, res_x, res_y, res_z, filename):
+def ndarray_to_vtk(data, res_x, res_y, res_z, filename):
     """ Save data to vtk format.
 
     THIS IS THE ONE THAT WORKS WITH REAL DATA.

@@ -37,5 +37,5 @@ m_post_reg = np.zeros(reg_coords.shape[0])
 m_post_reg[reg_inds] = m_post_m
 m_post_reg = m_post_reg.reshape(nx, ny, nz)
 
-ndarray_to__vtk(m_post_reg, res_x, res_y, res_z,
+ndarray_to_vtk(m_post_reg, res_x, res_y, res_z,
             "reconstructed_density.mhd")
