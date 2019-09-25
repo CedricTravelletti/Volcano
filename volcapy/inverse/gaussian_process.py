@@ -164,6 +164,7 @@ class GaussianProcess(torch.nn.Module):
         """
         # Get Cholesky factor (lower triangular) of the inversion operator.
         self.inv_op_L = self.get_inversion_op_cholesky(K_d, sigma0)
+        self.inversion_operator = torch.cholesky_inverse(self.inv_op_L)
             
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
@@ -366,6 +367,7 @@ class GaussianProcess(torch.nn.Module):
 
         """
         cov = cl.compute_cov(lambda0, cells_coords, i, j)
+
         post_cov = sigma0**2 * (cov -
                 torch.mm(
                     sigma0**2 * cov_pushfwd[i, :].reshape(1, -1),
