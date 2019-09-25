@@ -54,7 +54,7 @@ cpu = torch.device('cpu')
 # NtV = (0.001)**2
 
 # Data standard deviation.
-epsilon = 0.1
+epsilon2 = 0.1**2
 
 
 class GaussianProcess(torch.nn.Module):
@@ -89,6 +89,10 @@ class GaussianProcess(torch.nn.Module):
 
         self.d_obs = d_obs
         self.data_ones = torch.eye(self.n_data, dtype=torch.float32)
+
+        self.data_std_orig = data_std
+        # Used to store the modified noise level, if has to be increased to
+        # make matrix invertible.
         self.data_std = data_std
 
         # Identity vector. Need for concentration.
@@ -149,19 +153,13 @@ class GaussianProcess(torch.nn.Module):
         Note that the inversion operator should have been updated first.
 
         """
-        conc_m0 = torch.mm(
-                torch.inverse(
-                    torch.mm(
-                        torch.mm(self.mu0_d_stripped.t(), self.stripped_inv),
-                        self.mu0_d_stripped)),
-                torch.mm(
-                    self.mu0_d_stripped.t(),
-                    torch.mm(self.stripped_inv, self.d_obs)))
+        # Compute R^(-1) * G * I_m.
+        tmp = self.inv_op_vector_mult(self.mu0_d_stripped)
+        conc_m0 = torch.mm(self.d_obs.t(), tmp) / torch.mm(self.mu0_d_stripped.t(), tmp)
 
         return conc_m0
 
-    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False,
-            NtV_crit=-1.0):
+    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False):
         """ Condition model on the data side.
 
         Parameters
@@ -175,10 +173,6 @@ class GaussianProcess(torch.nn.Module):
         concentrate
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
-        NtV_crit:
-            Critical Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
-            numerical instability in the matrix inversion.
-            If provided, will not allow to go below the critical value.
 
         Returns
         -------
@@ -186,22 +180,10 @@ class GaussianProcess(torch.nn.Module):
             Posterior mean data vector
 
         """
-        # Noise to Variance ratio.
-        # If not specified, then do not modify it.
-        NtV = (self.data_std / sigma0)**2
-        if NtV < NtV_crit:
-            NtV = NtV_crit
-
-        inv_inversion_operator = torch.add(
-                        NtV * self.data_ones, K_d)
-        self.stripped_inv_inv = inv_inversion_operator
-
-        # Store for the logdet. Should refactor later.
-        self.stripped_inv = torch.inverse(inv_inversion_operator)
-
-        # Compute inversion operator and store once and for all.
-        self.inversion_operator = (
-                (1 / sigma0**2) * self.stripped_inv)
+        # Get Cholesky factor (lower triangular) of the inversion operator.
+        self.inv_op_L = self.get_inversion_op_cholesky(K_d, sigma0)
+            
+        inv_op_vector_mult(self, x)
 
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
@@ -210,12 +192,11 @@ class GaussianProcess(torch.nn.Module):
         self.mu0_d = m0 * self.mu0_d_stripped
         # Store m0 in case we want to print it later.
         self.m0 = m0
-        self. prior_misfit = torch.sub(self.d_obs, self.mu0_d)
-        weights = torch.mm(self.inversion_operator, self.prior_misfit)
+        self. prior_misfit = self.d_obs - self.mu0_d
 
-        mu_post_d = torch.add(
-                self.mu0_d,
-                torch.mm(sigma0**2 * K_d, weights))
+        weights = self.inv_op_L(self.prior_misfit)
+
+        mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, weights))
         # Store in case.
         self.mu_post_d = mu_post_d
 
@@ -565,3 +546,62 @@ class GaussianProcess(torch.nn.Module):
         # Note that we return data in a column vector, to make it
         # compatible with the rest of the data.
         return (rest_forward, rest_data[:, None])
+
+    def get_inversion_op_cholesky(self, K_d, sigma0):
+        """ Compute the Cholesky decomposition of the inversion operator.
+        Increases noise level if necessary to make matrix invertible.
+
+        Note that this method updates the noise level if necessary.
+
+        Parameters
+        ----------
+        K_d: Tensor
+            The (pushforwarded from model) data covariance matrix (stripped
+            from sigma0).
+        sigma0: Tensor
+            The (model side) standard deviation.
+
+        Returns
+        -------
+        Tensor
+            L such that R = LL^t. L i lower triangular.
+
+        """
+        self.R = (self.data_std**2) * self.data_ones + sigma0**2 * K_d
+
+        # Try to Cholesky.
+        for attempt in range(50):
+            try:
+                L = torch.cholesky(self.R)
+            except RuntimeError:
+                print("Cholesky failed: Singular Matrix.")
+                # Increase noise in steps of 10%.
+                self.data_std += 0.1 * self.data_std
+                self.R = (self.data_std**2) * self.data_ones + sigma0**2 * K_d
+                print("Increasing data std from original {} to {} and retrying.".format(
+                        self.data_std_orig, self.data_std))
+            else:
+                return L
+        # If didnt manage to invert.
+        raise ValueError(
+            "Impossible to invert matrix, even at noise std {}".format(self.data_std))
+        return -1
+    
+    def inv_op_vector_mult(self, x):
+        """ Multiply a vector by the inversion operator, using Cholesky
+        approach (numerically more stable than computing inverse).
+
+        Parameters
+        ----------
+        x: Tensor
+            The vector to multiply.
+
+        Returns
+        -------
+        Tensor
+            Multiplied vector R^(-1) * x.
+
+        """
+        z, _ = torch.triangular_solve(x, self.L, upper=False)
+        y, _ = torch.triangular_solve(z, self.L.t(), upper=True)
+        return y
