@@ -122,26 +122,11 @@ class GaussianProcess(torch.nn.Module):
         float
 
         """
-        # Need to do it this way, otherwise rounding errors kill everything.
-        """
-        log_det = (
-                - torch.logdet(self.stripped_inv)
-                + 2 * torch.log(self.sigma0))
-        """
-        # Note that for some reason, the above doesnt work the same.
-        # We should really check the implementation of logdet.
-        """
-        log_det = - torch.logdet(self.inversion_operator)
-        """
         # WARNING!!! determinant is not linear! Taking constants outside adds
         # power to them.
-        log_det = 2 * self.n_data * torch.log(self.sigma0) + torch.logdet(self.stripped_inv_inv)
+        log_det = torch.logdet(self.R)
+        nll = log_det + torch.mm(self.prior_misfit.t(), self.weights)
 
-        nll = torch.add(
-                log_det,
-                (1 / self.sigma0**2) * torch.mm(
-                      self.prior_misfit.t(),
-                      torch.mm(self.stripped_inv, self.prior_misfit)))
         return nll
 
     def concentrate_m0(self):
@@ -189,9 +174,9 @@ class GaussianProcess(torch.nn.Module):
         self.m0 = m0
         self. prior_misfit = self.d_obs - self.mu0_d
 
-        weights = self.inv_op_vector_mult(self.prior_misfit)
+        self.weights = self.inv_op_vector_mult(self.prior_misfit)
 
-        mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, weights)
+        mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, self.weights)
         # Store in case.
         self.mu_post_d = mu_post_d
 
