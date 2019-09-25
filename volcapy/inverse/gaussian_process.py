@@ -196,7 +196,7 @@ class GaussianProcess(torch.nn.Module):
 
         weights = self.inv_op_L(self.prior_misfit)
 
-        mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, weights))
+        mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, weights)
         # Store in case.
         self.mu_post_d = mu_post_d
 
