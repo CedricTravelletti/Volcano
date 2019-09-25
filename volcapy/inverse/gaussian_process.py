@@ -180,7 +180,7 @@ class GaussianProcess(torch.nn.Module):
         # Get Cholesky factor (lower triangular) of the inversion operator.
         self.inv_op_L = self.get_inversion_op_cholesky(K_d, sigma0)
             
-        inv_op_vector_mult(self, x)
+        self.inv_op_vector_mult(x)
 
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
@@ -191,7 +191,7 @@ class GaussianProcess(torch.nn.Module):
         self.m0 = m0
         self. prior_misfit = self.d_obs - self.mu0_d
 
-        weights = self.inv_op_L(self.prior_misfit)
+        weights = self.inv_op_vector_mult(self.prior_misfit)
 
         mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, weights)
         # Store in case.
@@ -598,6 +598,6 @@ class GaussianProcess(torch.nn.Module):
             Multiplied vector R^(-1) * x.
 
         """
-        z, _ = torch.triangular_solve(x, self.L, upper=False)
-        y, _ = torch.triangular_solve(z, self.L.t(), upper=True)
+        z, _ = torch.triangular_solve(x, self.inv_op_L, upper=False)
+        y, _ = torch.triangular_solve(z, self.inv_op_L.t(), upper=True)
         return y
