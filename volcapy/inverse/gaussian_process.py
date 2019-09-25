@@ -50,9 +50,6 @@ gpu = torch.device('cuda:0')
 cpu = torch.device('cpu')
 
 
-# Noise to Variance ratio.
-# NtV = (0.001)**2
-
 # Data standard deviation.
 epsilon2 = 0.1**2
 
@@ -337,8 +334,7 @@ class GaussianProcess(torch.nn.Module):
             # Forward pass: Compute predicted y by passing
             # x to the model
             m_posterior_d = self.condition_data(K_d, self.sigma0,
-                    concentrate=True,
-                    NtV_crit=NtV_crit)
+                    concentrate=True)
             log_likelihood = self.neg_log_likelihood()
 
             # Zero gradients, perform a backward pass,
