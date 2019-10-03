@@ -1,4 +1,20 @@
+"""
+This code generates a synthetic volcano and corresponding dataset.
+
+Output
+------
+F_synth.npy: The forward operator
+reg_coords_synth.npy: A regular grid, stored as a n_cells * n_dims array.
+volcano_inds_synth.npy A list specifying the indices (in the regular grid) that
+    correspond to volcano cells.
+data_coords_synth.npy: Coordinates of the data sites.
+data_values_synth.npy: (Computed) value of the data measurements.
+density_synth.npy: The matter density inside the synthetic volcano. Note that
+    this is on the regular grid, with zeros for cells outside the volcano.
+
+"""
 import volcapy.synthetic.grid as gd
+from volcapy.synthetic.vtkutils import save_vtk
 import numpy as np
 import os
 
@@ -99,7 +115,6 @@ np.save(os.path.join(out_folder,"density_synth.npy"), density)
 # -------------------------------------------------------------------
 # Save to VTK for alter visualiation with Paraview.
 # -------------------------------------------------------------------
-from volcapy.synthetic.vtkutils import save_vtk
 
 save_vtk(density, (nx, ny, nz), res_x, res_y, res_z,
         os.path.join(out_folder, "density_synth.mhd"))
