@@ -555,11 +555,11 @@ class GaussianProcess(torch.nn.Module):
             try:
                 L = torch.cholesky(self.R)
             except RuntimeError:
-                print("Cholesky failed: Singular Matrix.")
-                # Increase noise in steps of 10%.
-                self.data_std += 0.1 * self.data_std
+                logger.info("Cholesky failed: Singular Matrix.")
+                # Increase noise in steps of 5%.
+                self.data_std += 0.05 * self.data_std
                 self.R = (self.data_std**2) * self.data_ones + sigma0**2 * K_d
-                print("Increasing data std from original {} to {} and retrying.".format(
+                logger.info("Increasing data std from original {} to {} and retrying.".format(
                         self.data_std_orig, self.data_std))
             else:
                 return L
