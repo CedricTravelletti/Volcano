@@ -100,7 +100,8 @@ from timeit import default_timer as timer
 start = timer()
 
 # Create the GP model.
-myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init)
+myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
+        data_std=data_std, logger=logger)
 myGP.cuda()
 
 for i, lambda0 in enumerate(lambda0s):
@@ -121,7 +122,7 @@ for i, lambda0 in enumerate(lambda0s):
     else: n_epochs = n_epochs_long
 
     # Run gradient descent.
-    myGP.optimize(K_d, n_epochs, gpu, logger, sigma0_init=None, lr=0.4)
+    myGP.optimize(K_d, n_epochs, gpu, sigma0_init=None, lr=0.4)
 
     # Send everything back to cpu.
     myGP.to_device(cpu)

@@ -55,7 +55,8 @@ epsilon2 = 0.1**2
 
 
 class GaussianProcess(torch.nn.Module):
-    def __init__(self, F, d_obs, data_ones, sigma0_init, data_std=0.1):
+    def __init__(self, F, d_obs, data_ones, sigma0_init, data_std=0.1,
+            logger=None):
         """
 
         Parameters
@@ -69,6 +70,8 @@ class GaussianProcess(torch.nn.Module):
         sigma0_init
             Original value of the sigma0 parameter to use when starting
             optimization.
+        logger
+            An instance of logging.Logger, used to output training progression.
 
         """
         super(GaussianProcess, self).__init__()
@@ -94,6 +97,13 @@ class GaussianProcess(torch.nn.Module):
 
         # Identity vector. Need for concentration.
         self.I_d = torch.ones((self.n_data, 1), dtype=torch.float32)
+
+        # If no logger, create one.
+        if logger is None:
+            import logging
+            logging.basicConfig(level=logging.INFO)
+            logger = logging.getLogger(__name__)
+        self.logger = logger
 
     def to_device(self, device):
         """ Transfer all model attributes to the given device.
@@ -279,7 +289,7 @@ class GaussianProcess(torch.nn.Module):
 
         return self.mu_post_m.detach(), self.mu_post_d
 
-    def optimize(self, K_d, n_epochs, device, logger, sigma0_init=None,
+    def optimize(self, K_d, n_epochs, device, sigma0_init=None,
             lr=0.007, NtV_crit=-1.0):
         """ Given lambda0, optimize the two remaining hyperparams via MLE.
         Here, instead of giving lambda0, we give a (stripped) covariance
@@ -295,8 +305,6 @@ class GaussianProcess(torch.nn.Module):
             Number of training epochs.
         device: Torch.device
             Device to use for optimization, either CPU or GPU.
-        logger
-            An instance of logging.Logger, used to output training progression.
         sigma0_init: float
             Starting value for gradient descent. If None, then use the value
             sotred by the model class (that is, the one resulting from the
@@ -331,12 +339,12 @@ class GaussianProcess(torch.nn.Module):
             if epoch % 100 == 0:
                 # Compute train error.
                 train_RMSE = self.train_RMSE()
-                logger.info("sigma0: {}".format(self.sigma0.item()))
-                logger.info("Log-likelihood: {}".format(log_likelihood.item()))
-                logger.info("RMSE train error: {}".format(train_RMSE.item()))
+                self.logger.info("sigma0: {}".format(self.sigma0.item()))
+                self.logger.info("Log-likelihood: {}".format(log_likelihood.item()))
+                self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
-        logger.info("Log-likelihood: {}".format(log_likelihood.item()))
-        logger.info("RMSE train error: {}".format(train_RMSE.item()))
+        self.logger.info("Log-likelihood: {}".format(log_likelihood.item()))
+        self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
         # Send everything back to cpu.
         self.to_device(cpu)
@@ -555,11 +563,11 @@ class GaussianProcess(torch.nn.Module):
             try:
                 L = torch.cholesky(self.R)
             except RuntimeError:
-                logger.info("Cholesky failed: Singular Matrix.")
+                self.logger.info("Cholesky failed: Singular Matrix.")
                 # Increase noise in steps of 5%.
                 self.data_std += 0.05 * self.data_std
                 self.R = (self.data_std**2) * self.data_ones + sigma0**2 * K_d
-                logger.info("Increasing data std from original {} to {} and retrying.".format(
+                self.logger.info("Increasing data std from original {} to {} and retrying.".format(
                         self.data_std_orig, self.data_std))
             else:
                 return L
