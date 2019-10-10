@@ -6,7 +6,7 @@ cross validation error.
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
 from volcapy.compatibility_layer import get_regularization_cells_inds
-import volcapy.covariance.covariance_tools as cl
+import volcapy.covariance.matern32 as cl
 
 import numpy as np
 import os
@@ -42,9 +42,9 @@ n_data = inverseProblem.n_data
 # ---------------------------------------------------------------
 # ---------------------------------------------------------------
 reg_cells_inds = get_regularization_cells_inds(inverseProblem)
-# Delete the cells.
-inverseProblem.forward[:, reg_cells_inds] = 0.0
 
+# Delete the cells.
+# inverseProblem.forward[:, reg_cells_inds] = 0.0
 
 F = torch.as_tensor(inverseProblem.forward).detach()
 
@@ -60,7 +60,7 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 50.0
+sigma0_init = 500.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -74,7 +74,7 @@ out_folder = "/idiap/temp/ctravelletti/out/train/"
 # ---------------------------------------------------
 # Range for the grid search.
 lambda0_start = 2.0
-lambda0_stop = 600.0
+lambda0_stop = 1400.0
 lambda0_step = 20.0
 lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 n_lambda0s = len(lambda0s)
@@ -92,8 +92,8 @@ sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 # on sigma0). The next lambda0s will have optimal sigma0s that vary
 # continouslty, hence we can initialize with the last optimal sigma0 and train
 # for a shorter time.
-n_epochs_short = 4000
-n_epochs_long = 10000
+n_epochs_short = 6000
+n_epochs_long = 20000
 
 # Run gradient descent for every lambda0.
 from timeit import default_timer as timer
@@ -121,7 +121,7 @@ for i, lambda0 in enumerate(lambda0s):
     else: n_epochs = n_epochs_long
 
     # Run gradient descent.
-    myGP.optimize(K_d, n_epochs, gpu, logger, sigma0_init=None, lr=0.5)
+    myGP.optimize(K_d, n_epochs, gpu, logger, sigma0_init=None, lr=0.4)
 
     # Send everything back to cpu.
     myGP.to_device(cpu)
@@ -162,3 +162,12 @@ np.save(os.path.join(out_folder, "loocv_rmses_train.npy"), loocv_rmses)
 np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
 np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
 np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
+
+# Print optimal parameters.
+ind_min = np.argmin(lls)
+logger.info("OPTIMAL PARAMETERS")
+logger.info("------------------")
+logger.info("lambda0 {} , sigma0 {} , m0 {}".format(
+        lambda0s[ind_min], sigma0s[ind_min], m0s[ind_min]))
+logger.info("Performance Metrics: Train RMSE {} , LOOCV RMSE {} , log-likelihood {}.".format(
+        train_rmses[ind_min], loocv_rmses[ind_min], lls[ind_min]))
