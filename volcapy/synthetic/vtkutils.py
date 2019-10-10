@@ -1,3 +1,4 @@
+""" Save inversion result arrays to VTK for visualization. """
 from vtk.util import numpy_support
 import vtk
 import numpy as np
@@ -16,6 +17,10 @@ def save_vtk(data, shape, res_x, res_y, res_z, filename):
     filename: string
 
     """
+    # Consider 0s and below as NaNs. This makes visualization easier
+    # using the *Threshold* filter in Paraview.
+    data[data<=0.0] = np.nan
+
     data = data.reshape(shape, order="F")
 
     # vtkImageData is the vtk image volume type
@@ -48,6 +53,11 @@ def ndarray_to_vtk(data, res_x, res_y, res_z, filename):
     filename: string
 
     """
+    # Consider 0s and below as NaNs. This makes visualization easier
+    # using the *Threshold* filter in Paraview.
+    data[data<=0.0] = np.nan
+
+    # See the TRANSPOSE? VTK uses strange ordering.
     vtk_data_array = numpy_support.numpy_to_vtk(
                 num_array=data.transpose(2, 1, 0).ravel(),
                 deep=True, array_type=vtk.VTK_FLOAT)
