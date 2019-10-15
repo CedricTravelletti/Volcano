@@ -2,6 +2,8 @@
 """ Given a set of hyperparameters, compute the *kriging* predictor and the
 cross validation error.
 
+VERSION COMPUTING THE TEST ERROR AT EACH STEP.
+
 """
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
@@ -33,7 +35,13 @@ cpu = torch.device('cpu')
 # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
 niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
 inverseProblem = InverseProblem.from_matfile(niklas_data_path)
+
+# Test-Train split.
+n_keep = 300
+rest_forward, rest_data = subset_data(self, n_keep, seed=2):
 n_data = inverseProblem.n_data
+F_test = torch.as_tensor(rest_forward).detach()
+d_obs_test = torch.as_tensor(rest_data[:, None]).detach()
 
 
 # -- Delete Regularization Cells --
@@ -82,6 +90,7 @@ loocv_rmses = np.zeros((n_lambda0s), dtype=np.float32)
 m0s = np.zeros((n_lambda0s), dtype=np.float32)
 sigma0s = np.zeros((n_lambda0s), dtype=np.float32)
 
+test_rmses = np.zeros((n_lambda0s), dtype=np.float32)
 
 # OPTIMIZER LOGIC
 # The first lambda0 will be trained longer (that is, for the gradient descent
@@ -131,12 +140,19 @@ for i, lambda0 in enumerate(lambda0s):
     # Compute LOOCV RMSE.
     loocv_rmse = myGP.loo_error()
 
+    # Compute test RMSE
+    mu_post_m, _ = myGP.condition_model(K_d, F, sigma0=myGP.sigma0, concentrate=True)
+    test_rmse = torch.sqrt(torch.mean(
+            (d_obs_test - torch.mm(F_test, m_post_m)**2))
+
     # Save the final ll, train/test error and hyperparams for each lambda.
     lls[i] = ll.item()
     train_rmses[i] = train_RMSE.item()
     loocv_rmses[i] = loocv_rmse.item()
     m0s[i] = myGP.m0
     sigma0s[i] = myGP.sigma0.item()
+
+    test_rmses[i] = test_RMSE.item()
 
     # Save results every 5 iterations.
     if i % 4 == 0:
@@ -147,6 +163,8 @@ for i, lambda0 in enumerate(lambda0s):
         np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
         np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
         np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
+
+        np.save(os.path.join(out_folder, "test_rmses_train.npy"), test_rmses)
 
 logger.info("Elapsed time:")
 end = timer()
@@ -160,6 +178,7 @@ np.save(os.path.join(out_folder, "m0s_train.npy"), m0s)
 np.save(os.path.join(out_folder, "sigma0s_train.npy"), sigma0s)
 np.save(os.path.join(out_folder, "lambda0s_train.npy"), lambda0s)
 
+np.save(os.path.join(out_folder, "test_rmses_train.npy"), test_rmses)
 
 # Print optimal parameters.
 ind_min = np.argmin(lls)
@@ -169,3 +188,5 @@ logger.info("lambda0 {} , sigma0 {} , m0 {}".format(
         lambda0s[ind_min], sigma0s[ind_min], m0s[ind_min]))
 logger.info("Performance Metrics: Train RMSE {} , LOOCV RMSE {} , log-likelihood {}.".format(
         train_rmses[ind_min], loocv_rmses[ind_min], lls[ind_min]))
+logger.info("Performance Metrics: Test RMSE {}.".format(
+        test_rmses[ind_min]))
