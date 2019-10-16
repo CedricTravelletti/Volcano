@@ -5,8 +5,11 @@ IMPORTANT: Note that we always strip the variance parameter sigma0 from the
 covariance matrix. Hence, when using the covariance pushforward computed here,
 one has to manually multiply by sigma0^2 for expressions to make sense.
 
+THIS ONE COMPUTES THE SQUARED EXPONENTIAL.
+
 """
 import torch
+import numpy as np
 
 # General torch settings and devices.
 torch.set_num_threads(8)
@@ -50,7 +53,6 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
         n_model * n_data covariance pushforward K F^t.
     """
     start = timer()
-
 
     # Transfer everything to device.
     lambda0 = torch.tensor(lambda0, requires_grad=False).to(device)
