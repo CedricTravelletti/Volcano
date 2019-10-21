@@ -31,8 +31,8 @@ URL = 'https://github.com/CedricTravelletti/Volcapy'
 requirements = "requirements.txt"
 
 ext_modules = [
-    "volcapy/kernels/squared_exponential.pyx",
-    "volcapy/kernels/exponential.pyx",
+    # "volcapy/kernels/squared_exponential.pyx",
+    # "volcapy/kernels/exponential.pyx",
     "volcapy/niklas/banerjee.pyx",
     "volcapy/grid/covariance_tools.pyx",
 ]
