@@ -143,7 +143,7 @@ for i, lambda0 in enumerate(lambda0s):
     # Compute test RMSE
     mu_post_m, _ = myGP.condition_model(K_d, F, sigma0=myGP.sigma0, concentrate=True)
     test_rmse = torch.sqrt(torch.mean(
-            (d_obs_test - torch.mm(F_test, m_post_m)**2))
+            (d_obs_test - torch.mm(F_test, m_post_m))**2)
 
     # Save the final ll, train/test error and hyperparams for each lambda.
     lls[i] = ll.item()
