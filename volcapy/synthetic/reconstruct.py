@@ -1,8 +1,12 @@
 # File: forward_brute_force.py, Author: Cedric Travelletti, Date: 12.04.2019.
-""" Script running the inversion on synthetic dataset.
+""" This script runs the inversion on the synthetic dataset created using
+:code:`build_synth_data`.
+
+Note that hyperparameters have to be manually specified, so one should run
+:code:`train` before in order to determine the optimal hyperparameters. 
+
 """
 from volcapy.inverse.gaussian_process import GaussianProcess
-# import volcapy.covariance.covariance_tools as cl
 import volcapy.covariance.matern32 as cl
 
 import numpy as np

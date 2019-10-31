@@ -1,16 +1,10 @@
 """
 This code generates a synthetic volcano and corresponding dataset.
+The generated forward operator, inversion grid, data sites coordinates, etc ...
+will be stored as numpy array files (.npy).
 
-Output
-------
-F_synth.npy: The forward operator
-reg_coords_synth.npy: A regular grid, stored as a n_cells * n_dims array.
-volcano_inds_synth.npy A list specifying the indices (in the regular grid) that
-    correspond to volcano cells.
-data_coords_synth.npy: Coordinates of the data sites.
-data_values_synth.npy: (Computed) value of the data measurements.
-density_synth.npy: The matter density inside the synthetic volcano. Note that
-    this is on the regular grid, with zeros for cells outside the volcano.
+See the documentation of the :code:`main` function below for more information
+on the outputs.
 
 """
 import volcapy.synthetic.grid as gd
@@ -20,6 +14,24 @@ import os
 
 
 def main():
+    """
+
+    Returns
+    -------
+        F_synth.npy:
+            The forward operator 
+        reg_coords_synth.npy:
+            A regular grid, stored as a n_cells * n_dims array.
+        volcano_inds_synth.npy:
+            A list specifying the indices (in the regular grid) that correspond to volcano cells.
+        data_coords_synth.npy:
+            Coordinates of the data sites.
+        data_values_synth.npy:
+            (Computed) value of the data measurements.
+        density_synth.npy:
+            The matter density inside the synthetic volcano. Note tha this is on the regular grid, with zeros for cells outside the volcano.
+
+    """
     # Generate gridded cube.
     nx = 80
     ny = 80
