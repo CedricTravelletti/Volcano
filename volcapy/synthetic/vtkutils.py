@@ -1,4 +1,6 @@
-""" Save inversion result arrays to VTK for visualization. """
+""" Utilities to convert inversion data to VTK format for 3d visualization.
+
+"""
 from vtk.util import numpy_support
 import vtk
 import numpy as np

@@ -1,5 +1,14 @@
-"""
+""" Grid functions for synthetic volcano.
 
+This submodule contains functions for building artificial irregular grids
+(topographies).
+
+It can also generate data measurement site on the surface of the topography
+(sites placed at random) and compute the forward operator associated to the
+topography/data sites.
+
+Misc
+----
 cells_coords: ndarray, shape n_cells * n_dims
 
 """
