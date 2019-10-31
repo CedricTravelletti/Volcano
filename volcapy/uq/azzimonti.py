@@ -1,6 +1,8 @@
 # File: azzimonti.py, Author: Cedric Travelletti, Date: 28.01.2019.
-""" Module implementing estimation of excursion sets and uncertainty
+""" (DEPRECATED) Module implementing estimation of excursion sets and uncertainty
 quantification on them.
+
+SHOULD BE ADAPTED TO THE NEW GAUSSIANPROCESS CLASS.
 
 """
 import numpy as np
