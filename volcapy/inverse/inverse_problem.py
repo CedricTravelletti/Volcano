@@ -21,7 +21,7 @@ class InverseProblem():
     Needs a forward and an inversion grid as
     input. Then can perform several inversions.
 
-    Parameters
+    Attributes
     ----------
     cells_coords: 2D array
         Coordinates of the inversion cells. Element i,j should contain j-th
@@ -136,7 +136,7 @@ class InverseProblem():
         return (rest_forward, rest_data[:, None])
 
     def build_partial_covariance(self, row_begin, row_end, sigma0, lambda0):
-        """ Prepare a function for returning partial rows of the covariance
+        """ (DEPRECATED) Prepare a function for returning partial rows of the covariance
         matrix.
 
         Warning: should cast, since returns MemoryView.
@@ -157,7 +157,7 @@ class InverseProblem():
     # TODO: Refactor. Effectively, this is chunked multiplication of a matrix with
     # an implicitly defined one.
     def compute_covariance_pushforward(self, G, sigma0, lambda0):
-        """ Compute the matrix product C_m * G^T, which we call the *covariance
+        """ (DEPRECATED) Compute the matrix product C_m * G^T, which we call the *covariance
         pushforward*.
 
         Parameters
@@ -203,7 +203,7 @@ class InverseProblem():
             sigma0, lambda0,
             preload_covariance_pushforward=False, cov_pushforward=None,
             compute_post_covariance=False):
-        """ Perform inversion.
+        """ (DEPRECATED) Perform inversion.
 
         Parameters
         ----------
@@ -289,7 +289,7 @@ class InverseProblem():
 
     # TODO: Refactor. Currently accessing stuf oustide its scope.
     def compute_post_covariance(self):
-        """ Compute the full posterior covariance matrix.
+        """ (DEPRECATED) Compute the full posterior covariance matrix.
         """
         # AMBITIOUS: Compute the whole (120GB) posterior covariance matrix.
         print("Computing posterior covariance.")
@@ -307,7 +307,7 @@ class InverseProblem():
         del post_cov
 
     def save_squared_distance_mesh(self, path):
-        """ Computes the matrix of squared euclidean distances betwen all
+        """ (DEPRECATED) Computes the matrix of squared euclidean distances betwen all
         couples and saves to disk.
         """
         # AMBITIOUS: Compute the whole (120GB) posterior covariance matrix.
