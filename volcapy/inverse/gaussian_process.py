@@ -1,5 +1,4 @@
-""" Gaussian Process for Inversion class.
-
+"""
 This class implements gaussian process regression/conditioning for inverse
 problems, i.e. when conditioning on a linear operator of the field.
 The situation is we have a gaussian process on some space and a linear

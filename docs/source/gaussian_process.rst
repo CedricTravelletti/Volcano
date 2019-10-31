@@ -1,18 +1,19 @@
 .. role:: hidden
     :class: hidden-section
 
-Inverse Problem
+Gaussian Process
 ===================================
 
 .. automodule:: volcapy.inverse
 .. currentmodule:: volcapy.inverse
 
-.. automodule:: volcapy.inverse.inverse_problem
+
+.. automodule:: volcapy.inverse.gaussian_process
 
 -------------------------------------------
 
 Module implementation Details
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: InverseProblem
+.. autoclass:: GaussianProcess
    :members:

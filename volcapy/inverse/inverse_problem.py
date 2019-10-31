@@ -1,7 +1,15 @@
-""" Module handling all data needed to define an inverse problem.
+""" 
+This module provides a class encapsulating all data needed to define an inverse
+problem.
 
-The goal is to encapsulat things such as the inversion grid, the measurement
-data, ... in a single class.
+The goal is to allow the user to ignore the underlying details of the input
+data.
+
+Indeed, if one want to work on Niklas's data, one just has to use
+
+:code:`InverseProblem.from_matfile(path)`
+
+to load all data from the raw .mat file.
 
 """
 from volcapy import loading

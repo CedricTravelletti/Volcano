@@ -1,7 +1,7 @@
 .. Copied from gpytorch.
-:github_url: https://github.com/cornellius-gp/gpytorch
+:github_url: https://github.com/CedricTravelletti/Volcano
 
-GPyTorch's documentation
+Volcapy's documentation
 ====================================
 
 .. toctree::
@@ -29,6 +29,7 @@ GPyTorch's documentation
    :caption: Package Reference
 
    inverse
+   gaussian_process
    covariance
    train
    synthetic
@@ -37,8 +38,6 @@ GPyTorch's documentation
    niklas
    forward
    grid
-   math
-   exactGPbillion
 
 
 Indices and tables

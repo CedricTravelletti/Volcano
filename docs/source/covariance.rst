@@ -1,7 +1,7 @@
 .. role:: hidden
     :class: hidden-section
 
-volcapy.covariance
+Kernels
 ===================================
 
 This package implements the different covariance kernels that one can use
