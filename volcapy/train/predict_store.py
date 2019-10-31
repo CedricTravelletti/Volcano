@@ -9,7 +9,8 @@ It can then be used to perform forward passes on CPU-only machines.
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
 from volcapy.compatibility_layer import get_regularization_cells_inds
-import volcapy.covariance.matern32 as cl
+import volcapy.covariance.matern52 as cl
+suffix = "matern52" # Append to output file names so we know which kernel.
 
 import numpy as np
 import os
@@ -39,15 +40,6 @@ inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 n_data = inverseProblem.n_data
 
 
-# ---------------------------------------------------------------
-# ---------------------------------------------------------------
-# NEW
-# ---------------------------------------------------------------
-# ---------------------------------------------------------------
-reg_cells_inds = get_regularization_cells_inds(inverseProblem)
-# Delete the cells.
-# inverseProblem.forward[:, reg_cells_inds] = 0.0
-
 F = torch.as_tensor(inverseProblem.forward).detach()
 
 # Careful: we have to make a column vector here.
@@ -62,9 +54,9 @@ del(inverseProblem)
 # ----------------------------------------------------------------------------#
 #     HYPERPARAMETERS
 # ----------------------------------------------------------------------------#
-sigma0_init = 607.7907
-m0 = 1645.029
-lambda0 = 562.0
+sigma0_init = 221.6
+m0 = 2133.8
+lambda0 = 462.0
 # ----------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------#
 
@@ -120,13 +112,13 @@ def main(out_folder, lambda0, sigma0):
     logger.info("LOOCV error: {}".format(loocv_rmse.item()))
 
     # Save
-    filename = "m_post_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "m_post_" + str(int(lambda0)) + "_" + suffix + ".npy"
     np.save(os.path.join(out_folder, filename), m_post_m)
 
-    filename = "post_cov_diag_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "post_cov_diag_" + str(int(lambda0)) + "_" + suffix + ".npy"
     np.save(os.path.join(out_folder, filename), post_cov_diag)
 
-    filename = "cov_pushfwd_" + str(int(lambda0)) + "_sqexp.npy"
+    filename = "cov_pushfwd_" + str(int(lambda0)) + "_" + suffix + ".npy"
     np.save(os.path.join(out_folder, filename), cov_pushfwd)
 
 if __name__ == "__main__":

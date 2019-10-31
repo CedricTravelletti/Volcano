@@ -2,15 +2,17 @@ import os
 import urllib.request
 from scipy.io import loadmat
 
+import torch
+import gpytorch
 
 dataset = 'protein'
-if not os.path.isfile(f'{dataset}.mat'):
-    print(f'Downloading \'{dataset}\' UCI dataset...')
+if not os.path.isfile("{}.mat".format(dataset)):
+    print("Downloading {} UCI dataset...".format(dataset))
     urllib.request.urlretrieve(
             'https://drive.google.com/uc?export=download&id=1nRb8e7qooozXkNghC5eQS0JeywSXGX2S',
-            f'{dataset}.mat')
+            "{}.mat".format(dataset))
 
-data = torch.Tensor(loadmat(f'{dataset}.mat')['data'])
+data = torch.Tensor(loadmat("{}.mat".format(dataset))['data'])
 
 # ----------------------------------------------------------------------------
 # Normalize data and test/train split.
@@ -62,9 +64,9 @@ class ExactGPModel(gpytorch.models.ExactGP):
         base_covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
 
         self.covar_module = gpytorch.kernels.MultiDeviceKernel(
-            base_covar_module, device_ids=range(n_devices),
-            output_device=output_device
-        )
+                base_covar_module, device_ids=range(n_devices),
+                output_device=output_device
+                )
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -83,14 +85,13 @@ def train(train_x, train_y, n_devices, output_device,
     # "Loss" for GPs - the marginal log likelihood
     mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
 
-    with gpytorch.beta_features.checkpoint_kernel(checkpoint_size), \
-        gpytorch.settings.max_preconditioner_size(preconditioner_size):
-
-            def closure():
-                optimizer.zero_grad()
-                output = model(train_x)
-                loss = -mll(output, train_y)
-                return loss
+    with (gpytorch.beta_features.checkpoint_kernel(checkpoint_size),
+            gpytorch.settings.max_preconditioner_size(preconditioner_size)):
+        def closure():
+            optimizer.zero_grad()
+            output = model(train_x)
+            loss = -mll(output, train_y)
+            return loss
 
         loss = closure()
         loss.backward()
@@ -100,15 +101,16 @@ def train(train_x, train_y, n_devices, output_device,
             loss, _, _, _, _, _, _, fail = optimizer.step(options)
 
             print('Iter %d/%d - Loss: %.3f lengthscale: %.3f noise: %.3f' % (
-                i + 1, n_training_iter, loss.item(),
-                model.covar_module.module.base_kernel.lengthscale.item(),
-                model.likelihood.noise.item()
-            ))
+                    i + 1, n_training_iter, loss.item(),
+                    model.covar_module.module.base_kernel.lengthscale.item(),
+                    model.likelihood.noise.item()
+                    ))
             if fail:
                 print('Convergence reached!')
                 break
 
-    print(f"Finished training on {train_x.size(0)} data points using {n_devices} GPUs.")
+    print("Finished training on {} data points using {} GPUs.".format(
+            train_x.size(0), n_devices))
 
     return model, likelihood
 
@@ -116,7 +118,7 @@ def train(train_x, train_y, n_devices, output_device,
 # Automatically determing GPU settings.
 # ----------------------------------------------------------------------------
 
- import gc
+import gc
 
 def find_best_gpu_setting(train_x, train_y, n_devices, output_device,
         preconditioner_size):
@@ -160,10 +162,10 @@ checkpoint_size = find_best_gpu_setting(train_x, train_y, n_devices=n_devices,
 # ----------------------------------------------------------------------------
 
 model, likelihood = train(train_x, train_y,
-n_devices=n_devices, output_device=output_device,
-checkpoint_size=10000,
-preconditioner_size=100,
-n_training_iter=20)
+        n_devices=n_devices, output_device=output_device,
+        checkpoint_size=10000,
+        preconditioner_size=100,
+        n_training_iter=20)
 
 # ----------------------------------------------------------------------------
 # Prepare the cache by computing a prediction (this is just to get accurate
@@ -186,9 +188,9 @@ with (torch.no_grad(), gpytorch.settings.fast_pred_var(),
 # Compute Predictions
 # ----------------------------------------------------------------------------
 
- with (torch.no_grad(), gpytorch.settings.fast_pred_var(),
+with (torch.no_grad(), gpytorch.settings.fast_pred_var(),
          gpytorch.beta_features.checkpoint_kernel(1000)):
      import timeit
      timeit.timeit('latent_pred = model(test_x)', number=1)
      test_rmse = torch.sqrt(torch.mean(torch.pow(latent_pred.mean - test_y, 2)))
-     print(f"Test RMSE: {test_rmse.item()}")
+     print("Test RMSE: {}".format(test_rmse.item()))

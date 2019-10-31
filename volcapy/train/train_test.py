@@ -38,8 +38,9 @@ inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
 # Test-Train split.
 n_keep = 300
-rest_forward, rest_data = subset_data(self, n_keep, seed=2):
+rest_forward, rest_data = inverseProblem.subset_data(n_keep, seed=2)
 n_data = inverseProblem.n_data
+n_data_test = rest_data.shape[0]
 F_test = torch.as_tensor(rest_forward).detach()
 d_obs_test = torch.as_tensor(rest_data[:, None]).detach()
 
@@ -70,7 +71,8 @@ sigma0_init = 500.0
 ###########
 # IMPORTANT
 ###########
-out_folder = "/idiap/temp/ctravelletti/out/train/"
+# out_folder = "/idiap/temp/ctravelletti/out/train/"
+out_folder = "/idiap/temp/ctravelletti/out/train_sqexp/"
 
 # ---------------------------------------------------
 # Train multiple lambdas
@@ -141,9 +143,9 @@ for i, lambda0 in enumerate(lambda0s):
     loocv_rmse = myGP.loo_error()
 
     # Compute test RMSE
-    mu_post_m, _ = myGP.condition_model(K_d, F, sigma0=myGP.sigma0, concentrate=True)
+    m_post_m, _ = myGP.condition_model(cov_pushfwd, F, sigma0=myGP.sigma0, concentrate=True)
     test_rmse = torch.sqrt(torch.mean(
-            (d_obs_test - torch.mm(F_test, m_post_m)**2))
+            (d_obs_test - torch.mm(F_test, m_post_m))**2))
 
     # Save the final ll, train/test error and hyperparams for each lambda.
     lls[i] = ll.item()
@@ -152,7 +154,7 @@ for i, lambda0 in enumerate(lambda0s):
     m0s[i] = myGP.m0
     sigma0s[i] = myGP.sigma0.item()
 
-    test_rmses[i] = test_RMSE.item()
+    test_rmses[i] = test_rmse.item()
 
     # Save results every 5 iterations.
     if i % 4 == 0:
@@ -190,3 +192,5 @@ logger.info("Performance Metrics: Train RMSE {} , LOOCV RMSE {} , log-likelihood
         train_rmses[ind_min], loocv_rmses[ind_min], lls[ind_min]))
 logger.info("Performance Metrics: Test RMSE {}.".format(
         test_rmses[ind_min]))
+logger.info("Run made with {} training points and {} test points.".format(
+        n_data, n_data_test))

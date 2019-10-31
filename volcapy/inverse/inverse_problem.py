@@ -94,7 +94,7 @@ class InverseProblem():
         # Dimensions
         self.n_model = self.cells_coords.shape[0]
 
-    def subset_data(self, n_keep):
+    def subset_data(self, n_keep, seed=None):
         """ Subset an inverse problem by only keeping n_keep data
         points selected at random.
 
@@ -105,6 +105,8 @@ class InverseProblem():
         ----------
         n_keep: int
             Only keep n_keep data points.
+        seed: int
+            Can be used to make choice of test data predictable.
 
         Returns
         -------
@@ -113,6 +115,8 @@ class InverseProblem():
 
         """
         # Pick indices at random.
+        if seed is not None:
+            np.random.seed(seed)
         inds = np.random.choice(range(self.n_data), n_keep, replace=False)
 
         # Return the unused part of the forward and of the data so that it can
