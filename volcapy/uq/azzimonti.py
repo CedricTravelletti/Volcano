@@ -79,8 +79,7 @@ class GaussianProcess():
         return excursion_probs
 
     def vorobev_quantile_inds(self, alpha, threshold):
-        """ Returns Vorobev quantile alpha. In facts, return the indices of the
-        points which are in the quantile.
+        """ Get the cells belonging Vorobev quantile alpha.
 
         Parameters
         ----------
@@ -107,7 +106,8 @@ class GaussianProcess():
         return vorobev_inds
 
     def vorobev_expectation_inds(self, threshold):
-        """ Same as above, but return Vorob'ev expectation this time.
+        """ Get cells belonging to the Vorobev expectation.
+
         Parameters
         ----------
         threshold: float
@@ -142,8 +142,19 @@ class GaussianProcess():
     # should either subset cells when building the GP so that have all same
     # size, or loop over cells and get their resolutions.
     def expected_excursion_measure(self, threshold):
-        """ Returns the expected measure of the excursion set above the
+        """ Get the expected measure of the excursion set above the given
         threshold.
+
+        Parameters
+        ----------
+        threshold: float
+            Excursion threshold
+
+        Returns
+        -------
+        flot
+            Expected size (in number of cells) of the excursion set above the
+            given threshold.
 
         """
         excursion_probs = self.compute_excursion_probs(threshold)
@@ -151,6 +162,7 @@ class GaussianProcess():
 
     def vorobev_deviation(self, set_inds, threshold):
         """ Compute the Vorob'ev deviation of a given set.
+
         Parameters
         ----------
         set_inds: List[int]
