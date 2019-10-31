@@ -1,2 +1,2 @@
-# Volcano
-Collaboration with Niklas Linde on geophysical inversion.
+[Project Website](https://cedrictravelletti.github.io/Volcano/)
+
