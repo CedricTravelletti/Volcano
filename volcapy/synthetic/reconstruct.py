@@ -1,7 +1,5 @@
 # File: forward_brute_force.py, Author: Cedric Travelletti, Date: 12.04.2019.
-""" Given a set of hyperparameters, compute the *kriging* predictor and the
-cross validation error.
-
+""" Script running the inversion on synthetic dataset.
 """
 from volcapy.inverse.gaussian_process import GaussianProcess
 # import volcapy.covariance.covariance_tools as cl
@@ -11,81 +9,87 @@ import numpy as np
 import os
 
 
-# Should be loaded from metadata file.
-nx = 80
-ny = 80
-nz = 80
-res_x = 50
-res_y = 50
-res_z = 50
-
-
-# Set up logging.
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Now torch in da place.
-import torch
-
-# General torch settings and devices.
-torch.set_num_threads(8)
-gpu = torch.device('cuda:0')
-cpu = torch.device('cpu')
-
-# ----------------------------------------------------------------------------#
-#      LOAD DATA
-# ----------------------------------------------------------------------------#
-data_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/out/"
-# data_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/out"
-
-# Regular grid.
-reg_coords = np.load(os.path.join(data_folder, "reg_coords_synth.npy"))
-volcano_inds = np.load(os.path.join(data_folder, "volcano_inds_synth.npy"))
-data_values = np.load(os.path.join(data_folder, "data_values_synth.npy"))
-F = np.load(os.path.join(data_folder, "F_synth.npy"))
-
-n_data = data_values.shape[0]
-
-# Careful: we have to make a column vector here.
-data_std = 0.1
-
-d_obs = data_values.astype(np.float32)
-
-# Indices of the volcano inside the regular grid.
-volcano_coords = reg_coords.astype(np.float32)[volcano_inds]
-F = F.astype(np.float32)
-
-d_obs = torch.as_tensor(data_values[:, None]).float()
-volcano_coords = torch.as_tensor(volcano_coords).detach().float()
-F = torch.as_tensor(F).float()
-
-data_cov = torch.eye(n_data, dtype=torch.float32)
-# ----------------------------------------------------------------------------#
-# ----------------------------------------------------------------------------#
-
-# ----------------------------------------------------------------------------#
-#     HYPERPARAMETERS
-# ----------------------------------------------------------------------------#
-sigma0_init = 193.85703
-m0 = 1439.846
-lambda0 = 422.0
-# ----------------------------------------------------------------------------#
-# ----------------------------------------------------------------------------#
-
-###########
-# IMPORTANT
-###########
-out_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/forwards"
-# out_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/forwards"
-
-# Create the GP model.
-data_std = 0.1
-myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
-        data_std)
+# Should refactor this.
+# This had to be inserted to make the sript run-protected for autodoc.
+def prelude():
+    # Should be loaded from metadata file.
+    nx = 80
+    ny = 80
+    nz = 80
+    res_x = 50
+    res_y = 50
+    res_z = 50
+    
+    
+    # Set up logging.
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    # Now torch in da place.
+    import torch
+    
+    # General torch settings and devices.
+    torch.set_num_threads(8)
+    gpu = torch.device('cuda:0')
+    cpu = torch.device('cpu')
+    
+    # ----------------------------------------------------------------------------#
+    #      LOAD DATA
+    # ----------------------------------------------------------------------------#
+    data_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/out/"
+    # data_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/out"
+    
+    # Regular grid.
+    reg_coords = np.load(os.path.join(data_folder, "reg_coords_synth.npy"))
+    volcano_inds = np.load(os.path.join(data_folder, "volcano_inds_synth.npy"))
+    data_values = np.load(os.path.join(data_folder, "data_values_synth.npy"))
+    F = np.load(os.path.join(data_folder, "F_synth.npy"))
+    
+    n_data = data_values.shape[0]
+    
+    # Careful: we have to make a column vector here.
+    data_std = 0.1
+    
+    d_obs = data_values.astype(np.float32)
+    
+    # Indices of the volcano inside the regular grid.
+    volcano_coords = reg_coords.astype(np.float32)[volcano_inds]
+    F = F.astype(np.float32)
+    
+    d_obs = torch.as_tensor(data_values[:, None]).float()
+    volcano_coords = torch.as_tensor(volcano_coords).detach().float()
+    F = torch.as_tensor(F).float()
+    
+    data_cov = torch.eye(n_data, dtype=torch.float32)
+    # ----------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------#
+    
+    # ----------------------------------------------------------------------------#
+    #     HYPERPARAMETERS
+    # ----------------------------------------------------------------------------#
+    sigma0_init = 193.85703
+    m0 = 1439.846
+    lambda0 = 422.0
+    # ----------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------#
+    
+    ###########
+    # IMPORTANT
+    ###########
+    out_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/forwards"
+    # out_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/forwards"
+    
+    # Create the GP model.
+    data_std = 0.1
+    myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
+            data_std)
 
 
 def main(out_folder, lambda0, sigma0):
+    # Run prelude.
+    prelude()
+
     # Create the covariance pushforward.
     cov_pushfwd = cl.compute_cov_pushforward(
             lambda0, F, volcano_coords, cpu, n_chunks=200,

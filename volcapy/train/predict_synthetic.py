@@ -10,68 +10,73 @@ import volcapy.covariance.covariance_tools as cl
 import numpy as np
 import os
 
-
-# Set up logging.
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Now torch in da place.
-import torch
-
-# General torch settings and devices.
-torch.set_num_threads(8)
-gpu = torch.device('cuda:0')
-cpu = torch.device('cpu')
-
-# ----------------------------------------------------------------------------#
-#      LOAD DATA
-# ----------------------------------------------------------------------------#
-# ----------------------------------------------------------------------------#
-#      LOAD NIKLAS DATA
-# ----------------------------------------------------------------------------#
-# Initialize an inverse problem from Niklas's data.
-# This gives us the forward and the coordinates of the inversion cells.
-# niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
-# niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
-niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
-inverseProblem = InverseProblem.from_matfile(niklas_data_path)
-n_data = inverseProblem.n_data
-F = torch.as_tensor(inverseProblem.forward).detach()
-
-# Careful: we have to make a column vector here.
-data_std = 0.1
-d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
-data_cov = torch.eye(n_data)
-cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
-del(inverseProblem)
-
-n_data = d_obs.shape[0]
-data_cov = torch.eye(n_data, dtype=torch.float32)
-# ----------------------------------------------------------------------------#
-# ----------------------------------------------------------------------------#
-
-# ----------------------------------------------------------------------------#
-#     HYPERPARAMETERS
-# ----------------------------------------------------------------------------#
-sigma0_init = 162.0
-m0 = 1500.0
-lambda0 = 142.0
-# ----------------------------------------------------------------------------#
-# ----------------------------------------------------------------------------#
-
-###########
-# IMPORTANT
-###########
-# out_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/forwards"
-out_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/forwards"
-
-# Create the GP model.
-myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
-        data_std)
+# Will have to be refactored.
+# Had to add to make module run-protected for autodoc.
+def prelude():
+    # Set up logging.
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    # Now torch in da place.
+    import torch
+    
+    # General torch settings and devices.
+    torch.set_num_threads(8)
+    gpu = torch.device('cuda:0')
+    cpu = torch.device('cpu')
+    
+    # ----------------------------------------------------------------------------#
+    #      LOAD DATA
+    # ----------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------#
+    #      LOAD NIKLAS DATA
+    # ----------------------------------------------------------------------------#
+    # Initialize an inverse problem from Niklas's data.
+    # This gives us the forward and the coordinates of the inversion cells.
+    # niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+    # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
+    niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
+    inverseProblem = InverseProblem.from_matfile(niklas_data_path)
+    n_data = inverseProblem.n_data
+    F = torch.as_tensor(inverseProblem.forward).detach()
+    
+    # Careful: we have to make a column vector here.
+    data_std = 0.1
+    d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
+    data_cov = torch.eye(n_data)
+    cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
+    del(inverseProblem)
+    
+    n_data = d_obs.shape[0]
+    data_cov = torch.eye(n_data, dtype=torch.float32)
+    # ----------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------#
+    
+    # ----------------------------------------------------------------------------#
+    #     HYPERPARAMETERS
+    # ----------------------------------------------------------------------------#
+    sigma0_init = 162.0
+    m0 = 1500.0
+    lambda0 = 142.0
+    # ----------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------#
+    
+    ###########
+    # IMPORTANT
+    ###########
+    # out_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/forwards"
+    out_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/forwards"
+    
+    # Create the GP model.
+    myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
+            data_std)
 
 
 def main(out_folder, lambda0, sigma0):
+    # Run prelude.
+    prelude()
+
     # Create the covariance pushforward.
     cov_pushfwd = cl.compute_cov_pushforward(
             lambda0, F, cells_coords, gpu, n_chunks=200,

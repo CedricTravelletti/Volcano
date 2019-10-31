@@ -12,6 +12,9 @@ import volcapy.covariance.covariance_tools as cl
 import numpy as np
 import os
 
+# Will have to be refactored.
+# Had to add to make module run-protected for autodoc.
+def prelude():
 # Set up logging.
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -83,6 +86,9 @@ train_rmses = np.zeros((n_sigma0s), dtype=np.float32)
 loocv_rmses = np.zeros((n_sigma0s), dtype=np.float32)
 
 def main(out_folder, lambda0, sigma0, cov_pushfwd_path):
+    # Run prelude.
+    prelude()
+
     # Load the covariance pushforward.
     cov_pushfwd = torch.from_numpy(np.load(cov_pushfwd_path))
 
