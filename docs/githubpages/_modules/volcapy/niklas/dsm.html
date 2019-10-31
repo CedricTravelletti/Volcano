@@ -1,0 +1,370 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>volcapy.niklas.dsm &mdash; Volcapy 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Volcapy
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Package Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../inverse.html">volcapy.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../covariance.html">volcapy.covariance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../synthetic.html">volcapy.synthetic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uq.html">Uncertainty Quantification Tools</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Volcapy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>volcapy.niklas.dsm</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for volcapy.niklas.dsm</h1><div class="highlight"><pre>
+<span></span><span class="c1"># File: dsm.py, Author: Cedric Travelletti, Date: 15.01.2019.</span>
+<span class="sd">&quot;&quot;&quot; Class implementing dsm functionalities.</span>
+<span class="sd">Also allows to build a dsm object from the raw Niklas data.</span>
+
+<span class="sd">A dsm is basically a two dimensional array of cell, where for each cell we get</span>
+<span class="sd">the midpoint along the x-y axis and the elevation.</span>
+
+<span class="sd">Since we only have midpoints, and since the cells might have different sizes,</span>
+<span class="sd">we also need a list of resolutions.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># Import the definition of a Cell from inversion_grid, so that we have a</span>
+<span class="c1"># coherent data format across modules.</span>
+<span class="kn">from</span> <span class="nn">volcapy.niklas.inversion_grid</span> <span class="k">import</span> <span class="n">Cell</span>
+
+
+<div class="viewcode-block" id="CellDSM"><a class="viewcode-back" href="../../../volcapy.niklas.html#volcapy.niklas.dsm.CellDSM">[docs]</a><span class="k">class</span> <span class="nc">CellDSM</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; Cell for DSM. The difference is that the dsm gives us midpoints,</span>
+<span class="sd">    whereas cells in the inversion grid are defined by their corners. We thus</span>
+<span class="sd">    use the resolution of each cell to return the corners.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">res_x</span><span class="p">,</span> <span class="n">res_y</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">res_x</span> <span class="o">=</span> <span class="n">res_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">res_y</span> <span class="o">=</span> <span class="n">res_y</span>
+
+    <span class="c1"># Return the lower corner  along x.</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">xl</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">res_x</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">xh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">res_x</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">yl</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">res_y</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">yh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">res_y</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+    <span class="c1"># For z, we only have the altitude of the midpoint, there is no notion of</span>
+    <span class="c1"># resolution, so we return the same for high and low.</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">zl</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">zh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span></div>
+
+<div class="viewcode-block" id="DSM"><a class="viewcode-back" href="../../../volcapy.niklas.html#volcapy.niklas.dsm.DSM">[docs]</a><span class="k">class</span> <span class="nc">DSM</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; DSM functionalities</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">longs</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">elevations</span><span class="p">,</span> <span class="n">res_x</span><span class="p">,</span> <span class="n">res_y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Default constructor to create dsm from a list of x-coordinates</span>
+<span class="sd">        (longitudes), y-coordinates (latitudes) and a matrix of elevations</span>
+<span class="sd">        (first coordinate for x-axis).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        longs: [float]</span>
+<span class="sd">        lats: [float]</span>
+<span class="sd">        elevations [[float]]</span>
+<span class="sd">            2D array, elevations[i, j] gives the elevation of the cell with</span>
+<span class="sd">            coordinates longs[i], lats[j].</span>
+<span class="sd">        res_x: [float]</span>
+<span class="sd">            For each x-cell, gives its size in meters.</span>
+<span class="sd">        res_y: [float]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xs</span> <span class="o">=</span> <span class="n">longs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ys</span> <span class="o">=</span> <span class="n">lats</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elevations</span> <span class="o">=</span> <span class="n">elevations</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimy</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ys</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">res_x</span> <span class="o">=</span> <span class="n">res_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">res_y</span> <span class="o">=</span> <span class="n">res_y</span>
+
+<div class="viewcode-block" id="DSM.from_matfile"><a class="viewcode-back" href="../../../volcapy.niklas.html#volcapy.niklas.dsm.DSM.from_matfile">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_matfile</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Construct from matlab data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path: string</span>
+<span class="sd">            Path to .mat file. Data inside should have the same format as</span>
+<span class="sd">            provided by Niklas.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+
+        <span class="c1"># DSM</span>
+        <span class="c1"># We have arrays of arrays, so we flatten to be one dimensional.</span>
+        <span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]))</span>
+        <span class="n">ys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]))</span>
+        <span class="n">elevations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Build a dsm matrix.</span>
+        <span class="n">dsm</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">xs</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ys</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">dsm</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">xs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ys</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">elevations</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]])</span>
+
+        <span class="n">dsm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dsm</span><span class="p">)</span>
+
+        <span class="c1"># TODO: Clean this.</span>
+        <span class="c1"># We have to specify the size of each dsm cell.</span>
+        <span class="c1"># This could be computed automatically.</span>
+        <span class="c1"># For the moment being, we hardcode the size of Niklas dsm here.</span>
+        <span class="n">dem_res_x</span> <span class="o">=</span> <span class="mi">50</span><span class="o">*</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="mi">194</span><span class="o">*</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">+</span> <span class="mi">70</span><span class="o">*</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span>
+        <span class="n">dem_res_y</span> <span class="o">=</span> <span class="mi">50</span><span class="o">*</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="mi">190</span><span class="o">*</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">+</span> <span class="mi">75</span><span class="o">*</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="n">elevations</span><span class="p">,</span> <span class="n">dem_res_x</span><span class="p">,</span> <span class="n">dem_res_y</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Return the coordinates/elecation of the cell at the given index.</span>
+<span class="sd">        Also allows for slicing (i.e. giving an array of indices instead of a</span>
+<span class="sd">        single scalar tuple.</span>
+
+<span class="sd">        This returns a Cell object, to make the data format compatible with the</span>
+<span class="sd">        inversion_grid module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If we get a tuple, then we simply have to return the single cell it</span>
+        <span class="c1"># indexes.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_individual_item</span><span class="p">(</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># If not, then we need to iterate the list we were provided, build once</span>
+        <span class="c1"># cell each time, store them in a list and return the list.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cells</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">index</span><span class="p">:</span>
+                <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_individual_item</span><span class="p">(</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ind</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+            <span class="k">return</span> <span class="n">cells</span>
+
+    <span class="k">def</span> <span class="nf">_get_individual_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Helper function for the above. Builds and return the cell</span>
+<span class="sd">        corresponding the a single index. Then, we chain it with the above in</span>
+<span class="sd">        order to allow the user to provide a list of indices and get back a</span>
+<span class="sd">        list of cells.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        i: int</span>
+<span class="sd">            Index along the x-dimension.</span>
+<span class="sd">        j: int</span>
+<span class="sd">            Index along the y-dimension.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CellDSM</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get the resolutions and lat/longs/elevations.</span>
+        <span class="n">res_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">res_x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">res_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">res_y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ys</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">elevation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">elevations</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+        <span class="c1"># Create a cell and return it.</span>
+        <span class="c1"># Note the difference between dsm an the inversion grid.</span>
+        <span class="c1"># In the dsm we only get the midpoints, so we use the resolutions to</span>
+        <span class="c1"># compute the boundaries of the cell.</span>
+        <span class="c1"># Also, we only have one elevation, so we put zh to 0.</span>
+        <span class="k">return</span> <span class="n">CellDSM</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">elevation</span><span class="p">,</span> <span class="n">res_x</span><span class="p">,</span> <span class="n">res_y</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Cedric Travelletti
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
