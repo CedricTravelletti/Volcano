@@ -38,7 +38,8 @@ class) and include it manually in the experessions where it shows up.
 This means that when one sees a covariance matrix in the code, it generally
 doesn't include the sigma0 factor, which has to be included by hand.
 
-
+Covariance Pushforward
+----------------------
 The model covariance matrix K is to big to be stored, but during conditioning
 it only shows up in the form K * F^t. It is thus sufficient to compute this
 product once and for all. We call it the *covariance pushforward*.
@@ -61,8 +62,8 @@ class GaussianProcess(torch.nn.Module):
 
         Parameters
         ----------
-        F
-            Forward operator matrix
+        F: ndarray
+            Forward operator matrix, n_d * n_m
         d_obs
             Observed data vector.
         data_ones
@@ -70,8 +71,38 @@ class GaussianProcess(torch.nn.Module):
         sigma0_init
             Original value of the sigma0 parameter to use when starting
             optimization.
+        data_std: float
+            Data noise standard deviation.
         logger
             An instance of logging.Logger, used to output training progression.
+
+        ...
+
+        Attributes
+        ----------
+        sigma0: float
+            Current value of the prior standard deviation of the process.
+            Will get optimized. We store it so we can use it as starting value
+            for optimization of similar lambda0s.
+        n_model: int
+            Number of model cells.
+        n_data: int
+            Number of data observations.
+        mu0_d_stripped: tensor
+            Prior mean vector on the data side, but stripped of the prior mean
+            m0. I.e. it is equal to F * 1_m.
+        d_obs: tensor
+            Vector of observed data values
+        data_ones: tensor
+            Identity matrix in data space.
+        data_std_orig: float
+            Original data noise standard deviation.
+        data_std: float
+            Current data noise deviation. Can change from the original value
+            since we may have to increase it to make matrices invertible/better
+            conditioned.
+        I_d: tensor
+            Vector of ones in data space. Needed for concentration.
 
         """
         super(GaussianProcess, self).__init__()
@@ -156,19 +187,19 @@ class GaussianProcess(torch.nn.Module):
 
         Parameters
         ----------
-        K_d
+        K_d: tensor
             Covariance matrix on the data side.
-        sigma0
+        sigma0: float
             Standard deviation parameter for the kernel.
-        m0
+        m0: float
             Prior mean parameter.
-        concentrate
+        concentrate: bool
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
 
         Returns
         -------
-        mu_post_d
+        mu_post_d: tensor
             Posterior mean data vector
 
         """
@@ -199,18 +230,18 @@ class GaussianProcess(torch.nn.Module):
 
         Parameters
         ----------
-        cov_pushfwd
+        cov_pushfwd: tensor
             Pushforwarded covariance matrix, i.e. K F^T
         F
             Forward operator
-        sigma0
+        sigma0: float
             Standard deviation parameter for the kernel.
-        m0
+        m0: float
             Prior mean parameter.
-        concentrate
+        concentrate: bool
             If true, then will compute m0 by MLE via concentration of the
             log-likelihood.
-        NtV_crit:
+        NtV_crit: (deprecated)
             Critical Noise to Variance ratio (epsilon/sigma0). We can fix it to avoid
             numerical instability in the matrix inversion.
             If provided, will not allow to go below the critical value.
@@ -299,7 +330,7 @@ class GaussianProcess(torch.nn.Module):
 
         Parameters
         ----------
-        K_d: 2D Tensor
+        K_d: tensor
             (stripped) Covariance matrix in data space.
         n_epochs: int
             Number of training epochs.
@@ -311,6 +342,7 @@ class GaussianProcess(torch.nn.Module):
             previous optimization run).
         lr: float
             Learning rate.
+        NtV_crit: (deprecated)
 
         """
         # Send everything to the correct device.
@@ -352,11 +384,11 @@ class GaussianProcess(torch.nn.Module):
         return
 
     def post_cov(self, cov_pushfwd, cells_coords, lambda0, sigma0, i, j, cl):
-        """ Condition model on the model side.
+        """ Get posterior model covariance between two specified cells.
 
         Parameters
         ----------
-        cov_pushfwd
+        cov_pushfwd: tensor
             Pushforwarded covariance matrix, i.e. K F^T
         cells_coords: tensor
             n_cells * n_dims: cells coordinates
@@ -368,10 +400,15 @@ class GaussianProcess(torch.nn.Module):
             Index of first cell (index in the cells_coords array).
         j: int
             Index of second cell.
+        cl: module
+            Covariance module implementing the kernel we are working with.
+            The goal is to make this function kernel independent, though its a
+            bit awkward and should be changed to an object oriented approach.
 
         Returns
         -------
-        post_cov
+        post_cov: float
+            Posterior covariance between model cells i and j.
 
         """
         cov = cl.compute_cov(lambda0, cells_coords, i, j)
@@ -384,8 +421,31 @@ class GaussianProcess(torch.nn.Module):
 
         return post_cov
 
-    def compute_post_cov_diag(self, cov_pushfwd, cells_coords, lambda0, sigma0,
-            cl):
+    def compute_post_cov_diag(self, cov_pushfwd, cells_coords, lambda0, sigma0, cl):
+        """ Compute diagonal of the posterior covariance matrix.
+
+        Parameters
+        ----------
+        cov_pushfwd: tensor
+            Pushforwarded covariance matrix, i.e. K F^T
+        cells_coords: tensor
+            n_cells * n_dims: cells coordinates
+        lambda0: float
+            Lenght-scale parameter
+        sigma0: float
+            Prior variance.
+        cl: module
+            Covariance module implementing the kernel we are working with.
+            The goal is to make this function kernel independent, though its a
+            bit awkward and should be changed to an object oriented approach.
+
+        Returns
+        -------
+        post_cov_diag: tensor
+            Vector containing the posterior variance of model cell i as its
+            i-th element.
+
+        """
         n_cells = cells_coords.shape[0]
         post_cov_diag = np.zeros(n_cells)
 
@@ -462,6 +522,11 @@ class GaussianProcess(torch.nn.Module):
     def train_RMSE(self):
         """ Compute current error on training set.
 
+        Returns
+        -------
+        float
+            RMSE on training set.
+
         """
         return torch.sqrt(torch.mean(
             (self.d_obs - self.mu_post_d)**2))
@@ -473,11 +538,11 @@ class GaussianProcess(torch.nn.Module):
 
         Parameters
         ----------
-        cov_pushfwd
+        cov_pushfwd: tensor
             Pushforwarded covariance matrix, i.e. K F^T
-        F
+        F: tensor
             Forward operator
-        sigma0
+        sigma0: float
             Standard deviation parameter for the kernel.
 
         Returns
@@ -537,7 +602,7 @@ class GaussianProcess(torch.nn.Module):
         return (rest_forward, rest_data[:, None])
 
     def get_inversion_op_cholesky(self, K_d, sigma0):
-        """ Compute the Cholesky decomposition of the inversion operator.
+        """ Compute the Cholesky decomposition of the inverse of the inversion operator.
         Increases noise level if necessary to make matrix invertible.
 
         Note that this method updates the noise level if necessary.
