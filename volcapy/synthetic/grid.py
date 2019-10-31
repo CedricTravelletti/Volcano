@@ -1,15 +1,9 @@
-""" Grid functions for synthetic volcano.
-
-This submodule contains functions for building artificial irregular grids
-(topographies).
+""" This submodule contains functions for building artificial irregular grids
+(topographies) when building synthetic volcanoes.
 
 It can also generate data measurement site on the surface of the topography
 (sites placed at random) and compute the forward operator associated to the
 topography/data sites.
-
-Misc
-----
-cells_coords: ndarray, shape n_cells * n_dims
 
 """
 import numpy as np
@@ -21,7 +15,7 @@ G = 6.67e-6       #Transformation factor to get result in mGal
 
 
 def build_cube(nr_x, res_x, nr_y, res_y, nr_z, res_z):
-    """ Builds a gridded cube.
+    """ Builds a regular gridded cube.
 
     Parameters
     ----------
@@ -61,7 +55,8 @@ def build_cube(nr_x, res_x, nr_y, res_y, nr_z, res_z):
     return np.array(coords)
 
 def compute_forward(coords, res_x, res_y, res_z, data_coords):
-    """ Compute forward operator.
+    """ Compute the forward operator associated to a given topography/irregular
+    grid. In the end, it only need a list of cells.
 
     Parameters
     ----------

@@ -1,7 +1,6 @@
 # File: forward_brute_force.py, Author: Cedric Travelletti, Date: 12.04.2019.
 """ This script runs the inversion on the synthetic dataset created using
 :code:`build_synth_data`.
-
 Note that hyperparameters have to be manually specified, so one should run
 :code:`train` before in order to determine the optimal hyperparameters. 
 
