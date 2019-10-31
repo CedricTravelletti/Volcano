@@ -2,7 +2,6 @@ from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
 from volcapy.compatibility_layer import match_grids, get_regularization_cells_inds
 from volcapy.synthetic.vtkutils import ndarray_to_vtk
-import volcapy.covariance.matern32 as cl
 
 import numpy as np
 import os
@@ -14,7 +13,7 @@ inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
 
 # Load inversion results.
-posterior_mean_path = "/home/cedric/PHD/run_results/forwards/m_post_562_sqexp.npy"
+posterior_mean_path = "/home/cedric/PHD/run_results/forwards/m_post_342_squared_exponential.npy"
 m_post_m = np.load(posterior_mean_path)
 
 # SPECIAL: Remove regularisation cells.
