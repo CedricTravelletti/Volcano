@@ -1,0 +1,690 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>volcapy.niklas package &mdash; Volcapy 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Volcapy
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Package Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="inverse.html">volcapy.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariance.html">volcapy.covariance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="synthetic.html">volcapy.synthetic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uq.html">Uncertainty Quantification Tools</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Volcapy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>volcapy.niklas package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/volcapy.niklas.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="volcapy-niklas-package">
+<h1>volcapy.niklas package<a class="headerlink" href="#volcapy-niklas-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-volcapy.niklas.banerjee">
+<span id="volcapy-niklas-banerjee-module"></span><h2>volcapy.niklas.banerjee module<a class="headerlink" href="#module-volcapy.niklas.banerjee" title="Permalink to this headline">¶</a></h2>
+<p>Implements the Banerjee formula for the gravitational field froduced by a
+parallelepiped of uniform density.</p>
+<dl class="function">
+<dt id="volcapy.niklas.banerjee.banerjee">
+<code class="sig-prename descclassname">volcapy.niklas.banerjee.</code><code class="sig-name descname">banerjee</code><span class="sig-paren">(</span><em class="sig-param">double xh</em>, <em class="sig-param">double xl</em>, <em class="sig-param">double yh</em>, <em class="sig-param">double yl</em>, <em class="sig-param">double zh</em>, <em class="sig-param">double zl</em>, <em class="sig-param">double x_data</em>, <em class="sig-param">double y_data</em>, <em class="sig-param">double z_data</em><span class="sig-paren">)</span><a class="headerlink" href="#volcapy.niklas.banerjee.banerjee" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the gravity field (measured at a data point) produced by a
+parallelepiped of uniform unit density.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xh: float</strong></dt><dd><p>Location (in meters) of the upper (maximal x) corner of the
+parallelepiped.</p>
+</dd>
+<dt><strong>xl: float</strong></dt><dd><p>Same, but lower corner.</p>
+</dd>
+<dt><strong>yh: float</strong></dt><dd><p>Same but along y dimension.</p>
+</dd>
+<dt><strong>yl: float</strong></dt><dd><p>Same but along y dimension.</p>
+</dd>
+<dt><strong>zh: float</strong></dt><dd><p>Same but along z dimension.</p>
+</dd>
+<dt><strong>zl: float</strong></dt><dd><p>Same but along z dimension.</p>
+</dd>
+<dt><strong>x_data: float</strong></dt><dd><p>x coordinate (in meters) of the location at which we measure the field.</p>
+</dd>
+<dt><strong>y_data: float</strong></dt><dd></dd>
+<dt><strong>z_data: float</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.niklas.cell">
+<span id="volcapy-niklas-cell-module"></span><h2>volcapy.niklas.cell module<a class="headerlink" href="#module-volcapy.niklas.cell" title="Permalink to this headline">¶</a></h2>
+<p>Put the definition of a cell in its own file for imports reasons.</p>
+<dl class="class">
+<dt id="volcapy.niklas.cell.Cell">
+<em class="property">class </em><code class="sig-prename descclassname">volcapy.niklas.cell.</code><code class="sig-name descname">Cell</code><span class="sig-paren">(</span><em class="sig-param">xl</em>, <em class="sig-param">xh</em>, <em class="sig-param">yl</em>, <em class="sig-param">yh</em>, <em class="sig-param">zl</em>, <em class="sig-param">zh</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/cell.html#Cell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.cell.Cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class representing a cell in the inversion grid.
+A cell is just a cuboid, so all we need are the min and max along each
+coordinate. Distances should be in meters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xl</strong><span class="classifier">float</span></dt><dd><p>Minimum along x-axis (l for low).</p>
+</dd>
+<dt><strong>xh</strong><span class="classifier">float</span></dt><dd><p>Maximum along x-axis (h for high).</p>
+</dd>
+<dt><strong>yl</strong><span class="classifier">float</span></dt><dd><p>Minimum along y-axis (l for low).</p>
+</dd>
+<dt><strong>yh</strong><span class="classifier">float</span></dt><dd><p>Maximum along y-axis (h for high).</p>
+</dd>
+<dt><strong>zl</strong><span class="classifier">float</span></dt><dd><p>Minimum along z-axis (l for low).</p>
+</dd>
+<dt><strong>zh</strong><span class="classifier">float</span></dt><dd><p>Maximum along z-axis (h for high).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.niklas.coarsener">
+<span id="volcapy-niklas-coarsener-module"></span><h2>volcapy.niklas.coarsener module<a class="headerlink" href="#module-volcapy.niklas.coarsener" title="Permalink to this headline">¶</a></h2>
+<p>Class implementing coarsening functions.</p>
+<p>THIS IS STRICTLY 2-DIMENSIONAL, i.e., this only refers to x-y slice.</p>
+<p>We might want to have an inversion grid that is coarser than the dsm,
+i.e., each cell in the inversion grid corresponds to several cells in the dsm
+grid.</p>
+<p>We define the relation fine_grid &lt;-&gt; coarse grid as follows:</p>
+<blockquote>
+<div><p>We provide two lists: coarsen_x and coarsen_y, they define (for each axis)
+how many fine cells get aggregated to form a coarse cell.</p>
+</div></blockquote>
+<p>For example, if coarsen_x = [10, 5, 5, …], then the first cells
+(along dim-x) of the coarser grid will correspond to the first 10 cells
+of the fine one, then, the second cells (along dim-x) will correspond to the
+next 5 cells, and so on.</p>
+<p>The practical link between the two is then given by the two lists
+fine_inds_x and fine_inds_y.</p>
+<p>Those are lists of lists. fine_inds_x[i] returns a list of indices, that give
+the x-indices (in the fine grid) of the fine cells that correspond to cells
+with x-index i in the coarse grid.</p>
+<p>Finally, for the surface cells, we have to determine how many z-levels are below
+it. We look at the number of z-levels under each sub-cell making up the surface
+cell and take the minimum one.</p>
+<dl class="class">
+<dt id="volcapy.niklas.coarsener.Coarsener">
+<em class="property">class </em><code class="sig-prename descclassname">volcapy.niklas.coarsener.</code><code class="sig-name descname">Coarsener</code><span class="sig-paren">(</span><em class="sig-param">coarsen_x</em>, <em class="sig-param">coarsen_y</em>, <em class="sig-param">res_x</em>, <em class="sig-param">res_y</em>, <em class="sig-param">dsm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/coarsener.html#Coarsener"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.coarsener.Coarsener" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Build a grid coarser than the dsm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>coarsen_x: [int]</strong></dt><dd><p>Defines the coarsening along the x-dimension.
+For example, if coarsen_x = [10, 5, 5, …], then the first cells
+(along dim-x) of the coarser grid will correspond to the first 10 cells
+of the dsm, then, the second cells (along dim-x) will correspond to the
+next 5 cells, and so on.</p>
+</dd>
+<dt><strong>coarsen_y: [int]</strong></dt><dd></dd>
+<dt><strong>dsm: DSM</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.niklas.coarsener.Coarsener.get_coarse_cell" title="volcapy.niklas.coarsener.Coarsener.get_coarse_cell"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coarse_cell</span></code></a>(i, j)</p></td>
+<td><p>Given indices, spits out a coarse cell.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.niklas.coarsener.Coarsener.get_coords" title="volcapy.niklas.coarsener.Coarsener.get_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coords</span></code></a>(i, j)</p></td>
+<td><p>Get lat/long of the current cell in the coarse grid.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.niklas.coarsener.Coarsener.get_fine_cells" title="volcapy.niklas.coarsener.Coarsener.get_fine_cells"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fine_cells</span></code></a>(i, j)</p></td>
+<td><p>Get the cells (in the finer grid) corresponding to cell (i, j) in the coarser grid.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.niklas.coarsener.Coarsener.get_fine_elevations" title="volcapy.niklas.coarsener.Coarsener.get_fine_elevations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fine_elevations</span></code></a>(i, j)</p></td>
+<td><p>Get the elevations (in the finer grid) of cells corresponding to cell (i, j) in the coarser grid.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.niklas.coarsener.Coarsener.get_fine_indices" title="volcapy.niklas.coarsener.Coarsener.get_fine_indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fine_indices</span></code></a>(i, j)</p></td>
+<td><p>Get the indices (in the finer grid) of cells correspondin to cell (i, j) in the coarser grid.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="volcapy.niklas.coarsener.Coarsener.get_coarse_cell">
+<code class="sig-name descname">get_coarse_cell</code><span class="sig-paren">(</span><em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/coarsener.html#Coarsener.get_coarse_cell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.coarsener.Coarsener.get_coarse_cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given indices, spits out a coarse cell.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.coarsener.Coarsener.get_coords">
+<code class="sig-name descname">get_coords</code><span class="sig-paren">(</span><em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/coarsener.html#Coarsener.get_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.coarsener.Coarsener.get_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get lat/long of the current cell in the coarse grid.
+We use the mean of the coordinates of the cell in the larger grid that
+correspond to the cell under consideration.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.coarsener.Coarsener.get_fine_cells">
+<code class="sig-name descname">get_fine_cells</code><span class="sig-paren">(</span><em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/coarsener.html#Coarsener.get_fine_cells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.coarsener.Coarsener.get_fine_cells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the cells (in the finer grid) corresponding to cell
+(i, j) in the coarser grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>i,j: int</strong></dt><dd><p>Index in the coarse grid.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>List[CellDSM]</strong></dt><dd><p>List of DSM cells that make up the big grid.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.coarsener.Coarsener.get_fine_elevations">
+<code class="sig-name descname">get_fine_elevations</code><span class="sig-paren">(</span><em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/coarsener.html#Coarsener.get_fine_elevations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.coarsener.Coarsener.get_fine_elevations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the elevations (in the finer grid) of cells corresponding to cell
+(i, j) in the coarser grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>i,j: int</strong></dt><dd><p>Index in the coars grid.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>List[float]</strong></dt><dd><p>List of elevations in the bigger grid.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.coarsener.Coarsener.get_fine_indices">
+<code class="sig-name descname">get_fine_indices</code><span class="sig-paren">(</span><em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/coarsener.html#Coarsener.get_fine_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.coarsener.Coarsener.get_fine_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the indices (in the finer grid) of cells correspondin to cell
+(i, j) in the coarser grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>i,j: int</strong></dt><dd><p>Index in the coarse grid.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>List[(int, int)]</strong></dt><dd><p>List of indices in the bigger grid.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.niklas.dsm">
+<span id="volcapy-niklas-dsm-module"></span><h2>volcapy.niklas.dsm module<a class="headerlink" href="#module-volcapy.niklas.dsm" title="Permalink to this headline">¶</a></h2>
+<p>Class implementing dsm functionalities.
+Also allows to build a dsm object from the raw Niklas data.</p>
+<p>A dsm is basically a two dimensional array of cell, where for each cell we get
+the midpoint along the x-y axis and the elevation.</p>
+<p>Since we only have midpoints, and since the cells might have different sizes,
+we also need a list of resolutions.</p>
+<dl class="class">
+<dt id="volcapy.niklas.dsm.CellDSM">
+<em class="property">class </em><code class="sig-prename descclassname">volcapy.niklas.dsm.</code><code class="sig-name descname">CellDSM</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">z</em>, <em class="sig-param">res_x</em>, <em class="sig-param">res_y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/dsm.html#CellDSM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.dsm.CellDSM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Cell for DSM. The difference is that the dsm gives us midpoints,
+whereas cells in the inversion grid are defined by their corners. We thus
+use the resolution of each cell to return the corners.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xh</strong></dt><dd></dd>
+<dt><strong>xl</strong></dt><dd></dd>
+<dt><strong>yh</strong></dt><dd></dd>
+<dt><strong>yl</strong></dt><dd></dd>
+<dt><strong>zh</strong></dt><dd></dd>
+<dt><strong>zl</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="volcapy.niklas.dsm.CellDSM.xh">
+<em class="property">property </em><code class="sig-name descname">xh</code><a class="headerlink" href="#volcapy.niklas.dsm.CellDSM.xh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.dsm.CellDSM.xl">
+<em class="property">property </em><code class="sig-name descname">xl</code><a class="headerlink" href="#volcapy.niklas.dsm.CellDSM.xl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.dsm.CellDSM.yh">
+<em class="property">property </em><code class="sig-name descname">yh</code><a class="headerlink" href="#volcapy.niklas.dsm.CellDSM.yh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.dsm.CellDSM.yl">
+<em class="property">property </em><code class="sig-name descname">yl</code><a class="headerlink" href="#volcapy.niklas.dsm.CellDSM.yl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.dsm.CellDSM.zh">
+<em class="property">property </em><code class="sig-name descname">zh</code><a class="headerlink" href="#volcapy.niklas.dsm.CellDSM.zh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.dsm.CellDSM.zl">
+<em class="property">property </em><code class="sig-name descname">zl</code><a class="headerlink" href="#volcapy.niklas.dsm.CellDSM.zl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="volcapy.niklas.dsm.DSM">
+<em class="property">class </em><code class="sig-prename descclassname">volcapy.niklas.dsm.</code><code class="sig-name descname">DSM</code><span class="sig-paren">(</span><em class="sig-param">longs</em>, <em class="sig-param">lats</em>, <em class="sig-param">elevations</em>, <em class="sig-param">res_x</em>, <em class="sig-param">res_y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/dsm.html#DSM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.dsm.DSM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>DSM functionalities</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.niklas.dsm.DSM.from_matfile" title="volcapy.niklas.dsm.DSM.from_matfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_matfile</span></code></a>(path)</p></td>
+<td><p>Construct from matlab data.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="volcapy.niklas.dsm.DSM.from_matfile">
+<em class="property">classmethod </em><code class="sig-name descname">from_matfile</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/dsm.html#DSM.from_matfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.dsm.DSM.from_matfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct from matlab data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>path: string</strong></dt><dd><p>Path to .mat file. Data inside should have the same format as
+provided by Niklas.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="volcapy-niklas-find-permutation-module">
+<h2>volcapy.niklas.find_permutation module<a class="headerlink" href="#volcapy-niklas-find-permutation-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-volcapy.niklas.forward">
+<span id="volcapy-niklas-forward-module"></span><h2>volcapy.niklas.forward module<a class="headerlink" href="#module-volcapy.niklas.forward" title="Permalink to this headline">¶</a></h2>
+<p>Compute forward operator for a whole inversion grid.</p>
+<dl class="function">
+<dt id="volcapy.niklas.forward.compute_cell_response_at_point">
+<code class="sig-prename descclassname">volcapy.niklas.forward.</code><code class="sig-name descname">compute_cell_response_at_point</code><span class="sig-paren">(</span><em class="sig-param">cell</em>, <em class="sig-param">point</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/forward.html#compute_cell_response_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.forward.compute_cell_response_at_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the repsonse of an individual inversion cell on a measurement
+point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>cell: Cell</strong></dt><dd><p>Inversion cell whose response we want to compute.</p>
+</dd>
+<dt><strong>point: (float, float, float)</strong></dt><dd><p>Coordinates (x, y, z) of the point at which we measure the response.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.niklas.forward.compute_top_cell_response_at_point">
+<code class="sig-prename descclassname">volcapy.niklas.forward.</code><code class="sig-name descname">compute_top_cell_response_at_point</code><span class="sig-paren">(</span><em class="sig-param">cell</em>, <em class="sig-param">point</em>, <em class="sig-param">z_base=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/forward.html#compute_top_cell_response_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.forward.compute_top_cell_response_at_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as the above, but for a cell which contains subdivisions (i.e. a
+topmost cell).
+Note that for such cells, we extend the parallelograms down to zbase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>cell: Cell</strong></dt><dd><p>Inversion cell whose response we want to compute.</p>
+</dd>
+<dt><strong>point: (float, float, float)</strong></dt><dd><p>Coordinates (x, y, z) of the point at which we measure the response.</p>
+</dd>
+<dt><strong>z_base: float</strong></dt><dd><p>Altitude (in meters) of the lowest level we consider.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.niklas.forward.forward">
+<code class="sig-prename descclassname">volcapy.niklas.forward.</code><code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">inversion_grid</em>, <em class="sig-param">data_points</em>, <em class="sig-param">z_base</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/forward.html#forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.forward.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute forward operator associated to a given geometry/discretization
+defined by an inversion grid.
+The forward give the response at locations defined by the datapoints
+vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>inversion_grid: InversionGrid</strong></dt><dd></dd>
+<dt><strong>data_points: List[(float, float, float)]</strong></dt><dd><p>List containing the coordinates, in order (x, y, z) of the data points
+at which we measure the response / gravitational field.</p>
+</dd>
+<dt><strong>z_base: float</strong></dt><dd><p>Altitude (in meters) of the lowest level we consider. I.e., we will
+build inversion cells down to that level.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.niklas.inversion_grid">
+<span id="volcapy-niklas-inversion-grid-module"></span><h2>volcapy.niklas.inversion_grid module<a class="headerlink" href="#module-volcapy.niklas.inversion_grid" title="Permalink to this headline">¶</a></h2>
+<p>Class implementing inversion grid.</p>
+<p>The inversion grid has two importan properties</p>
+<ul class="simple">
+<li><p>It has a coarser resolution than the dsm, meaning that a single cell in the</p></li>
+</ul>
+<blockquote>
+<div><p>inversion grid corresponds to several cells in the dsm grid.
+* It is irregular, i.e. it doesn’t span an entire parallelepiped.</p>
+<blockquote>
+<div><p>This is due to the fact that we don’t include cells outside the volcano (in
+the air).</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="class">
+<dt id="volcapy.niklas.inversion_grid.InversionGrid">
+<em class="property">class </em><code class="sig-prename descclassname">volcapy.niklas.inversion_grid.</code><code class="sig-name descname">InversionGrid</code><span class="sig-paren">(</span><em class="sig-param">coarsen_x</em>, <em class="sig-param">coarsen_y</em>, <em class="sig-param">res_x</em>, <em class="sig-param">res_y</em>, <em class="sig-param">zlevels</em>, <em class="sig-param">dsm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/inversion_grid.html#InversionGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.inversion_grid.InversionGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.abc.Sequence</span></code></p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.niklas.inversion_grid.InversionGrid.fill_grid" title="volcapy.niklas.inversion_grid.InversionGrid.fill_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill_grid</span></code></a>()</p></td>
+<td><p>Create the cells in the grid, taking into account the fact that the grid is irregulat, i.e., the number a z-floors can change, since we do not include cells that are ‘in the air’ wrt the dsm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.niklas.inversion_grid.InversionGrid.fine_cells_from_topmost_ind" title="volcapy.niklas.inversion_grid.InversionGrid.fine_cells_from_topmost_ind"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fine_cells_from_topmost_ind</span></code></a>(ind)</p></td>
+<td><p>Given the index of a topmost cell, give the fine cells that correspond to it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.niklas.inversion_grid.InversionGrid.ind_in_regular_grid" title="volcapy.niklas.inversion_grid.InversionGrid.ind_in_regular_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ind_in_regular_grid</span></code></a>(cell)</p></td>
+<td><p>Gives the a cell would have if it was in a regular 3D grid enclosing the irregular grid.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.niklas.inversion_grid.InversionGrid.topmost_ind_to_2d_ind" title="volcapy.niklas.inversion_grid.InversionGrid.topmost_ind_to_2d_ind"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topmost_ind_to_2d_ind</span></code></a>(ind)</p></td>
+<td><p>Given the index of a topmost cell in the list of cells, give the x and y index (in the 2D grid) which correspond to that cell.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="volcapy.niklas.inversion_grid.InversionGrid.fill_grid">
+<code class="sig-name descname">fill_grid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/inversion_grid.html#InversionGrid.fill_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.inversion_grid.InversionGrid.fill_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the cells in the grid, taking into account the fact that the
+grid is irregulat, i.e., the number a z-floors can change, since we do
+not include cells that are ‘in the air’ wrt the dsm.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.inversion_grid.InversionGrid.fine_cells_from_topmost_ind">
+<code class="sig-name descname">fine_cells_from_topmost_ind</code><span class="sig-paren">(</span><em class="sig-param">ind</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/inversion_grid.html#InversionGrid.fine_cells_from_topmost_ind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.inversion_grid.InversionGrid.fine_cells_from_topmost_ind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the index of a topmost cell, give the fine cells that
+correspond to it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.inversion_grid.InversionGrid.ind_in_regular_grid">
+<code class="sig-name descname">ind_in_regular_grid</code><span class="sig-paren">(</span><em class="sig-param">cell</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/inversion_grid.html#InversionGrid.ind_in_regular_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.inversion_grid.InversionGrid.ind_in_regular_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives the a cell would have if it was in a regular 3D grid
+enclosing the irregular grid.</p>
+<p>The goal of this function is to be able to map inversion results to a
+regular 3D array, since most visualization softwares use that format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>cell: Cell</strong></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>(i, j, k)</strong></dt><dd><p>Index of the cell in a regular grid that encloses the irregular
+one. The grid is chosen such that it just encloses the regular one.
+The grid doesn’t care about individual cell resolutions.
+This is not much of a drawback since the only cells that dont have
+a standard resolution are on the borders fo the grid and will thus
+be clearly identifiable in a plot.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="volcapy.niklas.inversion_grid.InversionGrid.topmost_ind_to_2d_ind">
+<code class="sig-name descname">topmost_ind_to_2d_ind</code><span class="sig-paren">(</span><em class="sig-param">ind</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/niklas/inversion_grid.html#InversionGrid.topmost_ind_to_2d_ind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.niklas.inversion_grid.InversionGrid.topmost_ind_to_2d_ind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the index of a topmost cell in the list of cells, give the x
+and y index (in the 2D grid) which correspond to that cell.</p>
+<p>The goal of this method is to be able to find dsm cells that belong to
+a given topmost cell.</p>
+<p>Note that storing this as an attribute of each topmost cell would be
+memory costly, so we chose to compute it dynamically.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ind: int</strong></dt><dd><p>Index, in the ‘cells’ list of the topmost cell we are interested
+ind.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>(int, int)</strong></dt><dd><p>x-y index (in the 2D version of the inversion grid) of the given
+cell. One can then use the get_fine_cells method of the coarsener
+to find the corresponding dsm cells.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.niklas">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-volcapy.niklas" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Cedric Travelletti
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

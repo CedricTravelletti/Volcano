@@ -1,0 +1,696 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>volcapy.covariance package &mdash; Volcapy 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Volcapy
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Package Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="inverse.html">volcapy.inverse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariance.html">volcapy.covariance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="synthetic.html">volcapy.synthetic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uq.html">Uncertainty Quantification Tools</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Volcapy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>volcapy.covariance package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/volcapy.covariance.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="volcapy-covariance-package">
+<h1>volcapy.covariance package<a class="headerlink" href="#volcapy-covariance-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-volcapy.covariance.exponential">
+<span id="volcapy-covariance-exponential-module"></span><h2>volcapy.covariance.exponential module<a class="headerlink" href="#module-volcapy.covariance.exponential" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="volcapy.covariance.exponential.compute_cov">
+<code class="sig-prename descclassname">volcapy.covariance.exponential.</code><code class="sig-name descname">compute_cov</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/exponential.html#compute_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.exponential.compute_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance between two points.</p>
+<p>Note that, as always, sigma0 has been stripped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>i: int</strong></dt><dd><p>Index of first cell (index in the cells_coords array).</p>
+</dd>
+<dt><strong>j: int</strong></dt><dd><p>Index of second cell.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>(Stripped) covariance between cell nr i and cell nr j.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.exponential.compute_cov_pushforward">
+<code class="sig-prename descclassname">volcapy.covariance.exponential.</code><code class="sig-name descname">compute_cov_pushforward</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">F</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/exponential.html#compute_cov_pushforward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.exponential.compute_cov_pushforward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance pushforward.</p>
+<p>The covariance pushforward is just KF^T, where K is the model
+covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>F: tensor</strong></dt><dd><p>Forward operator matrix</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_model * n_data covariance pushforward K F^t.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.covariance.matern32">
+<span id="volcapy-covariance-matern32-module"></span><h2>volcapy.covariance.matern32 module<a class="headerlink" href="#module-volcapy.covariance.matern32" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="volcapy.covariance.matern32.compute_cov">
+<code class="sig-prename descclassname">volcapy.covariance.matern32.</code><code class="sig-name descname">compute_cov</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/matern32.html#compute_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.matern32.compute_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance between two points.</p>
+<p>Note that, as always, sigma0 has been stripped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>i: int</strong></dt><dd><p>Index of first cell (index in the cells_coords array).</p>
+</dd>
+<dt><strong>j: int</strong></dt><dd><p>Index of second cell.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>(Stripped) covariance between cell nr i and cell nr j.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.matern32.compute_cov_pushforward">
+<code class="sig-prename descclassname">volcapy.covariance.matern32.</code><code class="sig-name descname">compute_cov_pushforward</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">F</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/matern32.html#compute_cov_pushforward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.matern32.compute_cov_pushforward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance pushforward.</p>
+<p>The covariance pushforward is just KF^T, where K is the model
+covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>F: tensor</strong></dt><dd><p>Forward operator matrix</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_model * n_data covariance pushforward K F^t.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.matern32.compute_full_cov">
+<code class="sig-prename descclassname">volcapy.covariance.matern32.</code><code class="sig-name descname">compute_full_cov</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/matern32.html#compute_full_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.matern32.compute_full_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the full covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_cells * n_cells covariance matrix.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.covariance.matern52">
+<span id="volcapy-covariance-matern52-module"></span><h2>volcapy.covariance.matern52 module<a class="headerlink" href="#module-volcapy.covariance.matern52" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="volcapy.covariance.matern52.compute_cov">
+<code class="sig-prename descclassname">volcapy.covariance.matern52.</code><code class="sig-name descname">compute_cov</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/matern52.html#compute_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.matern52.compute_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance between two points.</p>
+<p>Note that, as always, sigma0 has been stripped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>i: int</strong></dt><dd><p>Index of first cell (index in the cells_coords array).</p>
+</dd>
+<dt><strong>j: int</strong></dt><dd><p>Index of second cell.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>(Stripped) covariance between cell nr i and cell nr j.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.matern52.compute_cov_pushforward">
+<code class="sig-prename descclassname">volcapy.covariance.matern52.</code><code class="sig-name descname">compute_cov_pushforward</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">F</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/matern52.html#compute_cov_pushforward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.matern52.compute_cov_pushforward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance pushforward.</p>
+<p>The covariance pushforward is just KF^T, where K is the model
+covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>F: tensor</strong></dt><dd><p>Forward operator matrix</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_model * n_data covariance pushforward K F^t.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.covariance.periodic">
+<span id="volcapy-covariance-periodic-module"></span><h2>volcapy.covariance.periodic module<a class="headerlink" href="#module-volcapy.covariance.periodic" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="volcapy.covariance.periodic.compute_cov">
+<code class="sig-prename descclassname">volcapy.covariance.periodic.</code><code class="sig-name descname">compute_cov</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/periodic.html#compute_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.periodic.compute_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance between two points.</p>
+<p>Note that, as always, sigma0 has been stripped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>i: int</strong></dt><dd><p>Index of first cell (index in the cells_coords array).</p>
+</dd>
+<dt><strong>j: int</strong></dt><dd><p>Index of second cell.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>(Stripped) covariance between cell nr i and cell nr j.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.periodic.compute_full_cov">
+<code class="sig-prename descclassname">volcapy.covariance.periodic.</code><code class="sig-name descname">compute_full_cov</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/periodic.html#compute_full_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.periodic.compute_full_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the full covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_cells * n_cells covariance matrix.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.periodic.compute_full_cov_gradient">
+<code class="sig-prename descclassname">volcapy.covariance.periodic.</code><code class="sig-name descname">compute_full_cov_gradient</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/periodic.html#compute_full_cov_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.periodic.compute_full_cov_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the full covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_cells * n_cells covariance matrix.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.covariance.squared_exponential">
+<span id="volcapy-covariance-squared-exponential-module"></span><h2>volcapy.covariance.squared_exponential module<a class="headerlink" href="#module-volcapy.covariance.squared_exponential" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="volcapy.covariance.squared_exponential.compute_cov">
+<code class="sig-prename descclassname">volcapy.covariance.squared_exponential.</code><code class="sig-name descname">compute_cov</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/squared_exponential.html#compute_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.squared_exponential.compute_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance between two points.</p>
+<p>Note that, as always, sigma0 has been stripped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>i: int</strong></dt><dd><p>Index of first cell (index in the cells_coords array).</p>
+</dd>
+<dt><strong>j: int</strong></dt><dd><p>Index of second cell.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>(Stripped) covariance between cell nr i and cell nr j.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.squared_exponential.compute_cov_pushforward">
+<code class="sig-prename descclassname">volcapy.covariance.squared_exponential.</code><code class="sig-name descname">compute_cov_pushforward</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">F</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/squared_exponential.html#compute_cov_pushforward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.squared_exponential.compute_cov_pushforward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the covariance pushforward.</p>
+<p>The covariance pushforward is just KF^T, where K is the model
+covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>F: tensor</strong></dt><dd><p>Forward operator matrix</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_model * n_data covariance pushforward K F^t.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.squared_exponential.compute_full_cov">
+<code class="sig-prename descclassname">volcapy.covariance.squared_exponential.</code><code class="sig-name descname">compute_full_cov</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/squared_exponential.html#compute_full_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.squared_exponential.compute_full_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the full covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_cells * n_cells covariance matrix.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.squared_exponential.compute_full_cov_gradient">
+<code class="sig-prename descclassname">volcapy.covariance.squared_exponential.</code><code class="sig-name descname">compute_full_cov_gradient</code><span class="sig-paren">(</span><em class="sig-param">lambda0</em>, <em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/squared_exponential.html#compute_full_cov_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.squared_exponential.compute_full_cov_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the full covariance matrix.</p>
+<p>Note that the sigam0^2 is not included, and one has to manually add it when
+using the covariance pushforward computed here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lambda0: float</strong></dt><dd><p>Lenght-scale parameter</p>
+</dd>
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_cells * n_cells covariance matrix.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="volcapy.covariance.squared_exponential.compute_full_sqeuclidean_cov">
+<code class="sig-prename descclassname">volcapy.covariance.squared_exponential.</code><code class="sig-name descname">compute_full_sqeuclidean_cov</code><span class="sig-paren">(</span><em class="sig-param">cells_coords</em>, <em class="sig-param">device</em>, <em class="sig-param">n_chunks=200</em>, <em class="sig-param">n_flush=50</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/covariance/squared_exponential.html#compute_full_sqeuclidean_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.covariance.squared_exponential.compute_full_sqeuclidean_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the full matrix of pairwise squared euclidean distances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>cells_coords: tensor</strong></dt><dd><p>n_cells * n_dims: cells coordinates</p>
+</dd>
+<dt><strong>device: toch.Device</strong></dt><dd><p>Device to perform the computation on, CPU or GPU.</p>
+</dd>
+<dt><strong>n_chunks: int</strong></dt><dd><p>Number of chunks to split the matrix into.
+Default is 200. Increase if get OOM errors.</p>
+</dd>
+<dt><strong>n_flush: int</strong></dt><dd><p>Synchronize threads and flush GPU cache every <em>n_flush</em> iterations.
+This is necessary to avoid OOM errors.
+Default is 50.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Tensor</strong></dt><dd><p>n_cells * n_cells covariance matrix.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-volcapy.covariance">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-volcapy.covariance" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Cedric Travelletti
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
