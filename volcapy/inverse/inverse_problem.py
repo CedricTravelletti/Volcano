@@ -1,3 +1,9 @@
+""" Module handling all data needed to define an inverse problem.
+
+The goal is to encapsulat things such as the inversion grid, the measurement
+data, ... in a single class.
+
+"""
 from volcapy import loading
 import volcapy.math.matrix_tools as mat
 import volcapy.grid.covariance_tools as cl
