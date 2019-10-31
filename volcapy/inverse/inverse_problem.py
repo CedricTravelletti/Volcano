@@ -5,11 +5,11 @@ problem.
 The goal is to allow the user to ignore the underlying details of the input
 data.
 
-Indeed, if one want to work on Niklas's data, one just has to use
+Indeed, if one want to work on Niklas's data, and directly load all 
+data from the raw .mat file, one just has to run:
 
 :code:`InverseProblem.from_matfile(path)`
 
-to load all data from the raw .mat file.
 
 """
 from volcapy import loading

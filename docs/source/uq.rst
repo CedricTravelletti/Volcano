@@ -40,29 +40,39 @@ vorobev_deviation               Compute Vorob'ev deviaiton of a given set at a g
 Set Uncertainty Quantification: Theory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* The main data characterizing an artificial volcano is a **topography**.
-  A topography is a collection of contiguous 3-dimensional cells defining a
-  discretization of a given domain (the volcano). For simplicity, we here use a
-  cone discretized into uniform cubic cells.
+We want to estimate regions in model the space :math:`X` where the matter density field
+:math:`Z` is above a given threshold :math:`u_0`.
 
-* Once a topography has been defined, one has to chose the locations at which
-  the measurements of the gravity field will be performed. We do this by
-  picking :math:`n_{obs}` locations at random on the surface of the topography.
-  Here surface means the *upper* boundary of the cone, i.e. there will be no
-  measurements below the cone. Note also that we add a small offset between the
-  surface and the measurement location to avoid singularities in the forwarded
-  operator.
+The posterior distribution of the conditional field gives rise to a random closed set (RACS) :math:`\Gamma`
 
-* Once topography and measurement locations have been defined, the forward
-  operator can be computed using the Banerjee formula.
+.. math::
 
+   \Gamma = \lbrace x \in X: \tilde{Z}_x \geq u_0 \rbrace
+
+We can then consider the pointwise probability to belong to the excursion set
+
+* *Coverage Function*
+
+.. math::
+
+   p_{\Gamma}: X \rightarrow [0, 1]
+
+.. math::
+  
+   p_{\Gamma}(x) := \mathbb{P}[x \in \Gamma]
+
+All our set estimators will be defined using the coverage function.
+
+* *Vorob'ev quantile* at level :math:`\alpha`
+
+.. math::
+
+   Q_{\alpha} := \lbrace x \in X : p_{\Gamma} \geq \alpha \rbrace
 
 --------------------------------------------
 
-A detailed description of each functionality is provided below
-
-azzimonti
----------
+Module implementation Details
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: volcapy.uq.azzimonti
    :members:

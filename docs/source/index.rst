@@ -9,35 +9,30 @@ Volcapy's documentation
    :maxdepth: 1
    :caption: Tutorials:
 
-    examples/tuto.ipynb
+   examples/tuto.ipynb
+   examples/README.md
 
 .. toctree::
    :glob:
    :maxdepth: 2
-   :caption: Examples:
+   :caption: Main Modules:
 
-   examples/README.md
+   inverse
+   gaussian_process
+   covariance
+   synthetic
+   uq
 
 .. toctree::
    :maxdepth: 1
    :caption: Advanced Usage
 
-   batch_gps
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Package Reference
-
-   inverse
-   gaussian_process
-   covariance
    train
-   synthetic
-   uq
    plotting
    niklas
    forward
    grid
+   compatibility_layer
 
 
 Indices and tables
