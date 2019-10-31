@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>volcapy.synthetic &mdash; Volcapy 0.1 documentation</title>
+  <title>Synthetic Volcano Creation &mdash; Volcapy 0.1 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Uncertainty Quantification Tools" href="uq.html" />
-    <link rel="prev" title="volcapy.covariance" href="covariance.html" />
+    <link rel="prev" title="Kernels" href="covariance.html" />
     <link href="_static/style.css" rel="stylesheet" type="text/css">
 
 </head>
@@ -83,11 +83,12 @@
               
             
             
-              <p class="caption"><span class="caption-text">Package Reference</span></p>
+              <p class="caption"><span class="caption-text">Main Modules:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="inverse.html">volcapy.inverse</a></li>
-<li class="toctree-l1"><a class="reference internal" href="covariance.html">volcapy.covariance</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">volcapy.synthetic</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="inverse.html">Inverse Problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gaussian_process.html">Gaussian Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariance.html">Kernels</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Synthetic Volcano Creation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#building-an-artificial-volcano">Building an artificial volcano</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#generating-data-from-an-artificial-volcano">Generating data from an artificial volcano</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#module-volcapy.synthetic.build_synth_data">build_synth_data</a></li>
@@ -100,6 +101,12 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="uq.html">Uncertainty Quantification Tools</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Advanced Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Hyperparameter Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compatibility_layer.html">Niklas Compatibility Layer</a></li>
 </ul>
 
             
@@ -145,7 +152,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>volcapy.synthetic</li>
+      <li>Synthetic Volcano Creation</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -165,7 +172,7 @@
            <div itemprop="articleBody">
             
   <div class="section" id="module-volcapy.synthetic">
-<span id="volcapy-synthetic"></span><h1>volcapy.synthetic<a class="headerlink" href="#module-volcapy.synthetic" title="Permalink to this headline">¶</a></h1>
+<span id="synthetic-volcano-creation"></span><h1>Synthetic Volcano Creation<a class="headerlink" href="#module-volcapy.synthetic" title="Permalink to this headline">¶</a></h1>
 <p>This module provides functionalities to build <em>synthetic volcanoes</em> and run
 inversion on them.</p>
 <p>The goal is to build a synthetic topography with some user defined matter
@@ -482,7 +489,7 @@ Note that hyperparameters have to be manually specified, so one should run
         <a href="uq.html" class="btn btn-neutral float-right" title="Uncertainty Quantification Tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="covariance.html" class="btn btn-neutral float-left" title="volcapy.covariance" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="covariance.html" class="btn btn-neutral float-left" title="Kernels" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

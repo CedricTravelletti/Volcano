@@ -83,10 +83,12 @@
             
               <p class="caption"><span class="caption-text">Package Reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inverse.html">volcapy.inverse</a></li>
-<li class="toctree-l1"><a class="reference internal" href="covariance.html">volcapy.covariance</a></li>
-<li class="toctree-l1"><a class="reference internal" href="synthetic.html">volcapy.synthetic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inverse.html">Inverse Problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gaussian_process.html">Gaussian Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariance.html">Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="uq.html">Uncertainty Quantification Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 </ul>
 
             
@@ -158,7 +160,6 @@
 </div>
 <div class="section" id="module-volcapy.inverse.gaussian_process">
 <span id="volcapy-inverse-gaussian-process-module"></span><h2>volcapy.inverse.gaussian_process module<a class="headerlink" href="#module-volcapy.inverse.gaussian_process" title="Permalink to this headline">¶</a></h2>
-<p>Gaussian Process for Inversion class.</p>
 <p>This class implements gaussian process regression/conditioning for inverse
 problems, i.e. when conditioning on a linear operator of the field.
 The situation is we have a gaussian process on some space and a linear
@@ -609,9 +610,13 @@ Can be used to switch between cpu and gpu.</p>
 </div>
 <div class="section" id="module-volcapy.inverse.inverse_problem">
 <span id="volcapy-inverse-inverse-problem-module"></span><h2>volcapy.inverse.inverse_problem module<a class="headerlink" href="#module-volcapy.inverse.inverse_problem" title="Permalink to this headline">¶</a></h2>
-<p>Module handling all data needed to define an inverse problem.</p>
-<p>The goal is to encapsulat things such as the inversion grid, the measurement
-data, … in a single class.</p>
+<p>This module provides a class encapsulating all data needed to define an inverse
+problem.</p>
+<p>The goal is to allow the user to ignore the underlying details of the input
+data.</p>
+<p>Indeed, if one want to work on Niklas’s data, and directly load all 
+data from the raw .mat file, one just has to run:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">InverseProblem.from_matfile(path)</span></code></p>
 <dl class="class">
 <dt id="volcapy.inverse.inverse_problem.InverseProblem">
 <em class="property">class </em><code class="sig-prename descclassname">volcapy.inverse.inverse_problem.</code><code class="sig-name descname">InverseProblem</code><span class="sig-paren">(</span><em class="sig-param">cells_coords</em>, <em class="sig-param">forward</em>, <em class="sig-param">data_points</em>, <em class="sig-param">data_values</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/inverse/inverse_problem.html#InverseProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.inverse.inverse_problem.InverseProblem" title="Permalink to this definition">¶</a></dt>

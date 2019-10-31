@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>GPyTorch’s documentation &mdash; Volcapy 0.1 documentation</title>
+  <title>Volcapy’s documentation &mdash; Volcapy 0.1 documentation</title>
   
 
   
@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="volcapy.inverse" href="inverse.html" />
+    <link rel="next" title="Inverse Problem" href="inverse.html" />
     <link href="_static/style.css" rel="stylesheet" type="text/css">
 
 </head>
@@ -82,12 +82,19 @@
               
             
             
-              <p class="caption"><span class="caption-text">Package Reference</span></p>
+              <p class="caption"><span class="caption-text">Main Modules:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inverse.html">volcapy.inverse</a></li>
-<li class="toctree-l1"><a class="reference internal" href="covariance.html">volcapy.covariance</a></li>
-<li class="toctree-l1"><a class="reference internal" href="synthetic.html">volcapy.synthetic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inverse.html">Inverse Problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gaussian_process.html">Gaussian Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariance.html">Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="uq.html">Uncertainty Quantification Tools</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Advanced Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Hyperparameter Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compatibility_layer.html">Niklas Compatibility Layer</a></li>
 </ul>
 
             
@@ -135,7 +142,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>GPyTorch’s documentation</li>
+      <li>Volcapy’s documentation</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -143,7 +150,7 @@
             
             
               <!-- User defined GitHub URL -->
-              <a href="https://github.com/cornellius-gp/gpytorch" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/CedricTravelletti/Volcano" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -157,21 +164,49 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="gpytorch-s-documentation">
-<h1>GPyTorch’s documentation<a class="headerlink" href="#gpytorch-s-documentation" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="volcapy-s-documentation">
+<h1>Volcapy’s documentation<a class="headerlink" href="#volcapy-s-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 <div class="toctree-wrapper compound">
-</div>
-<div class="toctree-wrapper compound">
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Package Reference</span></p>
+<p class="caption"><span class="caption-text">Main Modules:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inverse.html">volcapy.inverse</a></li>
-<li class="toctree-l1"><a class="reference internal" href="covariance.html">volcapy.covariance</a></li>
-<li class="toctree-l1"><a class="reference internal" href="synthetic.html">volcapy.synthetic</a></li>
-<li class="toctree-l1"><a class="reference internal" href="uq.html">Uncertainty Quantification Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inverse.html">Inverse Problem</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inverse.html#module-implementation-details">Module implementation Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gaussian_process.html">Gaussian Process</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gaussian_process.html#notation-and-implementation">Notation and Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gaussian_process.html#regression-conditioning">Regression/Conditioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gaussian_process.html#covariance-matrices">Covariance Matrices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gaussian_process.html#covariance-pushforward">Covariance Pushforward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gaussian_process.html#module-implementation-details">Module implementation Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="covariance.html">Kernels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="covariance.html#handling-out-of-memory-errors">Handling out of Memory Errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="covariance.html#matern-3-2">Matérn 3/2</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="synthetic.html">Synthetic Volcano Creation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="synthetic.html#building-an-artificial-volcano">Building an artificial volcano</a></li>
+<li class="toctree-l2"><a class="reference internal" href="synthetic.html#generating-data-from-an-artificial-volcano">Generating data from an artificial volcano</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="uq.html">Uncertainty Quantification Tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="uq.html#module-functionalities">Module Functionalities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="uq.html#set-uncertainty-quantification-theory">Set Uncertainty Quantification: Theory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="uq.html#module-volcapy.uq.azzimonti">Module implementation Details</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Advanced Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Hyperparameter Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compatibility_layer.html">Niklas Compatibility Layer</a></li>
 </ul>
 </div>
 </div>
@@ -192,7 +227,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="inverse.html" class="btn btn-neutral float-right" title="volcapy.inverse" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="inverse.html" class="btn btn-neutral float-right" title="Inverse Problem" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>

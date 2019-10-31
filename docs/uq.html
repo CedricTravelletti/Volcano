@@ -36,7 +36,8 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="volcapy.synthetic" href="synthetic.html" />
+    <link rel="next" title="Hyperparameter Optimization" href="train.html" />
+    <link rel="prev" title="Synthetic Volcano Creation" href="synthetic.html" />
     <link href="_static/style.css" rel="stylesheet" type="text/css">
 
 </head>
@@ -82,19 +83,24 @@
               
             
             
-              <p class="caption"><span class="caption-text">Package Reference</span></p>
+              <p class="caption"><span class="caption-text">Main Modules:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="inverse.html">volcapy.inverse</a></li>
-<li class="toctree-l1"><a class="reference internal" href="covariance.html">volcapy.covariance</a></li>
-<li class="toctree-l1"><a class="reference internal" href="synthetic.html">volcapy.synthetic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inverse.html">Inverse Problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gaussian_process.html">Gaussian Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariance.html">Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Uncertainty Quantification Tools</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-functionalities">Module Functionalities</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#set-uncertainty-quantification-theory">Set Uncertainty Quantification: Theory</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#module-volcapy.uq.azzimonti">azzimonti</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#set-uncertainty-quantification-theory">Set Uncertainty Quantification: Theory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-volcapy.uq.azzimonti">Module implementation Details</a></li>
 </ul>
 </li>
 </ul>
-</li>
+<p class="caption"><span class="caption-text">Advanced Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Hyperparameter Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compatibility_layer.html">Niklas Compatibility Layer</a></li>
 </ul>
 
             
@@ -207,25 +213,29 @@ space.</p>
 </div>
 <div class="section" id="set-uncertainty-quantification-theory">
 <h2>Set Uncertainty Quantification: Theory<a class="headerlink" href="#set-uncertainty-quantification-theory" title="Permalink to this headline">¶</a></h2>
+<p>We want to estimate regions in model the space <span class="math notranslate nohighlight">\(X\)</span> where the matter density field
+<span class="math notranslate nohighlight">\(Z\)</span> is above a given threshold <span class="math notranslate nohighlight">\(u_0\)</span>.</p>
+<p>The posterior distribution of the conditional field gives rise to a random closed set (RACS) <span class="math notranslate nohighlight">\(\Gamma\)</span></p>
+<div class="math notranslate nohighlight">
+\[\Gamma = \lbrace x \in X: \tilde{Z}_x \geq u_0 \rbrace\]</div>
+<p>We can then consider the pointwise probability to belong to the excursion set</p>
 <ul class="simple">
-<li><p>The main data characterizing an artificial volcano is a <strong>topography</strong>.
-A topography is a collection of contiguous 3-dimensional cells defining a
-discretization of a given domain (the volcano). For simplicity, we here use a
-cone discretized into uniform cubic cells.</p></li>
-<li><p>Once a topography has been defined, one has to chose the locations at which
-the measurements of the gravity field will be performed. We do this by
-picking <span class="math notranslate nohighlight">\(n_{obs}\)</span> locations at random on the surface of the topography.
-Here surface means the <em>upper</em> boundary of the cone, i.e. there will be no
-measurements below the cone. Note also that we add a small offset between the
-surface and the measurement location to avoid singularities in the forwarded
-operator.</p></li>
-<li><p>Once topography and measurement locations have been defined, the forward
-operator can be computed using the Banerjee formula.</p></li>
+<li><p><em>Coverage Function</em></p></li>
 </ul>
+<div class="math notranslate nohighlight">
+\[p_{\Gamma}: X \rightarrow [0, 1]\]</div>
+<div class="math notranslate nohighlight">
+\[p_{\Gamma}(x) := \mathbb{P}[x \in \Gamma]\]</div>
+<p>All our set estimators will be defined using the coverage function.</p>
+<ul class="simple">
+<li><p><em>Vorob’ev quantile</em> at level <span class="math notranslate nohighlight">\(\alpha\)</span></p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[Q_{\alpha} := \lbrace x \in X : p_{\Gamma} \geq \alpha \rbrace\]</div>
+</div>
 <hr class="docutils" />
-<p>A detailed description of each functionality is provided below</p>
 <div class="section" id="module-volcapy.uq.azzimonti">
-<span id="azzimonti"></span><h3>azzimonti<a class="headerlink" href="#module-volcapy.uq.azzimonti" title="Permalink to this headline">¶</a></h3>
+<span id="module-implementation-details"></span><h2>Module implementation Details<a class="headerlink" href="#module-volcapy.uq.azzimonti" title="Permalink to this headline">¶</a></h2>
 <p>(DEPRECATED) Module implementing estimation of excursion sets and uncertainty
 quantification on them.</p>
 <p>SHOULD BE ADAPTED TO THE NEW GAUSSIANPROCESS CLASS.</p>
@@ -256,22 +266,22 @@ points i and j.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="volcapy.uq.html#volcapy.uq.azzimonti.GaussianProcess.compute_excursion_probs" title="volcapy.uq.azzimonti.GaussianProcess.compute_excursion_probs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_excursion_probs</span></code></a>(threshold)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.uq.azzimonti.GaussianProcess.compute_excursion_probs" title="volcapy.uq.azzimonti.GaussianProcess.compute_excursion_probs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_excursion_probs</span></code></a>(threshold)</p></td>
 <td><p>Computes once and for all the probability of excursion above threshold for every point.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="volcapy.uq.html#volcapy.uq.azzimonti.GaussianProcess.coverage_fct" title="volcapy.uq.azzimonti.GaussianProcess.coverage_fct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coverage_fct</span></code></a>(i, threshold)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.uq.azzimonti.GaussianProcess.coverage_fct" title="volcapy.uq.azzimonti.GaussianProcess.coverage_fct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coverage_fct</span></code></a>(i, threshold)</p></td>
 <td><p>Coverage function (excursion probability) at a point.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="volcapy.uq.html#volcapy.uq.azzimonti.GaussianProcess.expected_excursion_measure" title="volcapy.uq.azzimonti.GaussianProcess.expected_excursion_measure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expected_excursion_measure</span></code></a>(threshold)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.uq.azzimonti.GaussianProcess.expected_excursion_measure" title="volcapy.uq.azzimonti.GaussianProcess.expected_excursion_measure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expected_excursion_measure</span></code></a>(threshold)</p></td>
 <td><p>Get the expected measure of the excursion set above the given threshold.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="volcapy.uq.html#volcapy.uq.azzimonti.GaussianProcess.vorobev_deviation" title="volcapy.uq.azzimonti.GaussianProcess.vorobev_deviation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vorobev_deviation</span></code></a>(set_inds, threshold)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.uq.azzimonti.GaussianProcess.vorobev_deviation" title="volcapy.uq.azzimonti.GaussianProcess.vorobev_deviation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vorobev_deviation</span></code></a>(set_inds, threshold)</p></td>
 <td><p>Compute the Vorob’ev deviation of a given set.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="volcapy.uq.html#volcapy.uq.azzimonti.GaussianProcess.vorobev_expectation_inds" title="volcapy.uq.azzimonti.GaussianProcess.vorobev_expectation_inds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vorobev_expectation_inds</span></code></a>(threshold)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.uq.azzimonti.GaussianProcess.vorobev_expectation_inds" title="volcapy.uq.azzimonti.GaussianProcess.vorobev_expectation_inds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vorobev_expectation_inds</span></code></a>(threshold)</p></td>
 <td><p>Get cells belonging to the Vorobev expectation.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="volcapy.uq.html#volcapy.uq.azzimonti.GaussianProcess.vorobev_quantile_inds" title="volcapy.uq.azzimonti.GaussianProcess.vorobev_quantile_inds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vorobev_quantile_inds</span></code></a>(alpha, threshold)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.uq.azzimonti.GaussianProcess.vorobev_quantile_inds" title="volcapy.uq.azzimonti.GaussianProcess.vorobev_quantile_inds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vorobev_quantile_inds</span></code></a>(alpha, threshold)</p></td>
 <td><p>Get the cells belonging Vorobev quantile alpha.</p></td>
 </tr>
 </tbody>
@@ -425,7 +435,6 @@ excursion set.</p>
 </p>
 </div>
 </div>
-</div>
 
 
            </div>
@@ -435,8 +444,10 @@ excursion set.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
+        <a href="train.html" class="btn btn-neutral float-right" title="Hyperparameter Optimization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-        <a href="synthetic.html" class="btn btn-neutral float-left" title="volcapy.synthetic" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+        <a href="synthetic.html" class="btn btn-neutral float-left" title="Synthetic Volcano Creation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

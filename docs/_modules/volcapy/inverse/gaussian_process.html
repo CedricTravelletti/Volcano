@@ -81,12 +81,19 @@
               
             
             
-              <p class="caption"><span class="caption-text">Package Reference</span></p>
+              <p class="caption"><span class="caption-text">Main Modules:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../inverse.html">volcapy.inverse</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../covariance.html">volcapy.covariance</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../synthetic.html">volcapy.synthetic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../inverse.html">Inverse Problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gaussian_process.html">Gaussian Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../covariance.html">Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../uq.html">Uncertainty Quantification Tools</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Advanced Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../train.html">Hyperparameter Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../compatibility_layer.html">Niklas Compatibility Layer</a></li>
 </ul>
 
             
@@ -150,8 +157,7 @@
            <div itemprop="articleBody">
             
   <h1>Source code for volcapy.inverse.gaussian_process</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot; Gaussian Process for Inversion class.</span>
-
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">This class implements gaussian process regression/conditioning for inverse</span>
 <span class="sd">problems, i.e. when conditioning on a linear operator of the field.</span>
 <span class="sd">The situation is we have a gaussian process on some space and a linear</span>

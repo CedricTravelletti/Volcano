@@ -81,12 +81,19 @@
               
             
             
-              <p class="caption"><span class="caption-text">Package Reference</span></p>
+              <p class="caption"><span class="caption-text">Main Modules:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../inverse.html">volcapy.inverse</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../covariance.html">volcapy.covariance</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../synthetic.html">volcapy.synthetic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../inverse.html">Inverse Problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gaussian_process.html">Gaussian Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../covariance.html">Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../uq.html">Uncertainty Quantification Tools</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Advanced Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../train.html">Hyperparameter Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../compatibility_layer.html">Niklas Compatibility Layer</a></li>
 </ul>
 
             
@@ -150,10 +157,18 @@
            <div itemprop="articleBody">
             
   <h1>Source code for volcapy.inverse.inverse_problem</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot; Module handling all data needed to define an inverse problem.</span>
+<span></span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">This module provides a class encapsulating all data needed to define an inverse</span>
+<span class="sd">problem.</span>
 
-<span class="sd">The goal is to encapsulat things such as the inversion grid, the measurement</span>
-<span class="sd">data, ... in a single class.</span>
+<span class="sd">The goal is to allow the user to ignore the underlying details of the input</span>
+<span class="sd">data.</span>
+
+<span class="sd">Indeed, if one want to work on Niklas&#39;s data, and directly load all </span>
+<span class="sd">data from the raw .mat file, one just has to run:</span>
+
+<span class="sd">:code:`InverseProblem.from_matfile(path)`</span>
+
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">volcapy</span> <span class="k">import</span> <span class="n">loading</span>
