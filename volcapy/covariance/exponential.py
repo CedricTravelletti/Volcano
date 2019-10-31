@@ -1,13 +1,3 @@
-""" Tools to compute covariance matrix (data side) and covariance pushforward,
-on GPU.
-
-IMPORTANT: Note that we always strip the variance parameter sigma0 from the
-covariance matrix. Hence, when using the covariance pushforward computed here,
-one has to manually multiply by sigma0^2 for expressions to make sense.
-
-THIS ONE COMPUTES THE SIMPLE EXPONENTIAL (LAPLACE).
-
-"""
 import torch
 import numpy as np
 

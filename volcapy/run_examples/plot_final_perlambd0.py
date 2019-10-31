@@ -12,7 +12,7 @@ from volcapy.inverse.flow import InverseProblem
 LOAD
 """
 # input_folder = "/idiap/temp/ctravelletti/out/simple_exponential/"
-input_folder = "/home/cedric/PHD/run_results/last/"
+input_folder = "/home/cedric/PHD/run_results/train_matern32/"
 
 lambda0s = np.load(os.path.join(input_folder, "lambda0s_train.npy"))
 lls = np.load(os.path.join(input_folder, "log_likelihoods_train.npy"))
@@ -24,7 +24,7 @@ loocv_rmses = np.load(os.path.join(input_folder, "loocv_rmses_train.npy"))
 # Plot train and LOOCV final error for each lambda0.
 plt.figure()
 plt.subplot(211)
-plt.title("Train/Test split: 450/103.")
+plt.title("Train/Test split: 300/242.")
 plt.plot(lambda0s, train_rmses, "r*", label="Train", markersize=12)
 plt.plot(lambda0s, loocv_rmses, "bo", label="LOOCV RMSE")
 
@@ -46,7 +46,7 @@ plt.show()
 # Plot final hyperparameters for each lambda0.
 plt.figure()
 plt.subplot(211)
-plt.title("Train/Test split: 450/103.")
+plt.title("Train/Test split: 300/242.")
 plt.plot(lambda0s, m0s, "r*", label="m0")
 plt.xlabel("lambda0 [m]")
 plt.ylabel("m0 [kg/m3]")

@@ -2,6 +2,11 @@
 data/
 *.c
 *.mat
+*.mhd
+*.zraw
+*.pvsm
+*.pwin
+*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

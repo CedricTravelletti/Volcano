@@ -9,8 +9,8 @@ import numpy as np
 
 
 # posterior_mean_path = "/home/cedric/PHD/Dev/Volcano/results/m_posterior.npy"
-posterior_mean_path = "/home/cedric/PHD/run_results/forwards/m_post_200_matern.npy"
-posterior_mean_path2 = "/home/cedric/PHD/run_results/forwards/m_post_250.0_sqexp.npy"
+posterior_mean_path = "/home/cedric/PHD/run_results/forwards/m_post_902_exponential.npy"
+posterior_mean_path2 = "/home/cedric/PHD/run_results/forwards/m_post_342_squared_exponential.npy"
 
 """
 posterior_mean_path = "/home/cedric/PHD/Dev/Volcano/results/m_posterior.npy"
@@ -21,7 +21,7 @@ niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
 # Load inversion results.
 post_mean = np.load(posterior_mean_path)
 post_mean2 = np.load(posterior_mean_path2)
-post_variance = np.load(posterior_variance_path)
+# post_variance = np.load(posterior_variance_path)
 
 # Load data from Niklas (forward and measurements).
 niklas_data = load_niklas(niklas_data_path)
