@@ -40,11 +40,16 @@ release = '0.1'
 # ones.
 extensions = [
     'sphinx.ext.autodoc', 'numpydoc',
-    'sphinx.ext.intersphinx', 'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
 ]
+
+# Disable docstring inheritance
+autodoc_inherit_docstrings = False
+
+# Otherwise numpydoc automatically includes methods from parent in summary.
+numpydoc_show_inherited_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
