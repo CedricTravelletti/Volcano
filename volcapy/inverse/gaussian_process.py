@@ -39,6 +39,13 @@ The model covariance matrix :math:`K` is to big to be stored, but during conditi
 it only shows up in the form :math:`K F^t`. It is thus sufficient to compute this
 product once and for all. We call it the *covariance pushforward*.
 
+Noise
+-----
+Independent homoscedactic noise on the data is assumed. It is specified by
+*data_std_orig*. If the matrices are ill-conditioned, the the noise will have
+to be increased, hence the current value of the noise will be stored in
+*noise_std*.
+
 """
 import numpy as np
 import torch
@@ -51,7 +58,51 @@ epsilon2 = 0.1**2
 
 
 class GaussianProcess(torch.nn.Module):
-    def __init__(self, F, d_obs, data_ones, sigma0_init, data_std=0.1,
+    """
+
+    Attributes
+    ----------
+    sigma0_init
+        Original value of the sigma0 parameter to use when starting
+        optimization.
+    sigma0: float
+        Current value of the prior standard deviation of the process.
+        Will get optimized. We store it so we can use it as starting value
+        for optimization of similar lambda0s.
+    data_std_orig: float
+        Original data noise standard deviation.
+    data_std: float
+        Current data noise deviation. Can change from the original value
+        since we may have to increase it to make matrices invertible/better
+        conditioned.
+    F: ndarray
+        Forward operator matrix, n_d * n_m
+    d_obs: tensor
+       Vector of observed data values
+    n_model: int
+        Number of model cells.
+    n_data: int
+        Number of data observations.
+
+    mu0_d_stripped
+    data_ones
+    inv_op_L
+    inversion_operator
+    mu0_d
+    m0
+    prior_misfit
+    weights
+    mu_post_d
+    mu_post_m
+    stripped_inv
+    mu0_m
+    R
+
+    logger
+        An instance of logging.Logger, used to output training progression.
+
+    """
+    def __init__(self, F, d_obs, sigma0_init, data_std=0.1,
             logger=None):
         """
 
@@ -61,8 +112,6 @@ class GaussianProcess(torch.nn.Module):
             Forward operator matrix, n_d * n_m
         d_obs
             Observed data vector.
-        data_ones
-            Data (observations) covariance matrix.
         sigma0_init
             Original value of the sigma0 parameter to use when starting
             optimization.
@@ -70,34 +119,6 @@ class GaussianProcess(torch.nn.Module):
             Data noise standard deviation.
         logger
             An instance of logging.Logger, used to output training progression.
-
-        ...
-
-        Attributes
-        ----------
-        sigma0: float
-            Current value of the prior standard deviation of the process.
-            Will get optimized. We store it so we can use it as starting value
-            for optimization of similar lambda0s.
-        n_model: int
-            Number of model cells.
-        n_data: int
-            Number of data observations.
-        mu0_d_stripped: tensor
-            Prior mean vector on the data side, but stripped of the prior mean
-            m0. I.e. it is equal to F * 1_m.
-        d_obs: tensor
-            Vector of observed data values
-        data_ones: tensor
-            Identity matrix in data space.
-        data_std_orig: float
-            Original data noise standard deviation.
-        data_std: float
-            Current data noise deviation. Can change from the original value
-            since we may have to increase it to make matrices invertible/better
-            conditioned.
-        I_d: tensor
-            Vector of ones in data space. Needed for concentration.
 
         """
         super(GaussianProcess, self).__init__()
@@ -121,9 +142,6 @@ class GaussianProcess(torch.nn.Module):
         # make matrix invertible.
         self.data_std = data_std
 
-        # Identity vector. Need for concentration.
-        self.I_d = torch.ones((self.n_data, 1), dtype=torch.float32)
-
         # If no logger, create one.
         if logger is None:
             import logging
@@ -144,7 +162,6 @@ class GaussianProcess(torch.nn.Module):
         self.mu0_d_stripped = self.mu0_d_stripped.to(device)
         self.d_obs = self.d_obs.to(device)
         self.data_ones = self.data_ones.to(device)
-        self.I_d = self.I_d.to(device)
 
     def neg_log_likelihood(self):
         """ Computes the negative log-likelihood of the current state of the
