@@ -572,47 +572,6 @@ class GaussianProcess(torch.nn.Module):
 
         return np.linalg.cond(inv_inversion_operator.detach().numpy())
 
-    def subset_data(self, n_keep):
-        """ Subset an inverse problem by only keeping n_keep data
-        points selected at random.
-
-        The effect of this method is to directly modify the attributes of the
-        class to adapt them to the smaller problem.
-
-        Parameters
-        ----------
-        n_keep: int
-            Only keep n_keep data points.
-
-        Returns
-        -------
-        (rest_forward, rest_data)
-
-
-        """
-        # Pick indices at random.
-        inds = np.random.choice(range(self.n_data), n_keep, replace=False)
-
-        # Return the unused part of the forward and of the data so that it can
-        # be used as test set.
-        rest_forward = np.delete(self.forward, inds, axis=0)
-        rest_data = np.delete(self.data_values, inds, axis=0)
-        rest_data_points = np.delete(self.data_points, inds, axis=0)
-
-        # Now subset
-        self.forward = self.forward[inds, :]
-        self.data_points = self.data_points[inds, :]
-        self.data_values = self.data_values[inds]
-        # We subsetted columns, hence we have to restore C-contiguity by hand.
-        self.forward = np.ascontiguousarray(self.forward)
-
-        # New dimensions
-        self.n_data = self.forward.shape[0]
-
-        # Note that we return data in a column vector, to make it
-        # compatible with the rest of the data.
-        return (rest_forward, rest_data[:, None])
-
     def get_inversion_op_cholesky(self, K_d, sigma0):
         """ Compute the Cholesky decomposition of the inverse of the inversion operator.
         Increases noise level if necessary to make matrix invertible.
