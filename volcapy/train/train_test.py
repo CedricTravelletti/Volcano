@@ -40,7 +40,7 @@ def main():
     
     # Test-Train split.
     n_keep = 300
-    rest_forward, rest_data = inverseProblem.subset_data(self, n_keep, seed=2):
+    rest_forward, rest_data = inverseProblem.subset_data(self, n_keep, seed=2)
     n_data = inverseProblem.n_data
     F_test = torch.as_tensor(rest_forward).detach()
     d_obs_test = torch.as_tensor(rest_data[:, None]).detach()
