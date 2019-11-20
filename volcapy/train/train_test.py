@@ -107,7 +107,7 @@ def main():
     start = timer()
     
     # Create the GP model.
-    myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
+    myGP = GaussianProcess(F, d_obs, sigma0_init,
             data_std=data_std, logger=logger)
     myGP.cuda()
     
