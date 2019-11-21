@@ -53,10 +53,6 @@ gpu = torch.device('cuda:0')
 cpu = torch.device('cpu')
 
 
-# Data standard deviation.
-epsilon2 = 0.1**2
-
-
 class GaussianProcess(torch.nn.Module):
     """
 
@@ -83,10 +79,13 @@ class GaussianProcess(torch.nn.Module):
         Number of model cells.
     n_data: int
         Number of data observations.
-
-    mu0_d_stripped
+    mu0_d_stripped: Tensor
+        The pushforwarded mean vector, stripped of the constant prior means
+        parameter. I.e. this is F * 1_m. Multiply by the prior mean m0 to get
+        the data-side mean.
     data_ones
-    inv_op_L
+    inv_op_L: Tensor
+        Lower Cholesky factor of the inverse inversion operator R.
     inversion_operator
     mu0_d
     m0
@@ -96,7 +95,9 @@ class GaussianProcess(torch.nn.Module):
     mu_post_m
     stripped_inv
     mu0_m
-    R
+    R: Tensor.
+        Inverse inversion operator. Given by
+        data_std**2 * 1_{d*d} + sigma0**2 * K_d
 
     logger
         An instance of logging.Logger, used to output training progression.
