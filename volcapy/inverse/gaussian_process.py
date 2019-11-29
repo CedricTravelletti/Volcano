@@ -46,6 +46,24 @@ Independent homoscedactic noise on the data is assumed. It is specified by
 to be increased, hence the current value of the noise will be stored in
 *noise_std*.
 
+Important Implementation Detail
+-------------------------------
+Products of vectors with the inversion operator R^{-1} * x should be computed
+using inv_op_vector_mult(x).
+
+Conditioning
+------------
+Conditioning always compute the inversion operator, and m0 via concentration.
+Hence, every call to conditioning (condition_data or condition_model), will
+update the following attributes:
+    - inv_op_L
+    - inversion_operator
+    - m0
+    - mu0_d
+    - prior_misfit
+    - weights
+    - mu_post_d (TODO: maybe shouldn't be an attribute of the GP.)
+
 """
 import numpy as np
 import torch
@@ -222,20 +240,16 @@ class GaussianProcess(torch.nn.Module):
             
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
-            m0 = self.concentrate_m0()
+            self.m0 = self.concentrate_m0()
 
-        self.mu0_d = m0 * self.mu0_d_stripped
-        # Store m0 in case we want to print it later.
-        self.m0 = m0
+        self.mu0_d = self.m0 * self.mu0_d_stripped
         self. prior_misfit = self.d_obs - self.mu0_d
 
         self.weights = self.inv_op_vector_mult(self.prior_misfit)
 
-        mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, self.weights)
-        # Store in case.
-        self.mu_post_d = mu_post_d
+        self.mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, self.weights)
 
-        return mu_post_d
+        return self.mu_post_d
 
     def condition_model(self, cov_pushfwd, F, sigma0, m0=0.1,
             concentrate=False, NtV_crit=-1.0):
@@ -267,56 +281,16 @@ class GaussianProcess(torch.nn.Module):
             Posterior mean data vector
 
         """
-        # Get Cholesky factor (lower triangular) of the inversion operator.
-        self.inv_op_L = self.get_inversion_op_cholesky(K_d, sigma0)
-        self.inversion_operator = torch.cholesky_inverse(self.inv_op_L)
-
-        if concentrate:
-            # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
-            m0 = self.concentrate_m0()
-
-        # Prior mean for data and model.
-        self.mu0_d = m0 * self.mu0_d_stripped
-        self.mu0_m = m0 * torch.ones((self.n_model, 1))
-
-        # Store m0 in case we want to print it later.
-        self.m0 = m0
-        self. prior_misfit = torch.sub(self.d_obs, self.mu0_d)
-        weights = torch.mm(self.inversion_operator, self.prior_misfit)
-
-        # -----------------------------------------
-        # -----------------------------------------
-        # WARNING
-        # We try to compute inverse matrix - vector product using Cholesky.
-        # See if its better.
-        # -----------------------------------------
-        # -----------------------------------------
-        for attempt in range(10):
-            try:
-                u = torch.cholesky(inv_inversion_operator)
-            except RuntimeError:
-                print("Cholesky failed: Singular Matrix.")
-                # Increase NtV in steps of 10%.
-                newNtV = 1.1 * NtV
-                print("Increasing NtV from original {} to {} and retrying.".format(NtV, newNtV))
-                inv_inversion_operator = torch.add(
-                    0.1 * NtV * self.data_ones,
-                    inv_inversion_operator)
-            else:
-                break
-
-        z2, _ = torch.triangular_solve(self.prior_misfit, u, upper=False)
-        y2, _ = torch.triangular_solve(z2, u.t(), upper=True)
-        weights = (1 / sigma0**2) * y2
-
-        # Posterior data mean.
-        self.mu_post_d = torch.add(
-                self.mu0_d,
-                torch.mm(sigma0**2 * torch.mm(F, cov_pushfwd), weights))
+        # Conditioning model is just conditioning on data and then computing
+        # posterior mean and (co-)variance on model side.
+        K_d = torch.mm(F, cov_pushfwd)
+        mu_post_d = self.condition_data(K_d, sigma0, m0,
+                concentrate=concentrate)
 
         # Posterior model mean.
+        # Can re-use the m0 and weights computed by condition_data.
         self.mu_post_m = torch.add(
-                self.mu0_m,
+                m0 * torch.ones((self.n_model, 1)),
                 torch.mm(sigma0**2 * cov_pushfwd, weights))
 
         return self.mu_post_m.detach(), self.mu_post_d
@@ -578,7 +552,7 @@ class GaussianProcess(torch.nn.Module):
         Returns
         -------
         Tensor
-            L such that R = LL^t. L i lower triangular.
+            L such that R = LL^t. L is lower triangular.
 
         """
         self.R = (self.data_std**2) * self.data_ones + sigma0**2 * K_d
