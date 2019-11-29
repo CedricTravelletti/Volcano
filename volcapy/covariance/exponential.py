@@ -110,7 +110,7 @@ def compute_cov(lambda0, cells_coords, i, j):
     """
     # Convert to torch.
     lambda0 = torch.tensor(lambda0, requires_grad=False)
-    inv_lambda2 = - 1 / (2 * lambda0**2)
+    inv_lambda2 = - 1 / (lambda0)
 
     # Squared euclidean distance.
     d_2 = torch.sqrt(torch.pow(
