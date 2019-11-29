@@ -291,7 +291,7 @@ class GaussianProcess(torch.nn.Module):
         # Can re-use the m0 and weights computed by condition_data.
         self.mu_post_m = torch.add(
                 m0 * torch.ones((self.n_model, 1)),
-                torch.mm(sigma0**2 * cov_pushfwd, weights))
+                torch.mm(sigma0**2 * cov_pushfwd, self.weights))
 
         return self.mu_post_m.detach(), self.mu_post_d
 
