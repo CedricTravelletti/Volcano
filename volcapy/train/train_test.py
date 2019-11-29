@@ -40,7 +40,7 @@ def main():
     
     # Test-Train split.
     n_keep = 300
-    rest_forward, rest_data = inverseProblem.subset_data(self, n_keep, seed=2):
+    rest_forward, rest_data = inverseProblem.subset_data(n_keep, seed=2)
     n_data = inverseProblem.n_data
     F_test = torch.as_tensor(rest_forward).detach()
     d_obs_test = torch.as_tensor(rest_data[:, None]).detach()
@@ -107,7 +107,7 @@ def main():
     start = timer()
     
     # Create the GP model.
-    myGP = GaussianProcess(F, d_obs, data_cov, sigma0_init,
+    myGP = GaussianProcess(F, d_obs, sigma0_init,
             data_std=data_std, logger=logger)
     myGP.cuda()
     
