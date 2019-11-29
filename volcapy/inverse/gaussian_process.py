@@ -267,21 +267,9 @@ class GaussianProcess(torch.nn.Module):
             Posterior mean data vector
 
         """
-        # Noise to Variance ratio.
-        # If not specified, then do not modify it.
-        NtV = (self.data_std / sigma0)**2
-        if NtV < NtV_crit:
-            NtV = NtV_crit
-
-        inv_inversion_operator = torch.add(
-                        NtV * self.data_ones,
-                        torch.mm(F, cov_pushfwd))
-
-        self.stripped_inv = torch.inverse(inv_inversion_operator)
-
-        # Compute inversion operator and store once and for all.
-        self.inversion_operator = (
-                (1 / sigma0**2) * self.stripped_inv)
+        # Get Cholesky factor (lower triangular) of the inversion operator.
+        self.inv_op_L = self.get_inversion_op_cholesky(K_d, sigma0)
+        self.inversion_operator = torch.cholesky_inverse(self.inv_op_L)
 
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
