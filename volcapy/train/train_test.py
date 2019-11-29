@@ -99,8 +99,8 @@ def main():
     # on sigma0). The next lambda0s will have optimal sigma0s that vary
     # continouslty, hence we can initialize with the last optimal sigma0 and train
     # for a shorter time.
-    n_epochs_short = 6000
-    n_epochs_long = 20000
+    n_epochs_short = 10
+    n_epochs_long = 10
     
     # Run gradient descent for every lambda0.
     from timeit import default_timer as timer
@@ -136,25 +136,25 @@ def main():
             
         # Once finished, run a forward pass.
         m_post_d = myGP.condition_data(K_d, sigma0=myGP.sigma0, concentrate=True)
-        train_RMSE = myGP.train_RMSE()
+        train_rmse = myGP.train_RMSE()
         ll = myGP.neg_log_likelihood()
     
         # Compute LOOCV RMSE.
         loocv_rmse = myGP.loo_error()
     
         # Compute test RMSE
-        mu_post_m, _ = myGP.condition_model(K_d, F, sigma0=myGP.sigma0, concentrate=True)
+        mu_post_m, _ = myGP.condition_model(cov_pushfwd, F, sigma0=myGP.sigma0, concentrate=True)
         test_rmse = torch.sqrt(torch.mean(
-                (d_obs_test - torch.mm(F_test, m_post_m))**2))
+                (d_obs_test - torch.mm(F_test, mu_post_m))**2))
     
         # Save the final ll, train/test error and hyperparams for each lambda.
         lls[i] = ll.item()
-        train_rmses[i] = train_RMSE.item()
+        train_rmses[i] = train_rmse.item()
         loocv_rmses[i] = loocv_rmse.item()
         m0s[i] = myGP.m0
         sigma0s[i] = myGP.sigma0.item()
     
-        test_rmses[i] = test_RMSE.item()
+        test_rmses[i] = test_rmse.item()
     
         # Save results every 5 iterations.
         if i % 4 == 0:
