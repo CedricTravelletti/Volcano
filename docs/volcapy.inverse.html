@@ -81,14 +81,19 @@
               
             
             
-              <p class="caption"><span class="caption-text">Package Reference</span></p>
+              <p class="caption"><span class="caption-text">Main Modules:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="inverse.html">Inverse Problem</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gaussian_process.html">Gaussian Process</a></li>
 <li class="toctree-l1"><a class="reference internal" href="covariance.html">Kernels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="uq.html">Uncertainty Quantification Tools</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Advanced Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Hyperparameter Optimization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compatibility_layer.html">Niklas Compatibility Layer</a></li>
 </ul>
 
             
@@ -196,10 +201,87 @@ doesn’t include the <span class="math notranslate nohighlight">\(\sigma_0\)</s
 <p>The model covariance matrix <span class="math notranslate nohighlight">\(K\)</span> is to big to be stored, but during conditioning
 it only shows up in the form <span class="math notranslate nohighlight">\(K F^t\)</span>. It is thus sufficient to compute this
 product once and for all. We call it the <em>covariance pushforward</em>.</p>
+</div>
+<div class="section" id="noise">
+<h3>Noise<a class="headerlink" href="#noise" title="Permalink to this headline">¶</a></h3>
+<p>Independent homoscedactic noise on the data is assumed. It is specified by
+<em>data_std_orig</em>. If the matrices are ill-conditioned, the the noise will have
+to be increased, hence the current value of the noise will be stored in
+<em>noise_std</em>.</p>
+</div>
+<div class="section" id="important-implementation-detail">
+<h3>Important Implementation Detail<a class="headerlink" href="#important-implementation-detail" title="Permalink to this headline">¶</a></h3>
+<p>Products of vectors with the inversion operator R^{-1} * x should be computed
+using inv_op_vector_mult(x).</p>
+</div>
+<div class="section" id="conditioning">
+<h3>Conditioning<a class="headerlink" href="#conditioning" title="Permalink to this headline">¶</a></h3>
+<p>Conditioning always compute the inversion operator, and m0 via concentration.
+Hence, every call to conditioning (condition_data or condition_model), will
+update the following attributes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>inv_op_L</p></li>
+<li><p>inversion_operator</p></li>
+<li><p>m0</p></li>
+<li><p>mu0_d</p></li>
+<li><p>prior_misfit</p></li>
+<li><p>weights</p></li>
+<li><p>mu_post_d (TODO: maybe shouldn’t be an attribute of the GP.)</p></li>
+</ul>
+</div></blockquote>
 <dl class="class">
 <dt id="volcapy.inverse.gaussian_process.GaussianProcess">
-<em class="property">class </em><code class="sig-prename descclassname">volcapy.inverse.gaussian_process.</code><code class="sig-name descname">GaussianProcess</code><span class="sig-paren">(</span><em class="sig-param">F</em>, <em class="sig-param">d_obs</em>, <em class="sig-param">data_ones</em>, <em class="sig-param">sigma0_init</em>, <em class="sig-param">data_std=0.1</em>, <em class="sig-param">logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/inverse/gaussian_process.html#GaussianProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.inverse.gaussian_process.GaussianProcess" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">volcapy.inverse.gaussian_process.</code><code class="sig-name descname">GaussianProcess</code><span class="sig-paren">(</span><em class="sig-param">F</em>, <em class="sig-param">d_obs</em>, <em class="sig-param">sigma0_init</em>, <em class="sig-param">data_std=0.1</em>, <em class="sig-param">logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/inverse/gaussian_process.html#GaussianProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.inverse.gaussian_process.GaussianProcess" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>sigma0_init</strong></dt><dd><p>Original value of the sigma0 parameter to use when starting
+optimization.</p>
+</dd>
+<dt><strong>sigma0: float</strong></dt><dd><p>Current value of the prior standard deviation of the process.
+Will get optimized. We store it so we can use it as starting value
+for optimization of similar lambda0s.</p>
+</dd>
+<dt><strong>data_std_orig: float</strong></dt><dd><p>Original data noise standard deviation.</p>
+</dd>
+<dt><strong>data_std: float</strong></dt><dd><p>Current data noise deviation. Can change from the original value
+since we may have to increase it to make matrices invertible/better
+conditioned.</p>
+</dd>
+<dt><strong>F: ndarray</strong></dt><dd><p>Forward operator matrix, n_d * n_m</p>
+</dd>
+<dt><strong>d_obs: tensor</strong></dt><dd><p>Vector of observed data values</p>
+</dd>
+<dt><strong>n_model: int</strong></dt><dd><p>Number of model cells.</p>
+</dd>
+<dt><strong>n_data: int</strong></dt><dd><p>Number of data observations.</p>
+</dd>
+<dt><strong>mu0_d_stripped: Tensor</strong></dt><dd><p>The pushforwarded mean vector, stripped of the constant prior means
+parameter. I.e. this is F * 1_m. Multiply by the prior mean m0 to get
+the data-side mean.</p>
+</dd>
+<dt><strong>data_ones</strong></dt><dd></dd>
+<dt><strong>inv_op_L: Tensor</strong></dt><dd><p>Lower Cholesky factor of the inverse inversion operator R.</p>
+</dd>
+<dt><strong>inversion_operator</strong></dt><dd></dd>
+<dt><strong>mu0_d</strong></dt><dd></dd>
+<dt><strong>m0</strong></dt><dd></dd>
+<dt><strong>prior_misfit</strong></dt><dd></dd>
+<dt><strong>weights</strong></dt><dd></dd>
+<dt><strong>mu_post_d</strong></dt><dd></dd>
+<dt><strong>mu_post_m</strong></dt><dd></dd>
+<dt><strong>stripped_inv</strong></dt><dd></dd>
+<dt><strong>mu0_m</strong></dt><dd></dd>
+<dt><strong>R: Tensor.</strong></dt><dd><p>Inverse inversion operator. Given by
+data_std**2 * 1_{d*d} + sigma0**2 * K_d</p>
+</dd>
+<dt><strong>logger</strong></dt><dd><p>An instance of logging.Logger, used to output training progression.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 <p class="rubric">Methods</p>
 <table class="longtable docutils align-default">
 <colgroup>
@@ -243,13 +325,10 @@ product once and for all. We call it the <em>covariance pushforward</em>.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#volcapy.inverse.gaussian_process.GaussianProcess.post_cov" title="volcapy.inverse.gaussian_process.GaussianProcess.post_cov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">post_cov</span></code></a>(cov_pushfwd, cells_coords, lambda0, …)</p></td>
 <td><p>Get posterior model covariance between two specified cells.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.inverse.gaussian_process.GaussianProcess.subset_data" title="volcapy.inverse.gaussian_process.GaussianProcess.subset_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subset_data</span></code></a>(n_keep)</p></td>
-<td><p>Subset an inverse problem by only keeping n_keep data points selected at random.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.inverse.gaussian_process.GaussianProcess.to_device" title="volcapy.inverse.gaussian_process.GaussianProcess.to_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_device</span></code></a>(device)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.inverse.gaussian_process.GaussianProcess.to_device" title="volcapy.inverse.gaussian_process.GaussianProcess.to_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_device</span></code></a>(device)</p></td>
 <td><p>Transfer all model attributes to the given device.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.inverse.gaussian_process.GaussianProcess.train_RMSE" title="volcapy.inverse.gaussian_process.GaussianProcess.train_RMSE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_RMSE</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.inverse.gaussian_process.GaussianProcess.train_RMSE" title="volcapy.inverse.gaussian_process.GaussianProcess.train_RMSE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_RMSE</span></code></a>()</p></td>
 <td><p>Compute current error on training set.</p></td>
 </tr>
 </tbody>
@@ -397,7 +476,7 @@ from sigma0).</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>Tensor</strong></dt><dd><p>L such that R = LL^t. L i lower triangular.</p>
+<dt><strong>Tensor</strong></dt><dd><p>L such that R = LL^t. L is lower triangular.</p>
 </dd>
 </dl>
 </dd>
@@ -549,28 +628,6 @@ bit awkward and should be changed to an object oriented approach.</p>
 <dd class="field-even"><dl class="simple">
 <dt><strong>post_cov: float</strong></dt><dd><p>Posterior covariance between model cells i and j.</p>
 </dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="volcapy.inverse.gaussian_process.GaussianProcess.subset_data">
-<code class="sig-name descname">subset_data</code><span class="sig-paren">(</span><em class="sig-param">n_keep</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/inverse/gaussian_process.html#GaussianProcess.subset_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.inverse.gaussian_process.GaussianProcess.subset_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Subset an inverse problem by only keeping n_keep data
-points selected at random.</p>
-<p>The effect of this method is to directly modify the attributes of the
-class to adapt them to the smaller problem.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>n_keep: int</strong></dt><dd><p>Only keep n_keep data points.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>(rest_forward, rest_data)</strong></dt><dd></dd>
 </dl>
 </dd>
 </dl>
@@ -1214,8 +1271,56 @@ class to adapt them to the smaller problem.</p>
 
 <dl class="class">
 <dt id="volcapy.inverse.GaussianProcess">
-<em class="property">class </em><code class="sig-prename descclassname">volcapy.inverse.</code><code class="sig-name descname">GaussianProcess</code><span class="sig-paren">(</span><em class="sig-param">F</em>, <em class="sig-param">d_obs</em>, <em class="sig-param">data_ones</em>, <em class="sig-param">sigma0_init</em>, <em class="sig-param">data_std=0.1</em>, <em class="sig-param">logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/inverse/gaussian_process.html#GaussianProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.inverse.GaussianProcess" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">volcapy.inverse.</code><code class="sig-name descname">GaussianProcess</code><span class="sig-paren">(</span><em class="sig-param">F</em>, <em class="sig-param">d_obs</em>, <em class="sig-param">sigma0_init</em>, <em class="sig-param">data_std=0.1</em>, <em class="sig-param">logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/inverse/gaussian_process.html#GaussianProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.inverse.GaussianProcess" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>sigma0_init</strong></dt><dd><p>Original value of the sigma0 parameter to use when starting
+optimization.</p>
+</dd>
+<dt><strong>sigma0: float</strong></dt><dd><p>Current value of the prior standard deviation of the process.
+Will get optimized. We store it so we can use it as starting value
+for optimization of similar lambda0s.</p>
+</dd>
+<dt><strong>data_std_orig: float</strong></dt><dd><p>Original data noise standard deviation.</p>
+</dd>
+<dt><strong>data_std: float</strong></dt><dd><p>Current data noise deviation. Can change from the original value
+since we may have to increase it to make matrices invertible/better
+conditioned.</p>
+</dd>
+<dt><strong>F: ndarray</strong></dt><dd><p>Forward operator matrix, n_d * n_m</p>
+</dd>
+<dt><strong>d_obs: tensor</strong></dt><dd><p>Vector of observed data values</p>
+</dd>
+<dt><strong>n_model: int</strong></dt><dd><p>Number of model cells.</p>
+</dd>
+<dt><strong>n_data: int</strong></dt><dd><p>Number of data observations.</p>
+</dd>
+<dt><strong>mu0_d_stripped: Tensor</strong></dt><dd><p>The pushforwarded mean vector, stripped of the constant prior means
+parameter. I.e. this is F * 1_m. Multiply by the prior mean m0 to get
+the data-side mean.</p>
+</dd>
+<dt><strong>data_ones</strong></dt><dd></dd>
+<dt><strong>inv_op_L: Tensor</strong></dt><dd><p>Lower Cholesky factor of the inverse inversion operator R.</p>
+</dd>
+<dt><strong>inversion_operator</strong></dt><dd></dd>
+<dt><strong>mu0_d</strong></dt><dd></dd>
+<dt><strong>m0</strong></dt><dd></dd>
+<dt><strong>prior_misfit</strong></dt><dd></dd>
+<dt><strong>weights</strong></dt><dd></dd>
+<dt><strong>mu_post_d</strong></dt><dd></dd>
+<dt><strong>mu_post_m</strong></dt><dd></dd>
+<dt><strong>stripped_inv</strong></dt><dd></dd>
+<dt><strong>mu0_m</strong></dt><dd></dd>
+<dt><strong>R: Tensor.</strong></dt><dd><p>Inverse inversion operator. Given by
+data_std**2 * 1_{d*d} + sigma0**2 * K_d</p>
+</dd>
+<dt><strong>logger</strong></dt><dd><p>An instance of logging.Logger, used to output training progression.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 <p class="rubric">Methods</p>
 <table class="longtable docutils align-default">
 <colgroup>
@@ -1259,13 +1364,10 @@ class to adapt them to the smaller problem.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#volcapy.inverse.GaussianProcess.post_cov" title="volcapy.inverse.GaussianProcess.post_cov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">post_cov</span></code></a>(cov_pushfwd, cells_coords, lambda0, …)</p></td>
 <td><p>Get posterior model covariance between two specified cells.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.inverse.GaussianProcess.subset_data" title="volcapy.inverse.GaussianProcess.subset_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subset_data</span></code></a>(n_keep)</p></td>
-<td><p>Subset an inverse problem by only keeping n_keep data points selected at random.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.inverse.GaussianProcess.to_device" title="volcapy.inverse.GaussianProcess.to_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_device</span></code></a>(device)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.inverse.GaussianProcess.to_device" title="volcapy.inverse.GaussianProcess.to_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_device</span></code></a>(device)</p></td>
 <td><p>Transfer all model attributes to the given device.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#volcapy.inverse.GaussianProcess.train_RMSE" title="volcapy.inverse.GaussianProcess.train_RMSE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_RMSE</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#volcapy.inverse.GaussianProcess.train_RMSE" title="volcapy.inverse.GaussianProcess.train_RMSE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_RMSE</span></code></a>()</p></td>
 <td><p>Compute current error on training set.</p></td>
 </tr>
 </tbody>
@@ -1413,7 +1515,7 @@ from sigma0).</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>Tensor</strong></dt><dd><p>L such that R = LL^t. L i lower triangular.</p>
+<dt><strong>Tensor</strong></dt><dd><p>L such that R = LL^t. L is lower triangular.</p>
 </dd>
 </dl>
 </dd>
@@ -1565,28 +1667,6 @@ bit awkward and should be changed to an object oriented approach.</p>
 <dd class="field-even"><dl class="simple">
 <dt><strong>post_cov: float</strong></dt><dd><p>Posterior covariance between model cells i and j.</p>
 </dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="volcapy.inverse.GaussianProcess.subset_data">
-<code class="sig-name descname">subset_data</code><span class="sig-paren">(</span><em class="sig-param">n_keep</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/volcapy/inverse/gaussian_process.html#GaussianProcess.subset_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#volcapy.inverse.GaussianProcess.subset_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Subset an inverse problem by only keeping n_keep data
-points selected at random.</p>
-<p>The effect of this method is to directly modify the attributes of the
-class to adapt them to the smaller problem.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>n_keep: int</strong></dt><dd><p>Only keep n_keep data points.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>(rest_forward, rest_data)</strong></dt><dd></dd>
 </dl>
 </dd>
 </dl>
