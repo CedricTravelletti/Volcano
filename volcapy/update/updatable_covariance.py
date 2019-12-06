@@ -62,9 +62,13 @@ class UpdatableCovariance:
             C * A
 
         """
-        res = toch.zeros((self.shape[0], A.shape[1]))
+        # First compute the level 0 pushforward.
+        cov_pushfwd_0 = cl.compute_cov_pushforward(
+                lambda0, A, cells_coords, gpu, n_chunks=200,
+                n_flush=50)
+
         for p, r in zip(self.pushforwards, self.inversion_ops):
-            res += p @ (r @ (p.transpose() @ A))
+            cov_pushfwd_0 += p @ (r @ (p.transpose() @ A))
 
         return res
 
@@ -84,7 +88,11 @@ class UpdatableCovariance:
             A^t * C * A
 
         """
-        res = toch.zeros((self.shape[0], A.shape[1]))
+        # First compute the level 0 pushforward.
+        cov_pushfwd_0 = A.transpose() @ cl.compute_cov_pushforward(
+                lambda0, A, cells_coords, gpu, n_chunks=200,
+                n_flush=50)
+
         for p, r in zip(self.pushforwards, self.inversion_ops):
             tmp = p.transpose() @ A
             res += tmp.transpose() @ (r @ tmp)
@@ -101,4 +109,9 @@ class UpdatableCovariance:
 
         """
         self.pushforwards.append(self.mul_right(F))
-        self.inversion_ops.append(F.transpose @ self.pushforwards[-1])
+
+        # Get inversion op by Cholesky.
+        R = F.transpose @ self.pushforwards[-1]
+        L = torch.cholesky(R)
+        inversion_op = torch.cholesky_inverse(L)
+        self.inversion_ops.append(inversion_op)
