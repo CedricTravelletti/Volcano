@@ -1,4 +1,4 @@
-" KeOps implementation of squared exponential covariance.
+""" KeOps implementation of squared exponential covariance.
 
 We here also try to take an object oriented approach to kernels.
 
@@ -38,12 +38,12 @@ def main():
     # Initialize an inverse problem from Niklas's data.
     # This gives us the forward and the coordinates of the inversion cells.
     # niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
-    # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
-    niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
+    niklas_data_path = "/home/ubuntu/Dev/Data/Cedric.mat"
+    # niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
     inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
     # Number of model cells to keep.
-    n_keep = 1000
+    n_keep = inverseProblem.cells_coords.shape[0]
 
     F = torch.as_tensor(inverseProblem.forward[:, :n_keep])
     cells_coords = torch.as_tensor(inverseProblem.cells_coords[:n_keep,:])
@@ -64,10 +64,15 @@ def main():
     D_ij = ((q_i - q_j) ** 2).sum(dim=2)  # Symbolic matrix of squared distances
     K_ij = (- D_ij / (2 * lambda0**2) ).exp()   # Symbolic Gaussian kernel matrix
 
+    v = K_ij @ F.t()
+
+    """
     v    = K_ij@p  # Genuine torch Tensor. (N,N)@(N,D) = (N,D)
 
     # Finally, compute the kernel norm H(q,p):
     H = .5 * torch.dot( p.view(-1), v.view(-1) ) # .5 * <p,v>
+
+    """
 
 if __name__ == "__main__":
     main()
