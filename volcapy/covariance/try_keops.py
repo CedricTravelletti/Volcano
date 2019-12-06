@@ -64,7 +64,14 @@ def main():
     D_ij = ((q_i - q_j) ** 2).sum(dim=2)  # Symbolic matrix of squared distances
     K_ij = (- D_ij / (2 * lambda0**2) ).exp()   # Symbolic Gaussian kernel matrix
 
+    # Time the execution to know if its worth switching to KeOps.
+    from timeit import default_timer as timer
+    start = timer()
+
     v = K_ij @ F.t()
+
+    end = timer()
+    print((end - start)/60.0)
 
     """
     v    = K_ij@p  # Genuine torch Tensor. (N,N)@(N,D) = (N,D)
