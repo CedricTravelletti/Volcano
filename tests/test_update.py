@@ -3,7 +3,7 @@
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
 from volcapy.compatibility_layer import get_regularization_cells_inds
-import volcapy.covariance.matern32 as cl
+import volcapy.covariance.squared_exponential as cl
 
 import numpy as np
 import os
@@ -24,8 +24,8 @@ def main():
     # Initialize an inverse problem from Niklas's data.
     # This gives us the forward and the coordinates of the inversion cells.
     # niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
-    # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
-    niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
+    niklas_data_path = "/home/ubuntu/Dev/Data/Cedric.mat"
+    # niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
     inverseProblem = InverseProblem.from_matfile(niklas_data_path)
     
     # Test-Train split.
@@ -44,3 +44,13 @@ def main():
     cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
     del(inverseProblem)
 
+    lambda0 = 100.0
+
+    # Now ready to go to updatable covariance.
+    from volcapy.update.updatable_covariance import UpdatableCovariance
+    updatable_cov = UpdatableCovariance(cl, lambda0, cells_coords)
+    updatable_cov.update(F)
+
+
+if __name__ == "__main__":
+    main()

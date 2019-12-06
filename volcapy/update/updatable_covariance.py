@@ -38,13 +38,19 @@ class UpdatableCovariance:
         The inversion operators corresponding to each conditioning step.
 
     """
-    def __init__(self, cov_module, lengthscale, coords):
+    def __init__(self, cov_module, lambda0, cells_coords):
         """ Build an updatable covariance from a traditional covariance module.
 
         Params
         ------
 
         """
+        self.cov_module = cov_module
+        self.lambda0 = lambda0
+        self.cells_coords = cells_coords
+
+        self.pushforwards = []
+        self.inversion_ops = []
 
     def mul_right(self, A):
         """ Multiply covariance matrix from the right.
@@ -63,8 +69,8 @@ class UpdatableCovariance:
 
         """
         # First compute the level 0 pushforward.
-        cov_pushfwd_0 = cl.compute_cov_pushforward(
-                lambda0, A, cells_coords, gpu, n_chunks=200,
+        cov_pushfwd_0 = self.cov_module.compute_cov_pushforward(
+                self.lambda0, A, cells_coords, gpu, n_chunks=200,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
@@ -89,8 +95,8 @@ class UpdatableCovariance:
 
         """
         # First compute the level 0 pushforward.
-        cov_pushfwd_0 = A.transpose() @ cl.compute_cov_pushforward(
-                lambda0, A, cells_coords, gpu, n_chunks=200,
+        cov_pushfwd_0 = A.transpose() @ self.cov_module.compute_cov_pushforward(
+                self.lambda0, A, cells_coords, gpu, n_chunks=200,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
