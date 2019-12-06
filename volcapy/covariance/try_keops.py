@@ -42,20 +42,27 @@ def main():
     niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
     inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
-    cells_coords = torch.as_tensor(inverseProblem.cells_coords[:1000,:])
+    # Number of model cells to keep.
+    n_keep = 1000
+
+    F = torch.as_tensor(inverseProblem.forward[:, :n_keep])
+    cells_coords = torch.as_tensor(inverseProblem.cells_coords[:n_keep,:])
     del(inverseProblem)
 
-    lambda0 = 100.0
+    lambda0 = torch.Tensor([100.0])
     lambda0 = lambda0.type(dtype)
     cells_coords = cells_coords.type(dtype)
+    F = F.type(dtype)
 
     cells_coords.requires_grad = True
 
-    q_i  = LazyTensor(self.cells_coords[:,None,:])  # shape (N,D) -> (N,1,D)
-    q_j  = LazyTensor(self.cells_coords[None,:,:])  # shape (N,D) -> (1,N,D)
+    from pykeops.torch import LazyTensor  # Semi-symbolic wrapper for torch Tensors
+
+    q_i  = LazyTensor(cells_coords[:,None,:])  # shape (N,D) -> (N,1,D)
+    q_j  = LazyTensor(cells_coords[None,:,:])  # shape (N,D) -> (1,N,D)
 
     D_ij = ((q_i - q_j) ** 2).sum(dim=2)  # Symbolic matrix of squared distances
-    K_ij = (- D_ij / (2 * self.lambda0**2) ).exp()   # Symbolic Gaussian kernel matrix
+    K_ij = (- D_ij / (2 * lambda0**2) ).exp()   # Symbolic Gaussian kernel matrix
 
     v    = K_ij@p  # Genuine torch Tensor. (N,N)@(N,D) = (N,D)
 
