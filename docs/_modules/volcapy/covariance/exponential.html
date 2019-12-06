@@ -88,6 +88,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../covariance.html">Kernels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../uq.html">Uncertainty Quantification Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../update.html">Updatable Covariance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced Usage</span></p>
 <ul>
@@ -269,7 +270,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Convert to torch.</span>
     <span class="n">lambda0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">lambda0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">inv_lambda2</span> <span class="o">=</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">lambda0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">inv_lambda2</span> <span class="o">=</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">lambda0</span><span class="p">)</span>
 
     <span class="c1"># Squared euclidean distance.</span>
     <span class="n">d_2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span>

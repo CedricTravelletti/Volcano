@@ -22,6 +22,7 @@ Volcapy's documentation
    covariance
    synthetic
    uq
+   update
 
 .. toctree::
    :maxdepth: 1

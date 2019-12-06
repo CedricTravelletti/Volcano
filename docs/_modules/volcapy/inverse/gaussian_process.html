@@ -88,6 +88,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../covariance.html">Kernels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../uq.html">Uncertainty Quantification Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../update.html">Updatable Covariance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced Usage</span></p>
 <ul>
@@ -198,6 +199,31 @@
 <span class="sd">it only shows up in the form :math:`K F^t`. It is thus sufficient to compute this</span>
 <span class="sd">product once and for all. We call it the *covariance pushforward*.</span>
 
+<span class="sd">Noise</span>
+<span class="sd">-----</span>
+<span class="sd">Independent homoscedactic noise on the data is assumed. It is specified by</span>
+<span class="sd">*data_std_orig*. If the matrices are ill-conditioned, the the noise will have</span>
+<span class="sd">to be increased, hence the current value of the noise will be stored in</span>
+<span class="sd">*noise_std*.</span>
+
+<span class="sd">Important Implementation Detail</span>
+<span class="sd">-------------------------------</span>
+<span class="sd">Products of vectors with the inversion operator R^{-1} * x should be computed</span>
+<span class="sd">using inv_op_vector_mult(x).</span>
+
+<span class="sd">Conditioning</span>
+<span class="sd">------------</span>
+<span class="sd">Conditioning always compute the inversion operator, and m0 via concentration.</span>
+<span class="sd">Hence, every call to conditioning (condition_data or condition_model), will</span>
+<span class="sd">update the following attributes:</span>
+<span class="sd">    - inv_op_L</span>
+<span class="sd">    - inversion_operator</span>
+<span class="sd">    - m0</span>
+<span class="sd">    - mu0_d</span>
+<span class="sd">    - prior_misfit</span>
+<span class="sd">    - weights</span>
+<span class="sd">    - mu_post_d (TODO: maybe shouldn&#39;t be an attribute of the GP.)</span>
+
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -205,12 +231,57 @@
 <span class="n">cpu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
 
 
-<span class="c1"># Data standard deviation.</span>
-<span class="n">epsilon2</span> <span class="o">=</span> <span class="mf">0.1</span><span class="o">**</span><span class="mi">2</span>
-
-
 <div class="viewcode-block" id="GaussianProcess"><a class="viewcode-back" href="../../../volcapy.inverse.html#volcapy.inverse.gaussian_process.GaussianProcess">[docs]</a><span class="k">class</span> <span class="nc">GaussianProcess</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">d_obs</span><span class="p">,</span> <span class="n">data_ones</span><span class="p">,</span> <span class="n">sigma0_init</span><span class="p">,</span> <span class="n">data_std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sigma0_init</span>
+<span class="sd">        Original value of the sigma0 parameter to use when starting</span>
+<span class="sd">        optimization.</span>
+<span class="sd">    sigma0: float</span>
+<span class="sd">        Current value of the prior standard deviation of the process.</span>
+<span class="sd">        Will get optimized. We store it so we can use it as starting value</span>
+<span class="sd">        for optimization of similar lambda0s.</span>
+<span class="sd">    data_std_orig: float</span>
+<span class="sd">        Original data noise standard deviation.</span>
+<span class="sd">    data_std: float</span>
+<span class="sd">        Current data noise deviation. Can change from the original value</span>
+<span class="sd">        since we may have to increase it to make matrices invertible/better</span>
+<span class="sd">        conditioned.</span>
+<span class="sd">    F: ndarray</span>
+<span class="sd">        Forward operator matrix, n_d * n_m</span>
+<span class="sd">    d_obs: tensor</span>
+<span class="sd">       Vector of observed data values</span>
+<span class="sd">    n_model: int</span>
+<span class="sd">        Number of model cells.</span>
+<span class="sd">    n_data: int</span>
+<span class="sd">        Number of data observations.</span>
+<span class="sd">    mu0_d_stripped: Tensor</span>
+<span class="sd">        The pushforwarded mean vector, stripped of the constant prior means</span>
+<span class="sd">        parameter. I.e. this is F * 1_m. Multiply by the prior mean m0 to get</span>
+<span class="sd">        the data-side mean.</span>
+<span class="sd">    data_ones</span>
+<span class="sd">    inv_op_L: Tensor</span>
+<span class="sd">        Lower Cholesky factor of the inverse inversion operator R.</span>
+<span class="sd">    inversion_operator</span>
+<span class="sd">    mu0_d</span>
+<span class="sd">    m0</span>
+<span class="sd">    prior_misfit</span>
+<span class="sd">    weights</span>
+<span class="sd">    mu_post_d</span>
+<span class="sd">    mu_post_m</span>
+<span class="sd">    stripped_inv</span>
+<span class="sd">    mu0_m</span>
+<span class="sd">    R: Tensor.</span>
+<span class="sd">        Inverse inversion operator. Given by</span>
+<span class="sd">        data_std**2 * 1_{d*d} + sigma0**2 * K_d</span>
+
+<span class="sd">    logger</span>
+<span class="sd">        An instance of logging.Logger, used to output training progression.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">d_obs</span><span class="p">,</span> <span class="n">sigma0_init</span><span class="p">,</span> <span class="n">data_std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
             <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 
@@ -220,8 +291,6 @@
 <span class="sd">            Forward operator matrix, n_d * n_m</span>
 <span class="sd">        d_obs</span>
 <span class="sd">            Observed data vector.</span>
-<span class="sd">        data_ones</span>
-<span class="sd">            Data (observations) covariance matrix.</span>
 <span class="sd">        sigma0_init</span>
 <span class="sd">            Original value of the sigma0 parameter to use when starting</span>
 <span class="sd">            optimization.</span>
@@ -229,34 +298,6 @@
 <span class="sd">            Data noise standard deviation.</span>
 <span class="sd">        logger</span>
 <span class="sd">            An instance of logging.Logger, used to output training progression.</span>
-
-<span class="sd">        ...</span>
-
-<span class="sd">        Attributes</span>
-<span class="sd">        ----------</span>
-<span class="sd">        sigma0: float</span>
-<span class="sd">            Current value of the prior standard deviation of the process.</span>
-<span class="sd">            Will get optimized. We store it so we can use it as starting value</span>
-<span class="sd">            for optimization of similar lambda0s.</span>
-<span class="sd">        n_model: int</span>
-<span class="sd">            Number of model cells.</span>
-<span class="sd">        n_data: int</span>
-<span class="sd">            Number of data observations.</span>
-<span class="sd">        mu0_d_stripped: tensor</span>
-<span class="sd">            Prior mean vector on the data side, but stripped of the prior mean</span>
-<span class="sd">            m0. I.e. it is equal to F * 1_m.</span>
-<span class="sd">        d_obs: tensor</span>
-<span class="sd">            Vector of observed data values</span>
-<span class="sd">        data_ones: tensor</span>
-<span class="sd">            Identity matrix in data space.</span>
-<span class="sd">        data_std_orig: float</span>
-<span class="sd">            Original data noise standard deviation.</span>
-<span class="sd">        data_std: float</span>
-<span class="sd">            Current data noise deviation. Can change from the original value</span>
-<span class="sd">            since we may have to increase it to make matrices invertible/better</span>
-<span class="sd">            conditioned.</span>
-<span class="sd">        I_d: tensor</span>
-<span class="sd">            Vector of ones in data space. Needed for concentration.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">GaussianProcess</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -280,9 +321,6 @@
         <span class="c1"># make matrix invertible.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data_std</span> <span class="o">=</span> <span class="n">data_std</span>
 
-        <span class="c1"># Identity vector. Need for concentration.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">I_d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-
         <span class="c1"># If no logger, create one.</span>
         <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="kn">import</span> <span class="nn">logging</span>
@@ -302,8 +340,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sigma0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma0</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d_stripped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d_stripped</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_obs</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data_ones</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_ones</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">I_d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">I_d</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_ones</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_ones</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="GaussianProcess.neg_log_likelihood"><a class="viewcode-back" href="../../../volcapy.inverse.html#volcapy.inverse.gaussian_process.GaussianProcess.neg_log_likelihood">[docs]</a>    <span class="k">def</span> <span class="nf">neg_log_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Computes the negative log-likelihood of the current state of the</span>
@@ -363,20 +400,16 @@
             
         <span class="k">if</span> <span class="n">concentrate</span><span class="p">:</span>
             <span class="c1"># Determine m0 (on the model side) from sigma0 by concentration of the Ll.</span>
-            <span class="n">m0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentrate_m0</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">m0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentrate_m0</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d</span> <span class="o">=</span> <span class="n">m0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d_stripped</span>
-        <span class="c1"># Store m0 in case we want to print it later.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">m0</span> <span class="o">=</span> <span class="n">m0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d_stripped</span>
         <span class="bp">self</span><span class="o">.</span> <span class="n">prior_misfit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_obs</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv_op_vector_mult</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_misfit</span><span class="p">)</span>
 
-        <span class="n">mu_post_d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">sigma0</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">K_d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
-        <span class="c1"># Store in case.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mu_post_d</span> <span class="o">=</span> <span class="n">mu_post_d</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu_post_d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">sigma0</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">K_d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">mu_post_d</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_post_d</span></div>
 
 <div class="viewcode-block" id="GaussianProcess.condition_model"><a class="viewcode-back" href="../../../volcapy.inverse.html#volcapy.inverse.gaussian_process.GaussianProcess.condition_model">[docs]</a>    <span class="k">def</span> <span class="nf">condition_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cov_pushfwd</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">sigma0</span><span class="p">,</span> <span class="n">m0</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
             <span class="n">concentrate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">NtV_crit</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">):</span>
@@ -408,69 +441,17 @@
 <span class="sd">            Posterior mean data vector</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Noise to Variance ratio.</span>
-        <span class="c1"># If not specified, then do not modify it.</span>
-        <span class="n">NtV</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_std</span> <span class="o">/</span> <span class="n">sigma0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
-        <span class="k">if</span> <span class="n">NtV</span> <span class="o">&lt;</span> <span class="n">NtV_crit</span><span class="p">:</span>
-            <span class="n">NtV</span> <span class="o">=</span> <span class="n">NtV_crit</span>
-
-        <span class="n">inv_inversion_operator</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
-                        <span class="n">NtV</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_ones</span><span class="p">,</span>
-                        <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">cov_pushfwd</span><span class="p">))</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">stripped_inv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">inv_inversion_operator</span><span class="p">)</span>
-
-        <span class="c1"># Compute inversion operator and store once and for all.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">inversion_operator</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">sigma0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">stripped_inv</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">concentrate</span><span class="p">:</span>
-            <span class="c1"># Determine m0 (on the model side) from sigma0 by concentration of the Ll.</span>
-            <span class="n">m0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentrate_m0</span><span class="p">()</span>
-
-        <span class="c1"># Prior mean for data and model.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d</span> <span class="o">=</span> <span class="n">m0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d_stripped</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mu0_m</span> <span class="o">=</span> <span class="n">m0</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_model</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-
-        <span class="c1"># Store m0 in case we want to print it later.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">m0</span> <span class="o">=</span> <span class="n">m0</span>
-        <span class="bp">self</span><span class="o">.</span> <span class="n">prior_misfit</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d</span><span class="p">)</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inversion_operator</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_misfit</span><span class="p">)</span>
-
-        <span class="c1"># -----------------------------------------</span>
-        <span class="c1"># -----------------------------------------</span>
-        <span class="c1"># WARNING</span>
-        <span class="c1"># We try to compute inverse matrix - vector product using Cholesky.</span>
-        <span class="c1"># See if its better.</span>
-        <span class="c1"># -----------------------------------------</span>
-        <span class="c1"># -----------------------------------------</span>
-        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">u</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">inv_inversion_operator</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cholesky failed: Singular Matrix.&quot;</span><span class="p">)</span>
-                <span class="c1"># Increase NtV in steps of 10%.</span>
-                <span class="n">newNtV</span> <span class="o">=</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="n">NtV</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Increasing NtV from original </span><span class="si">{}</span><span class="s2"> to </span><span class="si">{}</span><span class="s2"> and retrying.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">NtV</span><span class="p">,</span> <span class="n">newNtV</span><span class="p">))</span>
-                <span class="n">inv_inversion_operator</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
-                    <span class="mf">0.1</span> <span class="o">*</span> <span class="n">NtV</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_ones</span><span class="p">,</span>
-                    <span class="n">inv_inversion_operator</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">break</span>
-
-        <span class="n">z2</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">triangular_solve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_misfit</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">y2</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">triangular_solve</span><span class="p">(</span><span class="n">z2</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="n">upper</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">sigma0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">y2</span>
-
-        <span class="c1"># Posterior data mean.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mu_post_d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mu0_d</span><span class="p">,</span>
-                <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">sigma0</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">cov_pushfwd</span><span class="p">),</span> <span class="n">weights</span><span class="p">))</span>
+        <span class="c1"># Conditioning model is just conditioning on data and then computing</span>
+        <span class="c1"># posterior mean and (co-)variance on model side.</span>
+        <span class="n">K_d</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">cov_pushfwd</span><span class="p">)</span>
+        <span class="n">mu_post_d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition_data</span><span class="p">(</span><span class="n">K_d</span><span class="p">,</span> <span class="n">sigma0</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span>
+                <span class="n">concentrate</span><span class="o">=</span><span class="n">concentrate</span><span class="p">)</span>
 
         <span class="c1"># Posterior model mean.</span>
+        <span class="c1"># Can re-use the m0 and weights computed by condition_data.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mu_post_m</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mu0_m</span><span class="p">,</span>
-                <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">sigma0</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">cov_pushfwd</span><span class="p">,</span> <span class="n">weights</span><span class="p">))</span>
+                <span class="n">m0</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_model</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">sigma0</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">cov_pushfwd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_post_m</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_post_d</span></div>
 
@@ -714,47 +695,6 @@
 
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span><span class="n">inv_inversion_operator</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="GaussianProcess.subset_data"><a class="viewcode-back" href="../../../volcapy.inverse.html#volcapy.inverse.gaussian_process.GaussianProcess.subset_data">[docs]</a>    <span class="k">def</span> <span class="nf">subset_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_keep</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Subset an inverse problem by only keeping n_keep data</span>
-<span class="sd">        points selected at random.</span>
-
-<span class="sd">        The effect of this method is to directly modify the attributes of the</span>
-<span class="sd">        class to adapt them to the smaller problem.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        n_keep: int</span>
-<span class="sd">            Only keep n_keep data points.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        (rest_forward, rest_data)</span>
-
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Pick indices at random.</span>
-        <span class="n">inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_data</span><span class="p">),</span> <span class="n">n_keep</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="c1"># Return the unused part of the forward and of the data so that it can</span>
-        <span class="c1"># be used as test set.</span>
-        <span class="n">rest_forward</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="n">inds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">rest_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_values</span><span class="p">,</span> <span class="n">inds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">rest_data_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_points</span><span class="p">,</span> <span class="n">inds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-        <span class="c1"># Now subset</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">[</span><span class="n">inds</span><span class="p">,</span> <span class="p">:]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data_points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_points</span><span class="p">[</span><span class="n">inds</span><span class="p">,</span> <span class="p">:]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_values</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
-        <span class="c1"># We subsetted columns, hence we have to restore C-contiguity by hand.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">)</span>
-
-        <span class="c1"># New dimensions</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="c1"># Note that we return data in a column vector, to make it</span>
-        <span class="c1"># compatible with the rest of the data.</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">rest_forward</span><span class="p">,</span> <span class="n">rest_data</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">])</span></div>
-
 <div class="viewcode-block" id="GaussianProcess.get_inversion_op_cholesky"><a class="viewcode-back" href="../../../volcapy.inverse.html#volcapy.inverse.gaussian_process.GaussianProcess.get_inversion_op_cholesky">[docs]</a>    <span class="k">def</span> <span class="nf">get_inversion_op_cholesky</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">K_d</span><span class="p">,</span> <span class="n">sigma0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Compute the Cholesky decomposition of the inverse of the inversion operator.</span>
 <span class="sd">        Increases noise level if necessary to make matrix invertible.</span>
@@ -772,7 +712,7 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Tensor</span>
-<span class="sd">            L such that R = LL^t. L i lower triangular.</span>
+<span class="sd">            L such that R = LL^t. L is lower triangular.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">R</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_std</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_ones</span> <span class="o">+</span> <span class="n">sigma0</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">K_d</span>

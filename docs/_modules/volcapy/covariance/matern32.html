@@ -88,6 +88,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../covariance.html">Kernels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../synthetic.html">Synthetic Volcano Creation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../uq.html">Uncertainty Quantification Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../update.html">Updatable Covariance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced Usage</span></p>
 <ul>
@@ -168,7 +169,7 @@
 <span class="kn">from</span> <span class="nn">timeit</span> <span class="k">import</span> <span class="n">default_timer</span> <span class="k">as</span> <span class="n">timer</span>
 
 
-<div class="viewcode-block" id="compute_cov_pushforward"><a class="viewcode-back" href="../../../covariance.html#volcapy.covariance.matern32.compute_cov_pushforward">[docs]</a><span class="k">def</span> <span class="nf">compute_cov_pushforward</span><span class="p">(</span><span class="n">lambda0</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">cells_coords</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<div class="viewcode-block" id="compute_cov_pushforward"><a class="viewcode-back" href="../../../volcapy.covariance.html#volcapy.covariance.matern32.compute_cov_pushforward">[docs]</a><span class="k">def</span> <span class="nf">compute_cov_pushforward</span><span class="p">(</span><span class="n">lambda0</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">cells_coords</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
         <span class="n">n_flush</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Compute the covariance pushforward.</span>
 
@@ -248,7 +249,7 @@
 
     <span class="k">return</span> <span class="n">tot</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="compute_cov"><a class="viewcode-back" href="../../../covariance.html#volcapy.covariance.matern32.compute_cov">[docs]</a><span class="k">def</span> <span class="nf">compute_cov</span><span class="p">(</span><span class="n">lambda0</span><span class="p">,</span> <span class="n">cells_coords</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+<div class="viewcode-block" id="compute_cov"><a class="viewcode-back" href="../../../volcapy.covariance.html#volcapy.covariance.matern32.compute_cov">[docs]</a><span class="k">def</span> <span class="nf">compute_cov</span><span class="p">(</span><span class="n">lambda0</span><span class="p">,</span> <span class="n">cells_coords</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Compute the covariance between two points.</span>
 
 <span class="sd">    Note that, as always, sigma0 has been stripped.</span>
@@ -280,7 +281,7 @@
 
     <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">inv_lambda2</span> <span class="o">*</span> <span class="n">d</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">inv_lambda2</span> <span class="o">*</span> <span class="n">d</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="compute_full_cov"><a class="viewcode-back" href="../../../covariance.html#volcapy.covariance.matern32.compute_full_cov">[docs]</a><span class="k">def</span> <span class="nf">compute_full_cov</span><span class="p">(</span><span class="n">lambda0</span><span class="p">,</span> <span class="n">cells_coords</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<div class="viewcode-block" id="compute_full_cov"><a class="viewcode-back" href="../../../volcapy.covariance.html#volcapy.covariance.matern32.compute_full_cov">[docs]</a><span class="k">def</span> <span class="nf">compute_full_cov</span><span class="p">(</span><span class="n">lambda0</span><span class="p">,</span> <span class="n">cells_coords</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">n_chunks</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
         <span class="n">n_flush</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Compute the full covariance matrix.</span>
 
