@@ -24,6 +24,12 @@ is too fine to allow covariance matrices to ever sit in memory (contrast this
 with the *big data* settting.
 
 """
+import torch
+
+# General torch settings and devices.
+torch.set_num_threads(8)
+gpu = torch.device('cuda:0')
+cpu = torch.device('cpu')
 
 
 class UpdatableCovariance:
@@ -69,14 +75,15 @@ class UpdatableCovariance:
 
         """
         # First compute the level 0 pushforward.
+        # IMPORTANT: FIX THE TRANSPOSING STUFF.
         cov_pushfwd_0 = self.cov_module.compute_cov_pushforward(
-                self.lambda0, A, cells_coords, gpu, n_chunks=200,
+                self.lambda0, A.t(), self.cells_coords, gpu, n_chunks=200,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
-            cov_pushfwd_0 += p @ (r @ (p.transpose() @ A))
+            cov_pushfwd_0 += p @ (r @ (p.t() @ A))
 
-        return res
+        return cov_pushfwd_0
 
     def sandwich(self, A):
         """ Sandwich the covariance matrix on both sides.
@@ -95,15 +102,15 @@ class UpdatableCovariance:
 
         """
         # First compute the level 0 pushforward.
-        cov_pushfwd_0 = A.transpose() @ self.cov_module.compute_cov_pushforward(
-                self.lambda0, A, cells_coords, gpu, n_chunks=200,
+        cov_pushfwd_0 = A.t() @ self.cov_module.compute_cov_pushforward(
+                self.lambda0, A, self.cells_coords, gpu, n_chunks=200,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
-            tmp = p.transpose() @ A
-            res += tmp.transpose() @ (r @ tmp)
+            tmp = p.t() @ A
+            cov_pushfwd_0 += tmp.t() @ (r @ tmp)
 
-        return res
+        return cov_pushfwd_0
 
     def update(self, F):
         """ Update the covariance matrix / perform a conditioning.
@@ -114,10 +121,10 @@ class UpdatableCovariance:
             Measurement operator.
 
         """
-        self.pushforwards.append(self.mul_right(F))
+        self.pushforwards.append(self.mul_right(F.t()))
 
         # Get inversion op by Cholesky.
-        R = F.transpose @ self.pushforwards[-1]
+        R = F @ self.pushforwards[-1]
         L = torch.cholesky(R)
         inversion_op = torch.cholesky_inverse(L)
         self.inversion_ops.append(inversion_op)
