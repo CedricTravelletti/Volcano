@@ -23,6 +23,12 @@ Alsok we work in the *big model* framework, i.e. when the model discretization
 is too fine to allow covariance matrices to ever sit in memory (contrast this
 with the *big data* settting.
 
+TODO
+----
+
+Implement some shape getter.
+Implement computation of the diagonal.
+
 """
 import torch
 

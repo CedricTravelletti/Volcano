@@ -1,4 +1,9 @@
 """ Test the updatable covariance module.
+
+The first function just verifiies that everything runs. The second ones
+verifies that it is correct by comparing direct conditioning on the whole
+dataset with two steps conditioning.
+
 """
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
@@ -27,6 +32,9 @@ def main():
     # niklas_data_path = "/home/ubuntu/Dev/Data/Cedric.mat"
     niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
     inverseProblem = InverseProblem.from_matfile(niklas_data_path)
+
+    # Save full conditining matrix, before splitting the dataset.
+    F_full = torch.as_tensor(inverseProblem.forward).detach()
     
     # Test-Train split.
     n_keep = 300
@@ -49,7 +57,41 @@ def main():
     # Now ready to go to updatable covariance.
     from volcapy.update.updatable_covariance import UpdatableCovariance
     updatable_cov = UpdatableCovariance(cl, lambda0, cells_coords)
+
+    # First conditioning.
     updatable_cov.update(F)
+
+    # Second conditioning.
+    updatable_cov.update(F_test)
+
+    # Check that the covariance is correct by computing its product with a
+    # dummy matrix.
+    test_matrix = toch.eye(F.shape[1])
+    test_matrix = test_matrix[:, 2000]
+    res_test = updatable_cov.mul_right(test_matrix)
+
+    # ----------------------------------------------------------------
+    # ----------------------------------------------------------------
+    # Compare with the *true* product (the one produced by conditioning
+    # everything in one go).
+    # ----------------------------------------------------------------
+    # ----------------------------------------------------------------
+    # Create the GP model.
+    sigma0_init = 200.0 # Plays no role.
+    myGP = GaussianProcess(F, d_obs, sigma0_init,
+            data_std=data_std, logger=logger)
+    myGP.cuda()
+
+    true_pushfwd = cl.compute_cov_pushforward(lambda0, F_full, cells_coords, device,
+            n_chunks=200, n_flush=50)
+    K_d = torch.mm(F_full, true_pushfwd)
+    m_post_d = myGP.condition_data(K_d, sigma0=myGP.sigma0, concentrate=True)
+
+    # Compute the test product.
+    res_true = torch.mm(torch.mm(true_pushfwd, myGP.inversion_operator),
+            torch.mm(true_pushfwd.t(), test_matrix))
+
+    print(res_true - res_test)
 
 
 if __name__ == "__main__":
