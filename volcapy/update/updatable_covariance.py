@@ -50,7 +50,7 @@ class UpdatableCovariance:
         The inversion operators corresponding to each conditioning step.
 
     """
-    def __init__(self, cov_module, lambda0, cells_coords):
+    def __init__(self, cov_module, lambda0, sigma0, epsilon0, cells_coords):
         """ Build an updatable covariance from a traditional covariance module.
 
         Params
@@ -59,6 +59,8 @@ class UpdatableCovariance:
         """
         self.cov_module = cov_module
         self.lambda0 = lambda0
+        self.sigma0 = sigma0
+        self.epsilon0 = epsilon0
         self.cells_coords = cells_coords
 
         self.pushforwards = []
@@ -87,9 +89,12 @@ class UpdatableCovariance:
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
-            cov_pushfwd_0 += p @ (r @ (p.t() @ A))
+            cov_pushfwd_0 += self.sigma0**2 * p @ (r @ (p.t() @ A))
 
-        return cov_pushfwd_0
+        # Note the first term (the one with C_0 alone) only has one sigma0**2
+        # factor associated with it, whereas all other terms in the updating
+        # have two one.
+        return self.sigma0**2 * cov_pushfwd_0
 
     def sandwich(self, A):
         """ Sandwich the covariance matrix on both sides.
@@ -114,9 +119,9 @@ class UpdatableCovariance:
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
             tmp = p.t() @ A
-            cov_pushfwd_0 += tmp.t() @ (r @ tmp)
+            cov_pushfwd_0 += self.sigma0**2 * tmp.t() @ (r @ tmp)
 
-        return cov_pushfwd_0
+        return self.sigma0**2 * cov_pushfwd_0
 
     def update(self, F):
         """ Update the covariance matrix / perform a conditioning.
@@ -131,6 +136,7 @@ class UpdatableCovariance:
 
         # Get inversion op by Cholesky.
         R = F @ self.pushforwards[-1]
+        R = self.sigma0**2 * R + self.epsilon0**2 * torch.eye(F.shape[0])
         L = torch.cholesky(R)
         inversion_op = torch.cholesky_inverse(L)
         self.inversion_ops.append(inversion_op)
