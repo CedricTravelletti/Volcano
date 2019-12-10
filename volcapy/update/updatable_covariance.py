@@ -137,6 +137,11 @@ class UpdatableCovariance:
         # Get inversion op by Cholesky.
         R = F @ self.pushforwards[-1]
         R = self.sigma0**2 * R + self.epsilon0**2 * torch.eye(F.shape[0])
-        L = torch.cholesky(R)
+        try:
+            L = torch.cholesky(R)
+        except RuntimeError:
+            print("Error inverting.")
+            print(F)
+
         inversion_op = torch.cholesky_inverse(L)
         self.inversion_ops.append(inversion_op)
