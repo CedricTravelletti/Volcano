@@ -53,10 +53,12 @@ def main():
     del(inverseProblem)
 
     lambda0 = 100.0
+    sigma0 = 200.0
+    epsilon0 = 0.1
 
     # Now ready to go to updatable covariance.
     from volcapy.update.updatable_covariance import UpdatableCovariance
-    updatable_cov = UpdatableCovariance(cl, lambda0, cells_coords)
+    updatable_cov = UpdatableCovariance(cl, lambda0, sigma0, epsilon0, cells_coords)
 
     # First conditioning.
     updatable_cov.update(F)

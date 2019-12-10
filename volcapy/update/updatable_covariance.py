@@ -84,17 +84,17 @@ class UpdatableCovariance:
         """
         # First compute the level 0 pushforward.
         # IMPORTANT: FIX THE TRANSPOSING STUFF.
-        cov_pushfwd_0 = self.cov_module.compute_cov_pushforward(
+        cov_pushfwd_0 = self.sigma0**2 * self.cov_module.compute_cov_pushforward(
                 self.lambda0, A.t(), self.cells_coords, gpu, n_chunks=200,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
-            cov_pushfwd_0 += self.sigma0**2 * p @ (r @ (p.t() @ A))
+            cov_pushfwd_0 += p @ (r @ (p.t() @ A))
 
         # Note the first term (the one with C_0 alone) only has one sigma0**2
         # factor associated with it, whereas all other terms in the updating
         # have two one.
-        return self.sigma0**2 * cov_pushfwd_0
+        return cov_pushfwd_0
 
     def sandwich(self, A):
         """ Sandwich the covariance matrix on both sides.
@@ -113,15 +113,15 @@ class UpdatableCovariance:
 
         """
         # First compute the level 0 pushforward.
-        cov_pushfwd_0 = A.t() @ self.cov_module.compute_cov_pushforward(
+        cov_pushfwd_0 = self.sigma0**2 * A.t() @ self.cov_module.compute_cov_pushforward(
                 self.lambda0, A, self.cells_coords, gpu, n_chunks=200,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
             tmp = p.t() @ A
-            cov_pushfwd_0 += self.sigma0**2 * tmp.t() @ (r @ tmp)
+            cov_pushfwd_0 += tmp.t() @ (r @ tmp)
 
-        return self.sigma0**2 * cov_pushfwd_0
+        return cov_pushfwd_0
 
     def update(self, F):
         """ Update the covariance matrix / perform a conditioning.
@@ -136,7 +136,7 @@ class UpdatableCovariance:
 
         # Get inversion op by Cholesky.
         R = F @ self.pushforwards[-1]
-        R = self.sigma0**2 * R + self.epsilon0**2 * torch.eye(F.shape[0])
+        R =  R + self.epsilon0**2 * torch.eye(F.shape[0])
         try:
             L = torch.cholesky(R)
         except RuntimeError:
