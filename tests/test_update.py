@@ -33,8 +33,10 @@ def main():
     niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
     inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
+    # WARNING: GET RID OF FIRST LINE OF F, SINCE IT seems different.
     # Save full conditining matrix, before splitting the dataset.
     F_full = torch.as_tensor(inverseProblem.forward).detach()
+    d_obs_full = torch.as_tensor(inverseProblem.data_values[:, None])
     
     # Test-Train split.
     n_keep = 300
@@ -53,8 +55,8 @@ def main():
     del(inverseProblem)
 
     lambda0 = 100.0
-    sigma0 = 200.0
-    epsilon0 = 0.1
+    sigma0 = 1.0
+    epsilon0 = 10.0
 
     # Now ready to go to updatable covariance.
     from volcapy.update.updatable_covariance import UpdatableCovariance
@@ -68,8 +70,7 @@ def main():
 
     # Check that the covariance is correct by computing its product with a
     # dummy matrix.
-    test_matrix = toch.eye(F.shape[1])
-    test_matrix = test_matrix[:, 2000]
+    test_matrix = torch.rand(F.shape[1], 2000)
     res_test = updatable_cov.mul_right(test_matrix)
 
     # ----------------------------------------------------------------
@@ -79,21 +80,29 @@ def main():
     # ----------------------------------------------------------------
     # ----------------------------------------------------------------
     # Create the GP model.
-    sigma0_init = 200.0 # Plays no role.
-    myGP = GaussianProcess(F, d_obs, sigma0_init,
-            data_std=data_std, logger=logger)
+    myGP = GaussianProcess(F_full, d_obs_full, sigma0,
+            data_std=data_std)
     myGP.cuda()
 
-    true_pushfwd = cl.compute_cov_pushforward(lambda0, F_full, cells_coords, device,
+    true_pushfwd = cl.compute_cov_pushforward(lambda0, F_full, cells_coords,
+            device=gpu,
             n_chunks=200, n_flush=50)
     K_d = torch.mm(F_full, true_pushfwd)
     m_post_d = myGP.condition_data(K_d, sigma0=myGP.sigma0, concentrate=True)
 
     # Compute the test product.
-    res_true = torch.mm(torch.mm(true_pushfwd, myGP.inversion_operator),
+    # It involves the product of the matrix with C0 so a kind of *pushforward*.
+    test_matrix_pushfwd = cl.compute_cov_pushforward(lambda0, test_matrix.t(), cells_coords,
+            device=gpu,
+            n_chunks=200, n_flush=50)
+    res_true = sigma0**2 * test_matrix_pushfwd + torch.mm(
+            torch.mm(true_pushfwd, myGP.inversion_operator),
             torch.mm(true_pushfwd.t(), test_matrix))
 
     print(res_true - res_test)
+    print(res_true.shape)
+    print(res_true)
+    print(res_test)
 
 
 if __name__ == "__main__":
