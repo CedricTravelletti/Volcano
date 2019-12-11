@@ -7,12 +7,41 @@ topography/data sites.
 
 """
 import numpy as np
+from multiprocessing import Pool, RawArray
 from volcapy.niklas.banerjee import banerjee
 
 
 # Gravitational constant.
 G = 6.67e-6       #Transformation factor to get result in mGal
 
+# =====================
+# Multiprocessing Stuff
+# =====================
+# A global dictionary storing the variables passed from the initializer.
+var_dict = {}
+def init_worker(F, F_shape, coords, coords_shape, data, data_shape, meta):
+    var_dict['F'] = F
+    var_dict['F_shape'] = F_shape
+    var_dict['coords'] = coords
+    var_dict['coords_shape'] = coords_shape
+    var_dict['data_coords'] = data
+    var_dict['data_coords_shape'] = data_shape
+    var_dict['meta'] = meta
+
+def _worker_func(i):
+    F_np = np.frombuffer(var_dict['F']).reshape(var_dict['F_shape'])
+    coords_np = np.frombuffer(var_dict['coords']).reshape(var_dict['coords_shape'])
+    data_np = np.frombuffer(var_dict['data_coords']).reshape(var_dict['data_coords_shape'])
+
+    res_x = var_dict['meta']['res_x']
+    res_y = var_dict['meta']['res_y']
+    res_z = var_dict['meta']['res_z']
+
+    cell = coords_np[i, :]
+    tmp = _compute_forward_column(
+            cell, res_x, res_y, res_z, data_np)
+    F_np[:, i] = tmp
+    return None
 
 def build_cube(nr_x, res_x, nr_y, res_y, nr_z, res_z):
     """ Builds a regular gridded cube.
@@ -76,23 +105,72 @@ def compute_forward(coords, res_x, res_y, res_z, data_coords):
 
     """
     n_cells = coords.shape[0]
+    n_dim_coords = coords.shape[1]
     n_data = data_coords.shape[0]
-    F = np.zeros((n_data, n_cells))
+    n_dim_data = data_coords.shape[1]
+    F_shape = (n_data, n_cells)
+    data_shape = (n_data, n_dim_data)
+    coords_shape = (n_cells, n_dim_coords)
 
-    for i, cell in enumerate(coords):
-        for j, data in enumerate(data_coords):
-            # Compute cell endpoints.
-            xh = cell[0] + res_x / 2.0
-            xl = cell[0] - res_x / 2.0
-            yh = cell[1] + res_y / 2.0
-            yl = cell[1] - res_y / 2.0
-            zh = cell[2] + res_z / 2.0
-            zl = cell[2] - res_z / 2.0
+    meta = {'res_x': res_x, 'res_y': res_y, 'res_z': res_z, }
 
-            F[j, i] = G * banerjee(
-                    xh, xl, yh, yl, zh, zl,
-                    data[0],  data[1],  data[2])
-    return F
+    # ----------------------------
+    # Prepare the parallelization.
+    # ----------------------------
+    F_shared_buffer = RawArray('d', n_data * n_cells)
+    # Wrap as a numpy array so we can easily manipulates its data.
+    F_np = np.frombuffer(F_shared_buffer).reshape(F_shape)
+    # Copy data to our shared array.
+    np.copyto(F_np, np.zeros(F_shape))
+
+    coords_shared_buffer = RawArray('d', n_cells * n_dim_coords)
+    # Wrap as a numpy array so we can easily manipulates its data.
+    coords_np = np.frombuffer(coords_shared_buffer).reshape(coords_shape)
+    # Copy data to our shared array.
+    np.copyto(coords_np, coords)
+
+    # Same with data, so noesnt need to be copied along processes.
+    data_coords_shared_buffer = RawArray('d', n_data * n_dim_data)
+    # Wrap as a numpy array so we can easily manipulates its data.
+    data_coords_np = np.frombuffer(data_coords_shared_buffer).reshape(data_shape)
+    # Copy data to our shared array.
+    np.copyto(data_coords_np, data_coords)
+
+
+    # Start the process pool and do the computation.
+    # Here we pass X and X_shape to the initializer of
+    # each worker.
+    # (Because X_shape is not a shared variable,
+    # it will be copied to each
+    # child process.)
+    with Pool(processes=4, initializer=init_worker,
+            initargs=(F_shared_buffer, F_shape,
+                    coords_shared_buffer, coords_shape,
+                    data_coords_shared_buffer, data_shape, meta)) as pool:
+        result = pool.map(_worker_func, range(coords_shape[0]))
+
+    return F_np
+
+def _compute_forward_column(cell, res_x, res_y, res_z, data_coords):
+    """ Helper function for parallelizing the computation of the forward.
+
+    """
+    n_data = data_coords.shape[0]
+    F_column = np.zeros(n_data)
+
+    for j, data in enumerate(data_coords):
+        # Compute cell endpoints.
+        xh = cell[0] + res_x / 2.0
+        xl = cell[0] - res_x / 2.0
+        yh = cell[1] + res_y / 2.0
+        yl = cell[1] - res_y / 2.0
+        zh = cell[2] + res_z / 2.0
+        zl = cell[2] - res_z / 2.0
+
+        F_column[j] = G * banerjee(
+                xh, xl, yh, yl, zh, zl,
+                data[0],  data[1],  data[2])
+    return F_column
 
 def generate_regular_surface_datapoints(
         xl, xh, nx, yl, yh, ny, zl, zh, nz,
