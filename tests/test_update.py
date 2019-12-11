@@ -33,6 +33,11 @@ def main():
     niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
     inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
+    # -- Delete Regularization Cells --
+    # Delete the cells.
+    reg_cells_inds = get_regularization_cells_inds(inverseProblem)
+    inverseProblem.forward[:, reg_cells_inds] = 0.0
+
     # Save full conditining matrix, before splitting the dataset.
     F_full = torch.as_tensor(inverseProblem.forward).detach()
     
