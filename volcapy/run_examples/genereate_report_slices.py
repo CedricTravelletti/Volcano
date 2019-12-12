@@ -26,11 +26,13 @@ posterior_mean_path_matern52 = "/home/cedric/PHD/run_results/forwards/m_post_462
 m_post_m_matern52 = np.load(posterior_mean_path_matern52)
 
 # SPECIAL: Remove regularisation cells.
-regularisation_inds = get_regularization_cells_inds(inverseProblem)
-m_post_m_exp = np.delete(m_post_m_exp, regularisation_inds)
-m_post_m_sqexp = np.delete(m_post_m_sqexp, regularisation_inds)
-m_post_m_matern32 = np.delete(m_post_m_matern32, regularisation_inds)
-m_post_m_matern52 = np.delete(m_post_m_matern52, regularisation_inds)
+regularisation_inds, bottom_inds = get_regularization_cells_inds(inverseProblem)
+inds_to_delete = list(set(
+        np.concatenate([regularisation_inds, bottom_inds], axis=0)))
+m_post_m_exp = np.delete(m_post_m_exp, inds_to_delete)
+m_post_m_sqexp = np.delete(m_post_m_sqexp, inds_to_delete)
+m_post_m_matern32 = np.delete(m_post_m_matern32, inds_to_delete)
+m_post_m_matern52 = np.delete(m_post_m_matern52, inds_to_delete)
 
 # Match to regular grid.
 reg_inds, reg_coords, coords, grid_metadata = match_grids(inverseProblem)
@@ -316,7 +318,7 @@ plt.show()
 # -----------------------------
 # -----------------------------
 from volcapy.compatibility_layer import get_regularization_cells_inds
-reg_cells_inds = get_regularization_cells_inds(inverseProblem)
+reg_cells_inds, bottom_inds = get_regularization_cells_inds(inverseProblem)
 
 # Longitude of the slice.
 # NB, see below for how to find closest cell latitude to actual slice latitude.
