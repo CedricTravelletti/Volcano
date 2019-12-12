@@ -23,13 +23,15 @@ def main():
 
     # -- Delete Regularization Cells --
     # Delete the cells.
-    reg_cells_inds = get_regularization_cells_inds(inverseProblem)
-    inverseProblem.forward[:, reg_cells_inds] = 0.0
+    reg_cells_inds, bottom_inds = get_regularization_cells_inds(inverseProblem)
+    inds_to_delete = list(set(
+            np.concatenate([reg_cells_inds, bottom_inds], axis=0)))
+    inverseProblem.forward[:, inds_to_delete] = 0.0
 
     F = inverseProblem.forward
     d_obs = inverseProblem.data_values
     data_coords = inverseProblem.data_points
-    cells_coords = np.delete(inverseProblem.cells_coords, reg_cells_inds,
+    cells_coords = np.delete(inverseProblem.cells_coords, inds_to_delete,
             axis=0)
     np.savetxt("data_coords.txt", data_coords, fmt="%4f", delimiter=" ", header="data\nx y z")
     np.savetxt("volcano_coords.txt", cells_coords, fmt="%4f", delimiter=" ", header="data\nx y z")

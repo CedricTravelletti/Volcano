@@ -16,8 +16,8 @@ def get_regularization_cells_inds(inverseProblem):
     """ Get the indices of the troublesome cells in Niklas grid that we want to
     exclude.
 
-    Those are the cells at the edge of the grid and (temporarily) the bottom
-    cells.
+    Those are the (bigger) cells at the edge of the grid.
+    We also return the indices of the bottom cells.
 
     Parameters
     ----------
@@ -25,8 +25,11 @@ def get_regularization_cells_inds(inverseProblem):
 
     Returns
     -------
+    (reg_cells_inds, bottom_cells_ind)
     array[int]
-        Indices (in the grid) of the problematic cells.
+        Indices (in the grid) of the problematic/regularization cells.
+    array[int]
+        Indices (in the grid) of the bottom cells.
 
     """
     # Find the cells at the edges, those are the ones we want to delete.
@@ -42,17 +45,23 @@ def get_regularization_cells_inds(inverseProblem):
     ind_min_x = np.where(inverseProblem.cells_coords[:, 0] <= min_x)[0]
     ind_max_y = np.where(inverseProblem.cells_coords[:, 1] >= max_y)[0]
     ind_min_y = np.where(inverseProblem.cells_coords[:, 1] <= min_y)[0]
+
+    # Find bottom cells.
     ind_min_z = np.where(inverseProblem.cells_coords[:, 2] <= min_z)[0]
 
-    inds = np.concatenate([ind_max_x, ind_min_x, ind_max_y, ind_min_y,
-            ind_min_z], axis=0)
+    reg_cells_inds = np.concatenate([ind_max_x, ind_min_x, ind_max_y, ind_min_y], axis=0)
+    bottom_cells_inds = ind_min_z
 
-    return inds
+    return (reg_cells_inds, bottom_cells_inds)
 
 def match_grids(inverseProblem):
     # Get normal cells only (so we have a regular grid).
+    reg_cells_inds, bottom_cells_inds = get_regularization_cells_inds(inverseProblem)
+    inds_to_delete = list(set(
+            np.concatenate([reg_cells_inds, bottom_cells_inds], axis=0)))
+
     coords = np.delete(inverseProblem.cells_coords,
-            get_regularization_cells_inds(inverseProblem), axis=0)
+            inds_to_delete, axis=0)
 
     min_x = np.min(coords[:, 0])
     max_x = np.max(coords[:, 0])
