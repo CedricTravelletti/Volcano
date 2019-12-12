@@ -1,3 +1,6 @@
+""" Convert the results to the VTK file format for plotting using ParaView.
+
+"""
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
 from volcapy.compatibility_layer import match_grids, get_regularization_cells_inds
@@ -17,8 +20,10 @@ posterior_mean_path = "/home/cedric/PHD/run_results/forwards/m_post_342_squared_
 m_post_m = np.load(posterior_mean_path)
 
 # SPECIAL: Remove regularisation cells.
-regularisation_inds = get_regularization_cells_inds(inverseProblem)
-m_post_m = np.delete(m_post_m, regularisation_inds)
+reg_cells_inds, bottom_inds = get_regularization_cells_inds(inverseProblem)
+inds_to_delete = list(set(
+        np.concatenate([reg_cells_inds, bottom_inds], axis=0)))
+m_post_m = np.delete(m_post_m, inds_to_delete)
 
 # Match to regular grid.
 reg_inds, reg_coords, coords, grid_metadata = match_grids(inverseProblem)
