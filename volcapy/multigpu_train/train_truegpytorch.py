@@ -7,14 +7,18 @@ from volcapy.inverse.gaussian_process import GaussianProcess
 from volcapy.compatibility_layer import get_regularization_cells_inds
 import volcapy.covariance.matern32 as cl
 
+import torch
+
 import gpytorch
 import gpytorch.lazy
+from LBFGS import FullBatchLBFGS
 
 import numpy as np
 import os
 
 
 checkpoint_size = 20000
+
 
 # ----------------------------------------------------------------------------#
 #      LOAD NIKLAS DATA
@@ -37,7 +41,9 @@ F = torch.as_tensor(inverseProblem.forward).detach()
 # Careful: we have to make a column vector here.
 data_std = 0.1
 d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
-data_cov = torch.eye(n_data)
+
+noise_var = torch.ones(d_obs.shape[0]) * data_std**2
+
 cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
 del(inverseProblem)
 
@@ -67,7 +73,7 @@ print('Planning to run on {} GPUs.'.format(n_devices))
 # ----------------------------------------------------------------------------
 class ExactInverseGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, F, likelihood, n_devices):
-        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+        super(ExactInverseGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
         base_covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
         
@@ -104,7 +110,7 @@ def train(train_x,
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(
             noise=noise_var, learn_additional_noise=False).to(output_device)
 
-    model = ExactGPModel(train_x, train_y, likelihood, n_devices).to(output_device)
+    model = ExactInverseGPModel(train_x, train_y, F, likelihood, n_devices).to(output_device)
     model.train()
 
     optimizer = FullBatchLBFGS(model.parameters(), lr=0.1)
