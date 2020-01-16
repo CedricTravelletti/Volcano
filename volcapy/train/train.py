@@ -40,17 +40,18 @@ def main():
     # -- Delete Regularization Cells --
     reg_cells_inds, bottom_inds = get_regularization_cells_inds(inverseProblem)
     inds_to_delete = list(set(
-            np.concatenate([reg_cells_inds, bottom_inds], axis=0)))
-
-    F = np.delete(inverseProblem.forward, inds_to_delete)
-    cells_coords = np.delete(inverseProblem.cells_coords, inds_to_delete)
+        np.concatenate([reg_cells_inds, bottom_inds], axis=0)))
+    
+    F = np.delete(inverseProblem.forward, inds_to_delete, axis=1)
+    cells_coords = np.delete(inverseProblem.cells_coords, inds_to_delete, axis=0)
     
     F = torch.as_tensor(F).detach()
+    cells_coords = torch.as_tensor(cells_coords).detach()
+
     # Careful: we have to make a column vector here.
     data_std = 0.1
     d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
     data_cov = torch.eye(n_data)
-    cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
     del(inverseProblem)
     # ----------------------------------------------------------------------------#
     # ----------------------------------------------------------------------------#
