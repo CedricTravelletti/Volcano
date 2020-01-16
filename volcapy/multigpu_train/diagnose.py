@@ -77,7 +77,12 @@ class ExactInverseGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, F, likelihood, n_devices):
         super(ExactInverseGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
-        base_covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+        self.mean_module.initialize(constant=2000.0)
+
+        # base_covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+        base_covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=0.5))
+        base_covar_module.initialize(outputscale=400.0**2)
+        base_covar_module.base_kernel.initialize(lengthscale=200.0)
         
         self.covar_module = gpytorch.kernels.MultiDeviceKernel(
             base_covar_module, device_ids=range(n_devices),
@@ -195,6 +200,13 @@ likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(
         noise=noise_var, learn_additional_noise=False).to(output_device)
 
 model = ExactInverseGPModel(train_x, train_y, F, likelihood, n_devices).to(output_device)
+
+# Try to run forward pass.
+preconditioner_size = 3000000
+with gpytorch.beta_features.checkpoint_kernel(checkpoint_size), \
+        gpytorch.settings.max_preconditioner_size(preconditioner_size), \
+        gpytorch.settings.min_preconditioning_size(100):
+            a = model.forward(train_x)
 
 # "Loss" for GPs - the marginal log likelihood
 mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
