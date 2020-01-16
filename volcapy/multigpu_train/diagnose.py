@@ -41,9 +41,7 @@ F = F.contiguous()
 
 # Careful: we have to make a column vector here.
 data_std = 0.1
-
-# Note we work with row vectors.
-d_obs = torch.as_tensor(inverseProblem.data_values)
+d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
 
 noise_var = torch.ones(d_obs.shape[0]) * data_std**2
 
@@ -116,9 +114,7 @@ def train(train_x,
             noise=noise_var, learn_additional_noise=False).to(output_device)
 
     model = ExactInverseGPModel(train_x, train_y, F, likelihood, n_devices).to(output_device)
-    model.train()
 
-    optimizer = FullBatchLBFGS(model.parameters(), lr=0.1)
     # "Loss" for GPs - the marginal log likelihood
     mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
 
@@ -126,27 +122,13 @@ def train(train_x,
          gpytorch.settings.max_preconditioner_size(preconditioner_size):
 
         def closure():
-            optimizer.zero_grad()
             output = model(train_x)
+            print(train_y.shape)
+            print(output.shape)
             loss = -mll(output, train_y)
             return loss
 
         loss = closure()
-        loss.backward()
-
-        for i in range(n_training_iter):
-            options = {'closure': closure, 'current_loss': loss, 'max_ls': 10}
-            loss, _, _, _, _, _, _, fail = optimizer.step(options)
-
-            print('Iter %d/%d - Loss: %.3f   lengthscale: %.3f   variance: %.3f' % (
-                i + 1, n_training_iter, loss.item(),
-                model.covar_module.module.base_kernel.lengthscale.item(),
-                model.covar_module.module.outputscale.item()
-            ))
-
-            if fail:
-                print('Convergence reached!')
-                break
 
     print(f"Finished training on {train_x.size(0)} data points using {n_devices} GPUs.")
     return model, likelihood
@@ -197,13 +179,28 @@ checkpoint_size = find_best_gpu_setting(train_x, train_y,
                                         n_devices=n_devices,
                                         output_device=output_device,
                                         preconditioner_size=preconditioner_size)
-
 """
+
 # ----------------------------------------------------------------------------
 # Train.
 # ----------------------------------------------------------------------------
+"""
 model, likelihood = train(train_x, train_y,
                           n_devices=n_devices, output_device=output_device,
                           checkpoint_size=10000,
                           preconditioner_size=100,
                           n_training_iter=20)
+"""
+likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(
+        noise=noise_var, learn_additional_noise=False).to(output_device)
+
+model = ExactInverseGPModel(train_x, train_y, F, likelihood, n_devices).to(output_device)
+
+# "Loss" for GPs - the marginal log likelihood
+mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
+
+with gpytorch.beta_features.checkpoint_kernel(checkpoint_size), \
+        gpytorch.settings.max_preconditioner_size(preconditioner_size):
+
+    output = model(train_x)
+    print(output)
