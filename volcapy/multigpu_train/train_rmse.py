@@ -1,6 +1,10 @@
 """ This script aims at providing a fully gpytorch-based implementation of
 training gaussian process models for inverse problems.
 
+SAME AS tain_truepytorch, but uses train RMSE as loss instead.
+The goal is to avoid matrix inversions, which is problematic since our matrices
+are singular.
+
 """
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
