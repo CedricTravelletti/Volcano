@@ -104,9 +104,11 @@ def main():
             torch.mm(true_pushfwd, myGP.inversion_operator),
             torch.mm(true_pushfwd.t(), test_matrix))
 
+    print("Direct result - sequential result.")
     print(res_true - res_test)
-    print(res_true.shape)
+    print("Direct result.")
     print(res_true)
+    print("Sequential result.")
     print(res_test)
 
 

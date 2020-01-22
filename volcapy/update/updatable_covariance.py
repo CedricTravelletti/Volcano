@@ -23,6 +23,8 @@ Alsok we work in the *big model* framework, i.e. when the model discretization
 is too fine to allow covariance matrices to ever sit in memory (contrast this
 with the *big data* settting.
 
+Testing scripts may be found in Volcano/tests/test_update.py.
+
 TODO
 ----
 
@@ -79,17 +81,19 @@ class UpdatableCovariance:
         Returns
         -------
         Tensor
-            C * A
+            K * A
 
         """
         # First compute the level 0 pushforward.
-        # IMPORTANT: FIX THE TRANSPOSING STUFF.
+        # Warning: the original covariance pushforward method was used to
+        # comput K G^T, taking G as an argument, i.e. it does transposing in
+        # the background. We hence have to feed it A.t.
         cov_pushfwd_0 = self.sigma0**2 * self.cov_module.compute_cov_pushforward(
                 self.lambda0, A.t(), self.cells_coords, gpu, n_chunks=200,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
-            cov_pushfwd_0 += p @ (r @ (p.t() @ A))
+            cov_pushfwd_0 -= p @ (r @ (p.t() @ A))
 
         # Note the first term (the one with C_0 alone) only has one sigma0**2
         # factor associated with it, whereas all other terms in the updating
@@ -112,14 +116,17 @@ class UpdatableCovariance:
             A^t * C * A
 
         """
-        # First compute the level 0 pushforward.
+        # First compute the level 0 pushforward, i.e. K_0 A.
+        # Warning: the original covariance pushforward method was used to
+        # comput K G^T, taking G as an argument, i.e. it does transposing in
+        # the background. We hence have to feed it A.t.
         cov_pushfwd_0 = self.sigma0**2 * A.t() @ self.cov_module.compute_cov_pushforward(
-                self.lambda0, A, self.cells_coords, gpu, n_chunks=200,
+                self.lambda0, A.t(), self.cells_coords, gpu, n_chunks=200,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
             tmp = p.t() @ A
-            cov_pushfwd_0 += tmp.t() @ (r @ tmp)
+            cov_pushfwd_0 -= tmp.t() @ (r @ tmp)
 
         return cov_pushfwd_0
 
