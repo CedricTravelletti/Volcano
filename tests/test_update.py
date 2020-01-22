@@ -33,49 +33,47 @@ def main():
     niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
     inverseProblem = InverseProblem.from_matfile(niklas_data_path)
 
-    # -- Delete Regularization Cells --
-    # Delete the cells.
-    reg_cells_inds = get_regularization_cells_inds(inverseProblem)
-    inverseProblem.forward[:, reg_cells_inds] = 0.0
 
-    # WARNING: GET RID OF FIRST LINE OF F, SINCE IT seems different.
-    # Save full conditining matrix, before splitting the dataset.
-    F_full = torch.as_tensor(inverseProblem.forward).detach()
+    # -- Delete Regularization Cells --
+    reg_cells_inds, bottom_inds = get_regularization_cells_inds(inverseProblem)
+    inds_to_delete = list(set(
+        np.concatenate([reg_cells_inds, bottom_inds], axis=0)))
+    
+    F = np.delete(inverseProblem.forward, inds_to_delete, axis=1)
+    cells_coords = np.delete(inverseProblem.cells_coords, inds_to_delete, axis=0)
+    
+    F_full = torch.as_tensor(F).detach()
+    cells_coords = torch.as_tensor(cells_coords).detach()
+    
     d_obs_full = torch.as_tensor(inverseProblem.data_values[:, None])
+    del(inverseProblem)
     
     # Test-Train split.
     n_keep = 300
-    rest_forward, rest_data = inverseProblem.subset_data(n_keep, seed=2)
-    n_data = inverseProblem.n_data
-    F_test = torch.as_tensor(rest_forward).detach()
-    d_obs_test = torch.as_tensor(rest_data[:, None]).detach()
+    F_part_1 = F_full[:n_keep, :]
+    F_part_2 = F_full[n_keep:, :]
+
+    # rest_forward, rest_data = inverseProblem.subset_data(n_keep, seed=2)
     
-    F = torch.as_tensor(inverseProblem.forward).detach()
     
     # Careful: we have to make a column vector here.
     data_std = 0.1
-    d_obs = torch.as_tensor(inverseProblem.data_values[:, None])
-    data_cov = torch.eye(n_data)
-    cells_coords = torch.as_tensor(inverseProblem.cells_coords).detach()
-    del(inverseProblem)
-
     lambda0 = 100.0
     sigma0 = 1.0
-    epsilon0 = 10.0
 
     # Now ready to go to updatable covariance.
     from volcapy.update.updatable_covariance import UpdatableCovariance
-    updatable_cov = UpdatableCovariance(cl, lambda0, sigma0, epsilon0, cells_coords)
+    updatable_cov = UpdatableCovariance(cl, lambda0, sigma0, cells_coords)
 
     # First conditioning.
-    updatable_cov.update(F)
+    updatable_cov.update(F_part_1, data_std)
 
     # Second conditioning.
-    updatable_cov.update(F_test)
+    updatable_cov.update(F_part_2, data_std)
 
     # Check that the covariance is correct by computing its product with a
     # dummy matrix.
-    test_matrix = torch.rand(F.shape[1], 2000)
+    test_matrix = torch.rand(F_full.shape[1], 2000)
     res_test = updatable_cov.mul_right(test_matrix)
 
     # ----------------------------------------------------------------
