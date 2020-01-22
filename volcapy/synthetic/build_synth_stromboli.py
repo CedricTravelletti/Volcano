@@ -19,9 +19,9 @@ def main():
     # ----------------------------------------------------------------------------#
     # Initialize an inverse problem from Niklas's data.
     # This gives us the forward and the coordinates of the inversion cells.
-    niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
+    # niklas_data_path = "/home/cedric/PHD/Dev/Volcano/data/Cedric.mat"
     # niklas_data_path = "/home/ubuntu/Volcano/data/Cedric.mat"
-    # niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
+    niklas_data_path = "/idiap/temp/ctravelletti/tflow/Volcano/data/Cedric.mat"
     inverseProblem = InverseProblem.from_matfile(niklas_data_path)
     
     # -- Delete Regularization Cells --
@@ -34,6 +34,8 @@ def main():
     # Compute the forward operator.
     res_x, res_y, res_z = 50, 50, 50
     F_synth = gd.compute_forward(volcano_coords, res_x, res_y, res_z, data_coords)
+
+    np.save("synth_F.npy", F_synth)
     # print(F_synth)
 
     # Generate artificial measurements.
