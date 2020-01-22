@@ -52,7 +52,7 @@ class UpdatableCovariance:
         The inversion operators corresponding to each conditioning step.
 
     """
-    def __init__(self, cov_module, lambda0, sigma0, epsilon0, cells_coords):
+    def __init__(self, cov_module, lambda0, sigma0, cells_coords):
         """ Build an updatable covariance from a traditional covariance module.
 
         Params
@@ -62,7 +62,6 @@ class UpdatableCovariance:
         self.cov_module = cov_module
         self.lambda0 = lambda0
         self.sigma0 = sigma0
-        self.epsilon0 = epsilon0
         self.cells_coords = cells_coords
 
         self.pushforwards = []
@@ -130,20 +129,22 @@ class UpdatableCovariance:
 
         return cov_pushfwd_0
 
-    def update(self, F):
+    def update(self, F, data_std):
         """ Update the covariance matrix / perform a conditioning.
 
         Params
         ------
         F: Tensor
             Measurement operator.
+        data_std: float
+            Standard deviation of data noise, assumed to be iid centered gaussian.
 
         """
         self.pushforwards.append(self.mul_right(F.t()))
 
         # Get inversion op by Cholesky.
         R = F @ self.pushforwards[-1]
-        R =  R + self.epsilon0**2 * torch.eye(F.shape[0])
+        R =  R + data_std **2 * torch.eye(F.shape[0])
         try:
             L = torch.cholesky(R)
         except RuntimeError:
