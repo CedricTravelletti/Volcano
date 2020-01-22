@@ -102,7 +102,17 @@ class ExactInverseGPModel(gpytorch.models.ExactGP):
 
         # Compute covariance pushforward.
         # TODO: Add caching.
-        with gpytorch.beta_features.checkpoint_kernel(checkpoint_size):
+        precond_tol = 1e-3 # default
+        preconditioner_size, cg_tol, cg_iter = 10, 1e-2, 500
+
+        with gpytorch.beta_features.checkpoint_kernel(checkpoint_size), \
+                gpytorch.settings.max_preconditioner_size(preconditioner_size), \
+                gpytorch.settings.cg_tolerance(cg_tol), \
+                gpytorch.settings.eval_cg_tolerance(cg_tol), \
+                gpytorch.settings.max_cg_iterations(cg_iter), \
+                gpytorch.settings.preconditioner_tolerance(precond_tol), \
+                gpytorch.settings.skip_logdet_forward(state=True):
+
             temp = my_chunked_kernel.inv_matmul(self.F.t())
 
             # Verify it gives the correct result.
@@ -126,10 +136,7 @@ def train(train_x,
     model = ExactInverseGPModel(train_x, train_y, F, likelihood, n_devices).to(output_device)
     # model.train()
 
-
-    with gpytorch.beta_features.checkpoint_kernel(checkpoint_size), \
-         gpytorch.settings.max_preconditioner_size(preconditioner_size):
-             return model(train_x)
+    return model(train_x)
 
 
 start = timer()
