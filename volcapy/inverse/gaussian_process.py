@@ -76,9 +76,6 @@ class GaussianProcess(torch.nn.Module):
 
     Attributes
     ----------
-    sigma0_init
-        Original value of the sigma0 parameter to use when starting
-        optimization.
     sigma0: float
         Current value of the prior standard deviation of the process.
         Will get optimized. We store it so we can use it as starting value
@@ -89,34 +86,13 @@ class GaussianProcess(torch.nn.Module):
         Current data noise deviation. Can change from the original value
         since we may have to increase it to make matrices invertible/better
         conditioned.
-    F: ndarray
+    F: ndarray or Tensor
         Forward operator matrix, n_d * n_m
-    d_obs: tensor
+    d_obs: ndarray or Tensor
        Vector of observed data values
-    n_model: int
-        Number of model cells.
-    n_data: int
-        Number of data observations.
-    mu0_d_stripped: Tensor
-        The pushforwarded mean vector, stripped of the constant prior means
-        parameter. I.e. this is F * 1_m. Multiply by the prior mean m0 to get
-        the data-side mean.
-    data_ones
-    inv_op_L: Tensor
-        Lower Cholesky factor of the inverse inversion operator R.
-    inversion_operator
-    mu0_d
-    m0
-    prior_misfit
-    weights
-    mu_post_d
-    mu_post_m
-    stripped_inv
-    mu0_m
-    R: Tensor.
-        Inverse inversion operator. Given by
-        data_std**2 * 1_{d*d} + sigma0**2 * K_d
-
+    sigma0_init
+        Original value of the sigma0 parameter to use when starting
+        optimization.
     logger
         An instance of logging.Logger, used to output training progression.
 
