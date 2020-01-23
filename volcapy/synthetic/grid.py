@@ -239,8 +239,10 @@ def generate_regular_surface_datapoints(
             data_coords.append([x, y, zh + offset])
     return np.array(data_coords)
 
-def build_cone(coords):
+def build_cone_in_cube(coords):
     """ Given a cubic grid, turn it into a cone.
+    That is, given a list of cells that form a full cubic grid, place a cone in
+    the cube and mark the cells belonging to the cone.
 
     Parameters
     ----------
@@ -275,8 +277,8 @@ def build_cone(coords):
 
     return cone_inds
 
-def build_random_cone(coords, nx, ny, nz):
-    """ Given a cubic grid, turn it into a cone.
+def build_conic_volcano(coords, nx, ny, nz):
+    """ Build an artificial volcano having a conic shape.
 
     Parameters
     ----------
@@ -294,7 +296,7 @@ def build_random_cone(coords, nx, ny, nz):
         1 dimensional array containing indices of cells belonging to the cone.
 
     """
-    cone_inds = build_cone(coords)
+    cone_inds = build_cone_in_cube(coords)
 
     # Get the indices of the surfcace.
     tmp = np.zeros(coords[:, 0].shape)

@@ -33,19 +33,22 @@ def main():
 
     """
     # Generate gridded cube.
-    nx = 80
-    ny = 80
-    nz = 80
+    nx = 120
+    ny = 120
+    nz = 60
     res_x = 50
     res_y = 50
     res_z = 50
     reg_coords = gd.build_cube(nx, res_x, ny, res_y, nz, res_z)
+
+    print("Nbr of cells in regular cube : {}.".format(reg_coords.shape[0]))
     
     # Put evenly spaced measurement sites on the surface of the cube.
     max_x = np.max(reg_coords[:, 0])
     
     # Put matter in a cone.
-    cone_inds, surface_inds = gd.build_random_cone(reg_coords, nx, ny, nz)
+    cone_inds, surface_inds = gd.build_conic_volcano(reg_coords, nx, ny, nz)
+    print("Nbr of cells in synthetic volacano: {}.".format(cone_inds.shape[0]))
     
     # Discard cells that are not in the cone when building the forward.
     volcano_coords = reg_coords[cone_inds]
@@ -103,7 +106,7 @@ def main():
     # -------
     # We put measurements close to the surface by randomly selecting surface cells
     # and adding a small vertical shift.
-    n_data = 500
+    n_data = 10000
     data_inds = np.random.choice(surface_inds, n_data, replace=False)
     data_coords = reg_coords[data_inds]
     
@@ -138,5 +141,6 @@ def main():
     save_vtk(data_sites_reg, (nx, ny, nz), res_x, res_y, res_z,
             os.path.join(out_folder, "data_sites_synth.mhd"))
 
-    if __name__ == "__main__":
-        main()
+
+if __name__ == "__main__":
+    main()
