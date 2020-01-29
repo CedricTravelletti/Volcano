@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Volcapy’s documentation &mdash; Volcapy 0.1 documentation</title>
+  <title>Volcapy: Bayesian Inversion for large scale Geophysical Inverse Problems (and beyond …) &mdash; Volcapy 0.1 documentation</title>
   
 
   
@@ -143,7 +143,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>Volcapy’s documentation</li>
+      <li>Volcapy: Bayesian Inversion for large scale Geophysical Inverse Problems (and beyond …)</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -165,8 +165,62 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="volcapy-s-documentation">
-<h1>Volcapy’s documentation<a class="headerlink" href="#volcapy-s-documentation" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="volcapy-bayesian-inversion-for-large-scale-geophysical-inverse-problems-and-beyond">
+<h1>Volcapy: Bayesian Inversion for large scale Geophysical Inverse Problems (and beyond …)<a class="headerlink" href="#volcapy-bayesian-inversion-for-large-scale-geophysical-inverse-problems-and-beyond" title="Permalink to this headline">¶</a></h1>
+<p>The Bayesian approach to inverse problem is a well-known and powerful one <a class="bibtex reference internal" href="uq.html#tarantola" id="id1">[Tar05]</a>,
+<a class="bibtex reference internal" href="uq.html#stuart-2010" id="id2">[Stu10]</a></p>
+<p>This module implements the set uncetainty quantification methods proposed in
+<a class="bibtex reference internal" href="uq.html#chevalier-uq" id="id3">[CGBM13]</a>, <a class="bibtex reference internal" href="uq.html#azzimonti-uq" id="id4">[ABCG16]</a>, <a class="bibtex reference internal" href="uq.html#azzimonti-adaptive" id="id5">[AGC+16]</a>.</p>
+<p>The main goal is to identify regions in model space where the density field
+might be above some given threshold, using the posterior distribution.
+We call such regions <strong>excursion set</strong> above the threshold.
+We also aim at quantifying the uncertainty on the estimated regions.</p>
+<div class="math notranslate nohighlight">
+\[\Gamma = \lbrace x \in X: \tilde{Z}_x \geq u_0 \rbrace\]</div>
+<div class="section" id="module-functionalities">
+<h2>Module Functionalities<a class="headerlink" href="#module-functionalities" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head" colspan="2"><p>Excursion Set Methods</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Out-of-core matrix-matrix multiplication</p></td>
+<td><p>Multiply matrices that do not fit in memory.</p></td>
+</tr>
+<tr class="row-odd"><td><p>GPU Inversion</p></td>
+<td><p>Solve inverse problems on multiple GPUs.</p></td>
+</tr>
+<tr class="row-even"><td><p>Hyperparameter Optimization</p></td>
+<td><p>Fit model hyperparameters using maximum likelihood.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Set Estimation</p></td>
+<td><p>Get cells belonging to the Vorob’ev quantile at a given level, for a given threshold.</p></td>
+</tr>
+</tbody>
+</table>
+<p id="bibtex-bibliography-index-0"><dl class="citation">
+<dt class="bibtex label" id="azzimonti-uq"><span class="brackets"><a class="fn-backref" href="#id4">ABCG16</a></span></dt>
+<dd><p>Dario Azzimonti, Julien Bect, Clément Chevalier, and David Ginsbourger. Quantifying uncertainties on excursion sets under a gaussian random field prior. <em>SIAM/ASA Journal on Uncertainty Quantification</em>, 4(1):850–874, 2016.</p>
+</dd>
+<dt class="bibtex label" id="azzimonti-adaptive"><span class="brackets"><a class="fn-backref" href="#id5">AGC+16</a></span></dt>
+<dd><p>Dario Azzimonti, David Ginsbourger, Clément Chevalier, Julien Bect, and Yann Richet. Adaptive design of experiments for conservative estimation of excursion sets. 2016. <a class="reference external" href="https://arxiv.org/abs/1611.07256">arXiv:1611.07256</a>.</p>
+</dd>
+<dt class="bibtex label" id="chevalier-uq"><span class="brackets"><a class="fn-backref" href="#id3">CGBM13</a></span></dt>
+<dd><p>Clément Chevalier, David Ginsbourger, Julien Bect, and Ilya Molchanov. Estimating and quantifying uncertainties on level sets using the vorob’ev expectation and deviation with gaussian process models. In <em>mODa 10–Advances in Model-Oriented Design and Analysis</em>, pages 35–43. Springer, 2013.</p>
+</dd>
+<dt class="bibtex label" id="stuart-2010"><span class="brackets"><a class="fn-backref" href="#id2">Stu10</a></span></dt>
+<dd><p>A. M. Stuart. Inverse problems: a bayesian perspective. <em>Acta Numerica</em>, 19:451–559, 2010. <a class="reference external" href="https://doi.org/10.1017/S0962492910000061">doi:10.1017/S0962492910000061</a>.</p>
+</dd>
+<dt class="bibtex label" id="tarantola"><span class="brackets"><a class="fn-backref" href="#id1">Tar05</a></span></dt>
+<dd><p>Albert Tarantola. <em>Inverse problem theory and methods for model parameter estimation</em>. Volume 89. siam, 2005.</p>
+</dd>
+</dl>
+</p>
 <div class="toctree-wrapper compound">
 </div>
 <div class="toctree-wrapper compound">
@@ -205,7 +259,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="update.html">Updatable Covariance</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="update.html#concept">Concept</a></li>
-<li class="toctree-l2"><a class="reference internal" href="update.html#module-implementation-details">Module implementation Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="update.html#module-volcapy.update.updatable_covariance">Module implementation Details</a></li>
 </ul>
 </li>
 </ul>
@@ -217,6 +271,7 @@
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="compatibility_layer.html">Niklas Compatibility Layer</a></li>
 </ul>
+</div>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
