@@ -10,7 +10,7 @@ number.
 from volcapy.inverse.inverse_problem import InverseProblem
 from volcapy.inverse.gaussian_process import GaussianProcess
 from volcapy.compatibility_layer import get_regularization_cells_inds
-import volcapy.covariance.exponential as cl
+import volcapy.covariance.squared_exponential as cl
 
 import numpy as np
 import os
@@ -60,8 +60,8 @@ def main():
     
     # Careful: we have to make a column vector here.
     data_std = 0.1
-    lambda0 = 100.0
-    sigma0 = 1.0
+    lambda0 = 500.0
+    sigma0 = 200.0
 
     # ----------------------------------------------------------------
     # ----------------------------------------------------------------
