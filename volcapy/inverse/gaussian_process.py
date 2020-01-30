@@ -195,7 +195,7 @@ class GaussianProcess(torch.nn.Module):
         Parameters
         ----------
         K_d: tensor
-            Covariance matrix on the data side.
+            (stripped) Covariance matrix on the data side.
         sigma0: float
             Standard deviation parameter for the kernel.
         m0: float
@@ -532,6 +532,12 @@ class GaussianProcess(torch.nn.Module):
 
         """
         self.R = (self.data_std**2) * self.data_ones + sigma0**2 * K_d
+
+        # Check condition number if debug mode on.
+        if __debug__:
+            self.logger.info(
+                    "Condition number of (inverse) inversion operator: {}".format(
+                    np.linalg.cond(self.R.detach().numpy())))
 
         # Try to Cholesky.
         for attempt in range(50):
