@@ -39,6 +39,8 @@ torch.set_num_threads(8)
 gpu = torch.device('cuda:0')
 cpu = torch.device('cpu')
 
+# TODO: Refactor to automatically determine in the covariance module.
+n_chunks = 500
 
 class UpdatableCovariance:
     """ Covariance matrix that can be sequentially updated to include new
@@ -97,7 +99,7 @@ class UpdatableCovariance:
         # comput K G^T, taking G as an argument, i.e. it does transposing in
         # the background. We hence have to feed it A.t.
         cov_pushfwd_0 = self.sigma0**2 * self.cov_module.compute_cov_pushforward(
-                self.lambda0, A.t(), self.cells_coords, gpu, n_chunks=200,
+                self.lambda0, A.t(), self.cells_coords, gpu, n_chunks=n_chunks,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
@@ -129,7 +131,7 @@ class UpdatableCovariance:
         # comput K G^T, taking G as an argument, i.e. it does transposing in
         # the background. We hence have to feed it A.t.
         cov_pushfwd_0 = self.sigma0**2 * A.t() @ self.cov_module.compute_cov_pushforward(
-                self.lambda0, A.t(), self.cells_coords, gpu, n_chunks=200,
+                self.lambda0, A.t(), self.cells_coords, gpu, n_chunks=n_chunks,
                 n_flush=50)
 
         for p, r in zip(self.pushforwards, self.inversion_ops):
@@ -212,5 +214,7 @@ class UpdatableMean:
             Measurement noise standard deviation.
 
         """
-        K_dash = self.cov_module.pushfwds[-1]
-        self.m = self.m + K_dash @ R @ K_dash.t() @ (y - G @ self.m)
+        # Get the latest conditioning operators.
+        K_dash = self.cov_module.pushforwards[-1]
+        R = self.cov_module.inversion_ops[-1]
+        self.m = self.m + K_dash @ R @ (y - G @ self.m)
