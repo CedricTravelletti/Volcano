@@ -57,12 +57,21 @@ class UpdatableCovariance:
 
         Params
         ------
+        cov_module: CovarianceModule
+            Defines which kernel to use.
+        lambda0: float
+            Prior lengthscale parameter for the module.
+        sigma0: float
+            Prior standard deviation for the covariance.
+        cells_coords: Tensor
+            Coordinates of the model points.
 
         """
         self.cov_module = cov_module
         self.lambda0 = lambda0
         self.sigma0 = sigma0
         self.cells_coords = cells_coords
+        self.model_size = cells_coords.shape[0]
 
         self.pushforwards = []
         self.inversion_ops = []
@@ -129,7 +138,7 @@ class UpdatableCovariance:
 
         return cov_pushfwd_0
 
-    def update(self, F, data_std):
+    def update(self, G, data_std):
         """ Update the covariance matrix / perform a conditioning.
 
         Params
@@ -140,16 +149,68 @@ class UpdatableCovariance:
             Standard deviation of data noise, assumed to be iid centered gaussian.
 
         """
-        self.pushforwards.append(self.mul_right(F.t()))
+        self.pushforwards.append(self.mul_right(G.t()))
 
         # Get inversion op by Cholesky.
-        R = F @ self.pushforwards[-1]
-        R =  R + data_std **2 * torch.eye(F.shape[0])
+        R = G @ self.pushforwards[-1]
+        R =  R + data_std**2 * torch.eye(G.shape[0])
         try:
             L = torch.cholesky(R)
         except RuntimeError:
             print("Error inverting.")
-            print(F)
+            print(G)
 
         inversion_op = torch.cholesky_inverse(L)
         self.inversion_ops.append(inversion_op)
+
+class UpdatableMean:
+    """ Mean vector that can be sequentially updated. This is an addon to the
+    UpdatableCovariance class in that it depends on such an object.
+    
+    Attributes
+    ----------
+    pushforwards: List[Tensor]
+        The covariance pushforwards corresponding to each conditioning step.
+    inversion_ops: List[Tensor]
+        The inversion operators corresponding to each conditioning step.
+
+    """
+    def __init__(self, prior, cov_module):
+        """ Build an updatable mean.
+
+        Params
+        ------
+        prior: Tensor
+            Vector defining the prior mean at the model points.
+            We require the number of points to be the same as in the updatable
+            covariance module.
+        cov_module: UpdatableCovariance
+
+        """
+        self.prior = prior
+        self.m = prior # Current value of conditional mean.
+
+        self.model_size = prior.shape[0]
+        self.cov_module = cov_module
+        
+        if not (self.model_size == cov_module.model_size):
+            raise ValueError(
+                "Model size for mean: {} does not agree with "\
+                "model size for covariance {}.".format(
+                        self.model_size, cov_module.model_size))
+        
+    def update(self, y, G):
+        """ Perform conditioning.
+
+        Params
+        ------
+        y: Tensor
+            Data vector.
+        G: Tensor
+            Measurement matrix.
+        std: float
+            Measurement noise standard deviation.
+
+        """
+        K_dash = self.cov_module.pushfwds[-1]
+        self.m = self.m + K_dash @ R @ K_dash.t() @ (y - G @ self.m)

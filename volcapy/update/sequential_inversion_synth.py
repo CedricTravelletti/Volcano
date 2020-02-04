@@ -1,15 +1,16 @@
 """ Try the sequential inversion framework on synthetic data (conic volcano).
 
-The synthetic data should be located in ./out/.
+The synthetic data should be located in ../synthetic/synthetic_data/.
 
 """
 import os
+import torch
 import numpy as np
 
 
 def main():
     # Load
-    data_folder = "./out/"
+    data_folder = "../synthetic/synthetic_data/"
     F = np.load(os.path.join(data_folder, "F_synth.npy"))
     reg_coords = np.load(os.path.join(data_folder,"reg_coords_synth.npy"))
     volcano_inds = np.load(os.path.join(data_folder,"volcano_inds_synth.npy"))
