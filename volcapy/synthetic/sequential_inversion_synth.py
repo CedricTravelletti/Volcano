@@ -3,6 +3,9 @@
 The synthetic data should be located in ./out/.
 
 """
+import os
+import numpy as np
+
 
 def main():
     # Load
@@ -17,5 +20,12 @@ def main():
     # List of cells belonging to the volcano (same as cells_coords in the
     # Stromboli setup). Here we extract them from a regular grid.
     volcano_coords = reg_coords[volcano_inds]
+    print("Size of inversion grid: {} cells.".format(volcano_coords.shape[0]))
+    print("Number of datapoints: {}.".format(data_coords.shape[0]))
+    size = data_coords.shape[0]*volcano_coords.shape[0]*8 / 1e9
+    print("Size of Pushforward matrix: {} GB.".format(size))
 
     # Partition the data.
+
+if __name__ == "__main__":
+    main()

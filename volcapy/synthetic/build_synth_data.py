@@ -106,11 +106,13 @@ def main():
     # -------
     # We put measurements close to the surface by randomly selecting surface cells
     # and adding a small vertical shift.
-    n_data = 10000
-    data_inds = np.random.choice(surface_inds, n_data, replace=False)
+    n_data = 3000
+    # data_inds = np.random.choice(surface_inds, n_data, replace=False)
+    data_inds = surface_inds # Fill the whole surface with measurements.
     data_coords = reg_coords[data_inds]
-    
-    offset = 0.05 * res_z
+
+    # Add a 25 + 2.5m offset from centroid (so we are outside the cell).
+    offset = (0.5 + 0.05) * res_z 
     data_coords[:, 2] = data_coords[:, 2] + offset
     
     # Compute the forward operator.
@@ -120,7 +122,7 @@ def main():
     data_values = F @ irreg_density
     
     # Save
-    out_folder = "./out/"
+    out_folder = "./synthetic_data/"
     np.save(os.path.join(out_folder, "F_synth.npy"), F)
     np.save(os.path.join(out_folder,"reg_coords_synth.npy"), reg_coords)
     np.save(os.path.join(out_folder,"volcano_inds_synth.npy"), cone_inds)
@@ -129,7 +131,7 @@ def main():
     np.save(os.path.join(out_folder,"density_synth.npy"), density)
     
     # -------------------------------------------------------------------
-    # Save to VTK for alter visualiation with Paraview.
+    # Save to VTK for visualization with Paraview.
     # -------------------------------------------------------------------
     
     save_vtk(density, (nx, ny, nz), res_x, res_y, res_z,
