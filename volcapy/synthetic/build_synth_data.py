@@ -116,7 +116,9 @@ def main():
     data_coords[:, 2] = data_coords[:, 2] + offset
     
     # Compute the forward operator.
-    F = gd.compute_forward(volcano_coords, res_x, res_y, res_z, data_coords)
+    n_procs = 32
+    F = gd.compute_forward(volcano_coords, res_x, res_y, res_z, data_coords,
+            n_procs)
     
     # Generate artificial measurements.
     data_values = F @ irreg_density

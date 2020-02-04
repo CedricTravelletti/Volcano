@@ -83,7 +83,7 @@ def build_cube(nr_x, res_x, nr_y, res_y, nr_z, res_z):
         current_x += res_x
     return np.array(coords)
 
-def compute_forward(coords, res_x, res_y, res_z, data_coords):
+def compute_forward(coords, res_x, res_y, res_z, data_coords, n_procs):
     """ Compute the forward operator associated to a given topography/irregular
     grid. In the end, it only need a list of cells.
 
@@ -97,6 +97,8 @@ def compute_forward(coords, res_x, res_y, res_z, data_coords):
     res_z: float
     data_coords: ndarray
         List of data measurements coordinates, size n_data * n_dims.
+    n_procs: int
+        Number of processes to use to parallelize computation.
 
     Returns
     -------
@@ -143,7 +145,7 @@ def compute_forward(coords, res_x, res_y, res_z, data_coords):
     # (Because X_shape is not a shared variable,
     # it will be copied to each
     # child process.)
-    with Pool(processes=4, initializer=init_worker,
+    with Pool(processes=n_procs, initializer=init_worker,
             initargs=(F_shared_buffer, F_shape,
                     coords_shared_buffer, coords_shape,
                     data_coords_shared_buffer, data_shape, meta)) as pool:
