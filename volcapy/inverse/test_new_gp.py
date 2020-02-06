@@ -64,5 +64,9 @@ def main():
     # Same, but this time do not re-use pushforward.
     m_post_m, m_post_d = myGP.condition_model(G, y, data_std, concentrate=False)
 
+    myGP.train_fixed_lambda(lambda0, G, y, data_std,
+            n_epochs=1000, lr=0.1)
+         
+
 if __name__ == "__main__":
     main()
