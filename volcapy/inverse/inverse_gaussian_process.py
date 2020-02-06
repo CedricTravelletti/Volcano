@@ -127,9 +127,9 @@ class InverseGaussianProcess(torch.nn.Module):
                 raise ValueError("No GPU detected. Volcapy needs a GPU to run. Aborting.")
         self.output_device = output_device
 
-        self.m0 = torch.nn.Parameter(torch.tensor(sigma0)).to(output_device)
+        self.m0 = m0
         self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0)).to(output_device)
-        self.lambda0 = torch.nn.Parameter(torch.tensor(sigma0)).to(output_device)
+        self.lambda0 = lambda0
 
         self.cells_coords = cells_coords.to(output_device)
         self.n_model = cells_coords.shape[0]
@@ -207,9 +207,9 @@ class InverseGaussianProcess(torch.nn.Module):
 
         self.weights = self.inv_op_vector_mult(prior_misfit)
 
-        mu_post_d = mu0_d + torch.mm(self.sigma0**2 * self.K_d, self.weights)
+        m_post_d = mu0_d + torch.mm(self.sigma0**2 * self.K_d, self.weights)
 
-        return mu_post_d
+        return m_post_d
 
     def neg_log_likelihood(self, y):
         """ Computes the negative log-likelihood of the current state of the
@@ -283,7 +283,7 @@ class InverseGaussianProcess(torch.nn.Module):
         """
         # Conditioning model is just conditioning on data and then computing
         # posterior mean and (co-)variance on model side.
-        mu_post_d = condition_data(G, y, data_std, concentrate=concentrate,
+        m_post_d = condition_data(G, y, data_std, concentrate=concentrate,
                 is_precomp_pushfwd=is_precomp_pushfwd)
 
         # Posterior model mean.
@@ -292,14 +292,14 @@ class InverseGaussianProcess(torch.nn.Module):
             m0 = self.concentrate_m0()
         else: m0 = self.m0
 
-        mu_post_m = (
+        m_post_m = (
                 m0 * torch.ones((self.n_model, 1))
                 + (self.sigma0**2 * self.pushfwd @ self.weights))
 
-        return mu_post_m.detach(), mu_post_d
+        return m_post_m.detach(), m_post_d
 
-    def optimize(self, K_d, n_epochs, device, sigma0_init=None,
-            lr=0.007, NtV_crit=-1.0):
+    def train_fixed_lambda(lambda0, G, y, data_std,
+            n_epochs, lr=0.007):
         """ Given lambda0, optimize the two remaining hyperparams via MLE.
         Here, instead of giving lambda0, we give a (stripped) covariance
         matrix. Stripped means without sigma0.
@@ -323,20 +323,17 @@ class InverseGaussianProcess(torch.nn.Module):
         NtV_crit: (deprecated)
 
         """
-        # Send everything to the correct device.
-        self.to_device(device)
-        K_d = K_d.to(device)
-
-        # Initialize sigma0.
-        if sigma0_init is not None:
-            self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0_init)).to(device)
+        # Compute the pushforward once and for all, since it only depends on
+        # lambda0 and G.
+        self.lambda0 = lambda0
+        self.compute_pushfwd(G)
 
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
-            m_posterior_d = self.condition_data(K_d, self.sigma0,
-                    concentrate=True)
+            m_post_d = condition_data(G, y, data_std, concentrate=True,
+                is_precomp_pushfwd=True)
             log_likelihood = self.neg_log_likelihood()
 
             # Zero gradients, perform a backward pass,
@@ -348,16 +345,15 @@ class InverseGaussianProcess(torch.nn.Module):
             # Periodically print informations.
             if epoch % 100 == 0:
                 # Compute train error.
-                train_RMSE = self.train_RMSE()
+                train_RMSE = torch.sqrt(torch.mean(
+                        (y- m_post_d)**2))
                 self.logger.info("sigma0: {}".format(self.sigma0.item()))
                 self.logger.info("Log-likelihood: {}".format(log_likelihood.item()))
                 self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
         self.logger.info("Log-likelihood: {}".format(log_likelihood.item()))
         self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
-
-        # Send everything back to cpu.
-        self.to_device(cpu)
+        self.logger.info(self.parameters())
 
         return
 
