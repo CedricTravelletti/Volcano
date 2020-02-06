@@ -57,5 +57,12 @@ def main():
     # Run a forward pass.
     m_post_d = myGP.condition_data(G, y, data_std, concentrate=False)
 
+    # Try model conitioning.
+    m_post_m, m_post_d = myGP.condition_model(G, y, data_std, concentrate=False,
+            is_precomp_pushfwd=True)
+
+    # Same, but this time do not re-use pushforward.
+    m_post_m, m_post_d = myGP.condition_model(G, y, data_std, concentrate=False)
+
 if __name__ == "__main__":
     main()

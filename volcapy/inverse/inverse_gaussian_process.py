@@ -283,7 +283,7 @@ class InverseGaussianProcess(torch.nn.Module):
         """
         # Conditioning model is just conditioning on data and then computing
         # posterior mean and (co-)variance on model side.
-        mu_post_d = condition_data(G, y, data_std, concentrate=concentrate,
+        mu_post_d = self.condition_data(G, y, data_std, concentrate=concentrate,
                 is_precomp_pushfwd=is_precomp_pushfwd)
 
         # Posterior model mean.
