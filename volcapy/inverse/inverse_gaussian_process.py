@@ -125,13 +125,13 @@ class InverseGaussianProcess(torch.nn.Module):
                 output_device = torch.device('cuda:0')
             except:
                 raise ValueError("No GPU detected. Volcapy needs a GPU to run. Aborting.")
-        self.output_device = output_device
+        self.gpu0 = output_device
 
-        self.m0 = torch.nn.Parameter(torch.tensor(sigma0)).to(output_device)
-        self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0)).to(output_device)
-        self.lambda0 = torch.nn.Parameter(torch.tensor(sigma0)).to(output_device)
+        self.m0 = m0
+        self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0))
+        self.lambda0 = lambda0
 
-        self.cells_coords = cells_coords.to(output_device)
+        self.cells_coords = cells_coords.to(self.gpu0)
         self.n_model = cells_coords.shape[0]
 
         self.kernel = cov_module
@@ -156,7 +156,7 @@ class InverseGaussianProcess(torch.nn.Module):
         # Compute the compute_covariance_pushforward and data-side covariance matrix
         self.pushfwd = self.kernel.compute_cov_pushforward(
                 self.lambda0, G, self.cells_coords,
-                self.output_device, n_chunks=200, n_flush=50)
+                self.gpu0, n_chunks=200, n_flush=50)
         self.K_d = G @ self.pushfwd
 
     def condition_data(self, G, y, data_std, concentrate=False,
@@ -185,10 +185,16 @@ class InverseGaussianProcess(torch.nn.Module):
         -------
         mu_post_d: tensor
             Posterior mean data vector
+        nll: tensor
+            Negative log likelihood.
 
         """
         if not is_precomp_pushfwd:
             self.compute_pushfwd(G)
+
+        # Make column vector.
+        y = y.reshape(y.shape[0], 1).to(self.gpu0)
+        G = G.to(self.gpu0)
 
         # Get Cholesky factor (lower triangular) of the inversion operator.
         self.inv_op_L = self.get_inversion_op_cholesky(self.K_d, self.sigma0)
@@ -196,22 +202,25 @@ class InverseGaussianProcess(torch.nn.Module):
             
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
-            m0 = self.concentrate_m0()
+            m0 = self.concentrate_m0(G, y)
         else: m0 = self.m0
 
         # Prior mean (vector) on the data side.
-        mu0_d_stripped = torch.mm(G, torch.ones((self.n_model, 1),
-                dtype=torch.float32))
+        mu0_d_stripped = (G @ torch.ones((self.n_model, 1),
+                dtype=torch.float32, device=self.gpu0))
         mu0_d = m0 * mu0_d_stripped
         prior_misfit = y - mu0_d
 
         self.weights = self.inv_op_vector_mult(prior_misfit)
 
-        mu_post_d = mu0_d + torch.mm(self.sigma0**2 * self.K_d, self.weights)
+        m_post_d = mu0_d + torch.mm(self.sigma0**2 * self.K_d, self.weights)
 
-        return mu_post_d
+        print(self.weights.device)
+        nll = self.neg_log_likelihood(y, G, m0)
 
-    def neg_log_likelihood(self, y):
+        return m_post_d, nll
+
+    def neg_log_likelihood(self, y, G, m0):
         """ Computes the negative log-likelihood of the current state of the
         model.
         Note that this function should be called AFTER having run a
@@ -230,13 +239,17 @@ class InverseGaussianProcess(torch.nn.Module):
         # WARNING!!! determinant is not linear! Taking constants outside adds
         # power to them.
         log_det = torch.logdet(self.R)
+
+        mu0_d_stripped = torch.mm(G, torch.ones((self.n_model, 1),
+                dtype=torch.float32, device=self.gpu0))
+        mu0_d = m0 * mu0_d_stripped
         prior_misfit = y - mu0_d
-        weights = self.inv_op_vector_mult(prior_misfit)
-        nll = log_det + torch.mm(prior_misfit.t(), weights)
+
+        nll = log_det + torch.mm(prior_misfit.t(), self.weights)
 
         return nll
 
-    def concentrate_m0(self, y):
+    def concentrate_m0(self, G, y):
         """ Compute m0 (prior mean parameter) by MLE via concentration.
 
         Note that the inversion operator should have been updated first.
@@ -244,7 +257,7 @@ class InverseGaussianProcess(torch.nn.Module):
         """
         # Prior mean (vector) on the data side.
         mu0_d_stripped = torch.mm(G, torch.ones((self.n_model, 1),
-                dtype=torch.float32))
+                dtype=torch.float32, device=self.gpu0))
         # Compute R^(-1) * G * I_m.
         tmp = self.inv_op_vector_mult(mu0_d_stripped)
         conc_m0 = (y.t() @ tmp) / (mu0_d_stripped.t() @ tmp)
@@ -281,25 +294,29 @@ class InverseGaussianProcess(torch.nn.Module):
             Posterior mean data vector
 
         """
+        # Make column vector.
+        y = y.reshape(y.shape[0], 1).to(self.gpu0)
+        G = G.to(self.gpu0)
+
         # Conditioning model is just conditioning on data and then computing
         # posterior mean and (co-)variance on model side.
-        mu_post_d = self.condition_data(G, y, data_std, concentrate=concentrate,
+        m_post_d = self.condition_data(G, y, data_std, concentrate=concentrate,
                 is_precomp_pushfwd=is_precomp_pushfwd)
 
         # Posterior model mean.
         # Can re-use the m0 and weights computed by condition_data.
         if concentrate:
-            m0 = self.concentrate_m0()
+            m0 = self.concentrate_m0(G, y)
         else: m0 = self.m0
 
-        mu_post_m = (
-                m0 * torch.ones((self.n_model, 1))
+        m_post_m = (
+                m0 * torch.ones((self.n_model, 1), device=self.gpu0)
                 + (self.sigma0**2 * self.pushfwd @ self.weights))
 
-        return mu_post_m.detach(), mu_post_d
+        return m_post_m.detach(), m_post_d
 
-    def optimize(self, K_d, n_epochs, device, sigma0_init=None,
-            lr=0.007, NtV_crit=-1.0):
+    def train_fixed_lambda(self, lambda0, G, y, data_std,
+            n_epochs, lr=0.007):
         """ Given lambda0, optimize the two remaining hyperparams via MLE.
         Here, instead of giving lambda0, we give a (stripped) covariance
         matrix. Stripped means without sigma0.
@@ -320,44 +337,42 @@ class InverseGaussianProcess(torch.nn.Module):
             previous optimization run).
         lr: float
             Learning rate.
-        NtV_crit: (deprecated)
 
         """
-        # Send everything to the correct device.
-        self.to_device(device)
-        K_d = K_d.to(device)
+        # Compute the pushforward once and for all, since it only depends on
+        # lambda0 and G.
+        self.lambda0 = lambda0
+        self.compute_pushfwd(G)
 
-        # Initialize sigma0.
-        if sigma0_init is not None:
-            self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0_init)).to(device)
+        # Make column vector.
+        y = y.reshape(y.shape[0], 1).to(self.gpu0)
+        G = G.to(self.gpu0)
 
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         for epoch in range(n_epochs):
             # Forward pass: Compute predicted y by passing
             # x to the model
-            m_posterior_d = self.condition_data(K_d, self.sigma0,
-                    concentrate=True)
-            log_likelihood = self.neg_log_likelihood()
+            m_post_d, nll = self.condition_data(G, y, data_std, concentrate=True,
+                is_precomp_pushfwd=True)
 
             # Zero gradients, perform a backward pass,
             # and update the weights.
             optimizer.zero_grad()
-            log_likelihood.backward(retain_graph=True)
+            nll.backward(retain_graph=True)
             optimizer.step()
 
             # Periodically print informations.
             if epoch % 100 == 0:
                 # Compute train error.
-                train_RMSE = self.train_RMSE()
+                train_RMSE = torch.sqrt(torch.mean(
+                        (y- m_post_d)**2))
                 self.logger.info("sigma0: {}".format(self.sigma0.item()))
                 self.logger.info("Log-likelihood: {}".format(log_likelihood.item()))
                 self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
         self.logger.info("Log-likelihood: {}".format(log_likelihood.item()))
         self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
-
-        # Send everything back to cpu.
-        self.to_device(cpu)
+        self.logger.info(self.parameters())
 
         return
 
@@ -383,7 +398,7 @@ class InverseGaussianProcess(torch.nn.Module):
         """
         data_std_orig = data_std
         n_data = K_d.shape[0]
-        data_ones = torch.eye(n_data, dtype=torch.float32)
+        data_ones = torch.eye(n_data, dtype=torch.float32, device=self.gpu0)
         self.R = (data_std**2) * data_ones + self.sigma0**2 * K_d
 
         # Check condition number if debug mode on.

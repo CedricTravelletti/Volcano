@@ -87,7 +87,7 @@ def compute_cov_pushforward(lambda0, F, cells_coords, device, n_chunks=200,
     end = timer()
     print((end - start)/60.0)
 
-    return tot.cpu()
+    return tot
 
 def compute_cov(lambda0, cells_coords, i, j):
     """ Compute the covariance between two points.
@@ -188,4 +188,4 @@ def compute_full_cov(lambda0, cells_coords, device, n_chunks=200,
         torch.cuda.synchronize()
         torch.cuda.empty_cache()
 
-    return tot.cpu()
+    return tot
