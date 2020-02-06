@@ -96,7 +96,8 @@ class InverseGaussianProcess(torch.nn.Module):
         An instance of logging.Logger, used to output training progression.
 
     """
-    def __init__(self, m0, sigma0, lambda0, cov_module,
+    def __init__(self, m0, sigma0, lambda0,
+            cells_coords, cov_module,
             output_device=None,
             logger=None):
         """
@@ -116,14 +117,14 @@ class InverseGaussianProcess(torch.nn.Module):
         logger: Logger
 
         """
-        super(GaussianProcess, self).__init__()
+        super(InverseGaussianProcess, self).__init__()
         
         # Get GPUS.
-        if output_device = None:
+        if output_device is None:
             try:
                 output_device = torch.device('cuda:0')
-            raise:
-                ValueError("No GPU detected. Volcapy needs a GPU to run. Aborting.")
+            except:
+                raise ValueError("No GPU detected. Volcapy needs a GPU to run. Aborting.")
         self.output_device = output_device
 
         self.m0 = torch.nn.Parameter(torch.tensor(sigma0)).to(output_device)
@@ -153,10 +154,10 @@ class InverseGaussianProcess(torch.nn.Module):
 
         """
         # Compute the compute_covariance_pushforward and data-side covariance matrix
-        self.cov_pushfwd = self.kernel.compute_cov_pushforward(
+        self.pushfwd = self.kernel.compute_cov_pushforward(
                 self.lambda0, G, self.cells_coords,
                 self.output_device, n_chunks=200, n_flush=50)
-        self.K_d = torch.mm(G, cov_pushfwd)
+        self.K_d = torch.mm(G, self.pushfwd)
 
     def condition_data(self, G, y, data_std, concentrate=False):
         """ Given a bunch of measurement, condition model on the data side.
@@ -182,7 +183,7 @@ class InverseGaussianProcess(torch.nn.Module):
             Posterior mean data vector
 
         """
-        self.pushfwd = self.compute_pushfwd(self, G)
+        self.compute_pushfwd(G)
         self.K_d = G @ self.pushfwd
 
         # Get Cholesky factor (lower triangular) of the inversion operator.
@@ -196,12 +197,12 @@ class InverseGaussianProcess(torch.nn.Module):
         # Prior mean (vector) on the data side.
         mu0_d_stripped = torch.mm(G, torch.ones((self.n_model, 1),
                 dtype=torch.float32))
-        mu0_d = m0 * mu0_d_stripped
+        mu0_d = self.m0 * mu0_d_stripped
         prior_misfit = y - mu0_d
 
         self.weights = self.inv_op_vector_mult(prior_misfit)
 
-        mu_post_d = self.mu0_d + torch.mm(self.sigma0**2 * self.K_d, self.weights)
+        mu_post_d = mu0_d + torch.mm(self.sigma0**2 * self.K_d, self.weights)
 
         return mu_post_d
 
@@ -235,44 +236,6 @@ class InverseGaussianProcess(torch.nn.Module):
         conc_m0 = torch.mm(self.d_obs.t(), tmp) / torch.mm(self.mu0_d_stripped.t(), tmp)
 
         return conc_m0
-
-    def condition_data(self, K_d, sigma0, m0=0.1, concentrate=False):
-        """ Condition model on the data side.
-
-        Parameters
-        ----------
-        K_d: tensor
-            (stripped) Covariance matrix on the data side.
-        sigma0: float
-            Standard deviation parameter for the kernel.
-        m0: float
-            Prior mean parameter.
-        concentrate: bool
-            If true, then will compute m0 by MLE via concentration of the
-            log-likelihood.
-
-        Returns
-        -------
-        mu_post_d: tensor
-            Posterior mean data vector
-
-        """
-        # Get Cholesky factor (lower triangular) of the inversion operator.
-        self.inv_op_L = self.get_inversion_op_cholesky(K_d, sigma0)
-        self.inversion_operator = torch.cholesky_inverse(self.inv_op_L)
-            
-        if concentrate:
-            # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
-            self.m0 = self.concentrate_m0()
-
-        self.mu0_d = self.m0 * self.mu0_d_stripped
-        self. prior_misfit = self.d_obs - self.mu0_d
-
-        self.weights = self.inv_op_vector_mult(self.prior_misfit)
-
-        self.mu_post_d = self.mu0_d + torch.mm(sigma0**2 * K_d, self.weights)
-
-        return self.mu_post_d
 
     def condition_model(self, cov_pushfwd, F, sigma0, m0=0.1,
             concentrate=False, NtV_crit=-1.0):

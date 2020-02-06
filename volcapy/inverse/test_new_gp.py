@@ -7,6 +7,7 @@ from volcapy.inverse.inverse_gaussian_process import InverseGaussianProcess
 from volcapy.compatibility_layer import get_regularization_cells_inds
 
 import numpy as np
+import torch
 import os
 
 
@@ -48,7 +49,8 @@ def main():
     
     # Create the GP model.
     import volcapy.covariance.matern32 as kernel
-    myGP = InverseGaussianProcess(m0, sigma0, lambda0, kernel,
+    myGP = InverseGaussianProcess(m0, sigma0, lambda0,
+            cells_coords, kernel,
             logger=logger)
     myGP.cuda() # See if still necessary.
             
