@@ -12,6 +12,9 @@ import os
 
 
 def main():
+    # Get GPUs.
+    gpu0 = torch.device('cuda:0')
+
     # Set up logging.
     import logging
     logging.basicConfig(level=logging.INFO)
@@ -36,16 +39,18 @@ def main():
     cells_coords = np.delete(inverseProblem.cells_coords, inds_to_delete, axis=0)
     
     G = torch.as_tensor(G).detach()
+    G = G.to(gpu0)
     cells_coords = torch.as_tensor(cells_coords).detach()
 
     data_std = 0.1
     y = torch.as_tensor(inverseProblem.data_values)
+    y = y.reshape(y.shape[0], 1).to(gpu0)
     del(inverseProblem)
     # ----------------------------------------------------------------------------#
     # ----------------------------------------------------------------------------#
 
     # Hyperparams.
-    m0, sigma0, lambda0 = 1800.0, 200.0, 200.0
+    m0, sigma0, lambda0 = 1800.0, 400.0, 200.0
     
     # Create the GP model.
     import volcapy.covariance.matern32 as kernel
@@ -65,7 +70,7 @@ def main():
     m_post_m, m_post_d = myGP.condition_model(G, y, data_std, concentrate=False)
 
     myGP.train_fixed_lambda(lambda0, G, y, data_std,
-            n_epochs=1000, lr=0.1)
+            n_epochs=5000, lr=0.05)
          
 
 if __name__ == "__main__":
