@@ -77,7 +77,7 @@ def main():
 
     myGP.train(lambda0s, G, y, data_std,
             out_path,
-            n_epochs=5000, lr=0.05)
+            n_epochs=6000, lr=0.07)
     
 
 if __name__ == "__main__":

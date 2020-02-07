@@ -376,7 +376,7 @@ class InverseGaussianProcess(torch.nn.Module):
         # Make column vector.
 
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
-        for epoch in range(n_epochs):
+        for epoch in range(n_epochs + 1):
             # Forward pass: Compute predicted y by passing
             # x to the model
             m_post_d, nll = self.condition_data(G, y, data_std, concentrate=True,
@@ -399,7 +399,7 @@ class InverseGaussianProcess(torch.nn.Module):
                 self.logger.info("Log-likelihood: {}".format(nll.item()))
                 self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
-        return (self.sigma0.item(), nll.item() train_RMSE.item())
+        return (self.sigma0.item(), nll.item(), train_RMSE.item())
 
     def train(self, lambda0s, G, y, data_std,
             out_path, device=None,
