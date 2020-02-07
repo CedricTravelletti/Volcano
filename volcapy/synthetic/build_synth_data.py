@@ -110,26 +110,29 @@ def main():
     # data_inds = np.random.choice(surface_inds, n_data, replace=False)
     data_inds = surface_inds # Fill the whole surface with measurements.
     data_coords = reg_coords[data_inds]
+    print("Nbr of data points: {}.".format(data_inds.shape[0]))
 
     # Add a 25 + 2.5m offset from centroid (so we are outside the cell).
     offset = (0.5 + 0.05) * res_z 
     data_coords[:, 2] = data_coords[:, 2] + offset
     
     # Compute the forward operator.
+    """
     n_procs = 32
     F = gd.compute_forward(volcano_coords, res_x, res_y, res_z, data_coords,
             n_procs)
     
     # Generate artificial measurements.
     data_values = F @ irreg_density
+    """
     
     # Save
     out_folder = "./synthetic_data/"
-    np.save(os.path.join(out_folder, "F_synth.npy"), F)
+    # np.save(os.path.join(out_folder, "F_synth.npy"), F)
     np.save(os.path.join(out_folder,"reg_coords_synth.npy"), reg_coords)
     np.save(os.path.join(out_folder,"volcano_inds_synth.npy"), cone_inds)
     np.save(os.path.join(out_folder,"data_coords_synth.npy"), data_coords)
-    np.save(os.path.join(out_folder,"data_values_synth.npy"), data_values)
+    # np.save(os.path.join(out_folder,"data_values_synth.npy"), data_values)
     np.save(os.path.join(out_folder,"density_synth.npy"), density)
     
     # -------------------------------------------------------------------
@@ -140,10 +143,19 @@ def main():
             os.path.join(out_folder, "density_synth.mhd"))
     
     # Also save a grid with location of the measurements.
-    data_sites_reg = np.zeros(reg_coords.shape[0])
-    data_sites_reg[data_inds] = 1
+    data_sites_reg = np.ones(reg_coords.shape[0])
+    data_sites_reg[data_inds] = 2
+    np.save(os.path.join(out_folder,"data_sites_reg.npy"), data_sites_reg)
+
     save_vtk(data_sites_reg, (nx, ny, nz), res_x, res_y, res_z,
             os.path.join(out_folder, "data_sites_synth.mhd"))
+
+    surface = np.ones((reg_coords.shape[0],), dtype=np.float32)
+    surface[cone_inds] = 2
+    surface[surface_inds] = 3
+
+    save_vtk(surface, (nx, ny, nz), res_x, res_y, res_z,
+            os.path.join(out_folder, "surface.mhd"))
 
 
 if __name__ == "__main__":
