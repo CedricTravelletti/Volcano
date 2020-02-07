@@ -11,6 +11,9 @@ import torch
 import os
 
 
+out_path = "./train_results.pkl"
+
+
 def main():
     # Get GPUs.
     gpu0 = torch.device('cuda:0')
@@ -69,9 +72,13 @@ def main():
     # Same, but this time do not re-use pushforward.
     m_post_m, m_post_d = myGP.condition_model(G, y, data_std, concentrate=False)
 
-    myGP.train_fixed_lambda(lambda0, G, y, data_std,
+    lambda0_start, lambda0_stop, lambda0_step = 20, 700, 20
+    lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
+
+    myGP.train(lambda0s, G, y, data_std,
+            out_path,
             n_epochs=5000, lr=0.05)
-         
+    
 
 if __name__ == "__main__":
     main()

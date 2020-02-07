@@ -69,6 +69,8 @@ update the following attributes:
 """
 import numpy as np
 import torch
+import pandas as pd
+from timeit import default_timer as timer
 
 
 class InverseGaussianProcess(torch.nn.Module):
@@ -359,6 +361,10 @@ class InverseGaussianProcess(torch.nn.Module):
         lr: float
             Learning rate.
 
+        Returns
+        -------
+        (sigma0, nll, train_RMSE)
+
         """
         if device is None:
             device = torch.device('cuda:0')
@@ -383,19 +389,72 @@ class InverseGaussianProcess(torch.nn.Module):
             optimizer.step()
 
             # Periodically print informations.
-            if epoch % 500 == 0:
+            if epoch % 1000 == 0:
                 # Compute train error.
                 train_RMSE = torch.sqrt(torch.mean(
                         (y - m_post_d)**2))
+                self.logger.info("Epoch: {}/{}".format(epoch, n_epochs))
+                self.logger.info("lambda0: {}".format(lambda0))
                 self.logger.info("sigma0: {}".format(self.sigma0.item()))
                 self.logger.info("Log-likelihood: {}".format(nll.item()))
                 self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
-        self.logger.info("Log-likelihood: {}".format(nll.item()))
-        self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
-        self.logger.info(self.parameters())
+        return (self.sigma0.item(), nll.item() train_RMSE.item())
 
-        return
+    def train(self, lambda0s, G, y, data_std,
+            out_path, device=None,
+            n_epochs=5000, lr=0.01):
+        """ Given lambda0, optimize the two remaining hyperparams via MLE.
+        Here, instead of giving lambda0, we give a (stripped) covariance
+        matrix. Stripped means without sigma0.
+
+        The user can choose between CPU and GPU.
+
+        Parameters
+        ----------
+        lambda0s: Iterable
+            List of prior lengthscale for which to optimize the two other hyperparams.
+        G: tensor
+            Measurement matrix
+        y: tensor
+            Observed data. Must have shape (n_data, 1)
+        data_std: flot
+            Data noise standard deviation.
+        out_path: string
+            Path for training results.
+        device: torch.device
+            Device on which to perform the training. Should be the same as the
+            one the inputs are located on.
+            If None, defaults to gpu0.
+        n_epochs: int
+            Number of training epochs.
+        lr: float
+            Learning rate.
+
+        Returns
+        -------
+        (sigma0, nll, train_RMSE)
+
+        """
+        start = timer()
+        if device is None:
+            device = torch.device('cuda:0')
+
+        # Store results in Pandas DataFrame.
+        df = pd.DataFrame(columns=['lambda0', 'sigma0', 'nll', 'train_RMSE'])
+
+        for lambda0 in lambda0s:
+            (sigma0, nll, train_RMSE) = self.train_fixed_lambda(
+                    lambda0, G, y, data_std,
+                    device=device, n_epochs=n_epochs, lr=lr)
+            df = df.append({'lambda0': lambda0, 'sigma0': sigma0,
+                    'nll': nll, 'train_RMSE': train_RMSE}, ignore_index=True)
+            # Save after each lambda0.
+            df.to_pickle(out_path)
+
+        end = timer()
+        print("Training done in {} minutes.".format((end-start)/60))
+
 
     def get_inversion_op_cholesky(self, K_d, data_std):
         """ Compute the Cholesky decomposition of the inverse of the inversion operator.
