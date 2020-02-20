@@ -195,6 +195,9 @@ class InverseGaussianProcess(torch.nn.Module):
             Posterior mean data vector
         nll: tensor
             Negative log likelihood.
+        float
+            When noise has to be increased to make matrices invertible, this
+            gives the new value of the noise standard deviation.
 
         """
         if device is None:
@@ -203,27 +206,26 @@ class InverseGaussianProcess(torch.nn.Module):
             self.compute_pushfwd(G)
 
         # Get Cholesky factor (lower triangular) of the inversion operator.
-        self.inv_op_L = self.get_inversion_op_cholesky(self.K_d, data_std)
+        self.inv_op_L, data_std = self.get_inversion_op_cholesky(self.K_d, data_std)
         self.inversion_operator = torch.cholesky_inverse(self.inv_op_L)
             
         if concentrate:
             # Determine m0 (on the model side) from sigma0 by concentration of the Ll.
-            m0 = self.concentrate_m0(G, y)
-        else: m0 = self.m0
+            self.m0 = self.concentrate_m0(G, y)
 
         # Prior mean (vector) on the data side.
         mu0_d_stripped = (G @ torch.ones((self.n_model, 1),
                 dtype=torch.float32, device=device))
-        mu0_d = m0 * mu0_d_stripped
+        mu0_d = self.m0 * mu0_d_stripped
         prior_misfit = y - mu0_d
 
         self.weights = self.inv_op_vector_mult(prior_misfit)
 
         m_post_d = mu0_d + torch.mm(self.sigma0**2 * self.K_d, self.weights)
 
-        nll = self.neg_log_likelihood(y, G, m0)
+        nll = self.neg_log_likelihood(y, G, self.m0)
 
-        return m_post_d, nll
+        return m_post_d, nll, data_std
 
     def neg_log_likelihood(self, y, G, m0, device=None):
         """ Computes the negative log-likelihood of the current state of the
@@ -318,7 +320,7 @@ class InverseGaussianProcess(torch.nn.Module):
             device = torch.device('cuda:0')
         # Conditioning model is just conditioning on data and then computing
         # posterior mean and (co-)variance on model side.
-        m_post_d = self.condition_data(G, y, data_std, concentrate=concentrate,
+        m_post_d, nll, data_std = self.condition_data(G, y, data_std, concentrate=concentrate,
                 is_precomp_pushfwd=is_precomp_pushfwd)
 
         # Posterior model mean.
@@ -379,7 +381,7 @@ class InverseGaussianProcess(torch.nn.Module):
         for epoch in range(n_epochs + 1):
             # Forward pass: Compute predicted y by passing
             # x to the model
-            m_post_d, nll = self.condition_data(G, y, data_std, concentrate=True,
+            m_post_d, nll, data_std = self.condition_data(G, y, data_std, concentrate=True,
                 is_precomp_pushfwd=True, device=device)
 
             # Zero gradients, perform a backward pass,
@@ -399,7 +401,7 @@ class InverseGaussianProcess(torch.nn.Module):
                 self.logger.info("Log-likelihood: {}".format(nll.item()))
                 self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
-        return (self.sigma0.item(), nll.item(), train_RMSE.item())
+        return (self.sigma0.item(), self.m0.item(), nll.item(), train_RMSE.item())
 
     def train(self, lambda0s, G, y, data_std,
             out_path, device=None,
@@ -441,13 +443,14 @@ class InverseGaussianProcess(torch.nn.Module):
             device = torch.device('cuda:0')
 
         # Store results in Pandas DataFrame.
-        df = pd.DataFrame(columns=['lambda0', 'sigma0', 'nll', 'train_RMSE'])
+        df = pd.DataFrame(columns=['lambda0', 'sigma0', 'm0', 'nll', 'train_RMSE'])
 
         for lambda0 in lambda0s:
-            (sigma0, nll, train_RMSE) = self.train_fixed_lambda(
+            (sigma0, m0, nll, train_RMSE) = self.train_fixed_lambda(
                     lambda0, G, y, data_std,
                     device=device, n_epochs=n_epochs, lr=lr)
             df = df.append({'lambda0': lambda0, 'sigma0': sigma0,
+                    'm0': m0,
                     'nll': nll, 'train_RMSE': train_RMSE}, ignore_index=True)
             # Save after each lambda0.
             df.to_pickle(out_path)
@@ -474,7 +477,9 @@ class InverseGaussianProcess(torch.nn.Module):
         -------
         Tensor
             L such that R = LL^t. L is lower triangular.
-
+        float
+            When noise has to be increased to make matrices invertible, this
+            gives the new value of the noise standard deviation.
         """
         data_std_orig = data_std
         n_data = K_d.shape[0]
@@ -499,11 +504,11 @@ class InverseGaussianProcess(torch.nn.Module):
                 self.logger.info("Increasing data std from original {} to {} and retrying.".format(
                         data_std_orig, data_std))
             else:
-                return L
+                return L, data_std
         # If didnt manage to invert.
         raise ValueError(
             "Impossible to invert matrix, even at noise std {}".format(self.data_std))
-        return -1
+        return -1, data_std
     
     def inv_op_vector_mult(self, x):
         """ Multiply a vector by the inversion operator, using Cholesky

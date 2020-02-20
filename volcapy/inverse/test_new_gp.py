@@ -63,7 +63,7 @@ def main():
     myGP.cuda() # See if still necessary.
             
     # Run a forward pass.
-    m_post_d = myGP.condition_data(G, y, data_std, concentrate=False)
+    m_post_d, nll, data_std = myGP.condition_data(G, y, data_std, concentrate=False)
 
     # Try model conitioning.
     m_post_m, m_post_d = myGP.condition_model(G, y, data_std, concentrate=False,
