@@ -133,7 +133,7 @@ class InverseGaussianProcess(torch.nn.Module):
         self.sigma0 = torch.nn.Parameter(torch.tensor(sigma0))
         self.lambda0 = lambda0
 
-        self.cells_coords = cells_coords.to(self.gpu0)
+        self.cells_coords = cells_coords
         self.n_model = cells_coords.shape[0]
 
         self.kernel = cov_module
@@ -156,6 +156,7 @@ class InverseGaussianProcess(torch.nn.Module):
 
         """
         if not G.device == self.gpu0:
+            logger.info("Moving to GPU.")
             G = G.to(self.gpu0)
         # Compute the compute_covariance_pushforward and data-side covariance matrix
         self.pushfwd = self.kernel.compute_cov_pushforward(
@@ -331,7 +332,7 @@ class InverseGaussianProcess(torch.nn.Module):
                 m0 * torch.ones((self.n_model, 1), device=device)
                 + (self.sigma0**2 * self.pushfwd @ self.weights))
 
-        return m_post_m.detach(), m_post_d
+        return m_post_m, m_post_d
 
     def train_fixed_lambda(self, lambda0, G, y, data_std,
             device=None,
@@ -389,7 +390,7 @@ class InverseGaussianProcess(torch.nn.Module):
             optimizer.step()
 
             # Periodically print informations.
-            if epoch % 1000 == 0:
+            if epoch % 100 == 0:
                 # Compute train error.
                 train_RMSE = torch.sqrt(torch.mean(
                         (y - m_post_d)**2))

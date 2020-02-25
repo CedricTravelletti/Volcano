@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import os
 
+torch.set_num_threads(1)
 
 out_path = "./train_results.pkl"
 
@@ -41,9 +42,9 @@ def main():
     G = np.delete(inverseProblem.forward, inds_to_delete, axis=1)
     cells_coords = np.delete(inverseProblem.cells_coords, inds_to_delete, axis=0)
     
-    G = torch.as_tensor(G).detach()
+    G = torch.as_tensor(G)
     G = G.to(gpu0)
-    cells_coords = torch.as_tensor(cells_coords).detach()
+    cells_coords = torch.as_tensor(cells_coords).to(gpu0)
 
     data_std = 0.1
     y = torch.as_tensor(inverseProblem.data_values)
@@ -53,7 +54,7 @@ def main():
     # ----------------------------------------------------------------------------#
 
     # Hyperparams.
-    m0, sigma0, lambda0 = 1800.0, 400.0, 200.0
+    m0, sigma0, lambda0 = 1800.0, 775.0, 700.0
     
     # Create the GP model.
     import volcapy.covariance.matern32 as kernel
@@ -62,6 +63,7 @@ def main():
             logger=logger)
     myGP.cuda() # See if still necessary.
             
+    """
     # Run a forward pass.
     m_post_d = myGP.condition_data(G, y, data_std, concentrate=False)
 
@@ -72,12 +74,14 @@ def main():
     # Same, but this time do not re-use pushforward.
     m_post_m, m_post_d = myGP.condition_model(G, y, data_std, concentrate=False)
 
-    lambda0_start, lambda0_stop, lambda0_step = 20, 700, 20
+    """
+
+    lambda0_start, lambda0_stop, lambda0_step = 700, 1200, 20
     lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 
     myGP.train(lambda0s, G, y, data_std,
             out_path,
-            n_epochs=6000, lr=0.07)
+            n_epochs=3000, lr=0.2)
     
 
 if __name__ == "__main__":
