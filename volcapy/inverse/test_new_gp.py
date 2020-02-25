@@ -39,8 +39,13 @@ def main():
     inds_to_delete = list(set(
         np.concatenate([reg_cells_inds, bottom_inds], axis=0)))
     
-    G = np.delete(inverseProblem.forward, inds_to_delete, axis=1)
-    cells_coords = np.delete(inverseProblem.cells_coords, inds_to_delete, axis=0)
+    G = inverseProblem.forward
+    cells_coords = inverseProblem.cells_coords
+
+    """
+    G = np.delete(G, inds_to_delete, axis=1)
+    cells_coords = np.delete(cells_coords, inds_to_delete, axis=0)
+    """
     
     G = torch.as_tensor(G)
     G = G.to(gpu0)
@@ -54,7 +59,7 @@ def main():
     # ----------------------------------------------------------------------------#
 
     # Hyperparams.
-    m0, sigma0, lambda0 = 1800.0, 775.0, 700.0
+    m0, sigma0, lambda0 = 1800.0, 775.0, 20.0
     
     # Create the GP model.
     import volcapy.covariance.matern32 as kernel
@@ -76,7 +81,7 @@ def main():
 
     """
 
-    lambda0_start, lambda0_stop, lambda0_step = 700, 1200, 20
+    lambda0_start, lambda0_stop, lambda0_step = 20, 700, 20
     lambda0s = np.arange(lambda0_start, lambda0_stop + 0.1, lambda0_step)
 
     myGP.train(lambda0s, G, y, data_std,
