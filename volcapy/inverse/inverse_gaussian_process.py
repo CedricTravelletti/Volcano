@@ -399,6 +399,7 @@ class InverseGaussianProcess(torch.nn.Module):
                 self.logger.info("Epoch: {}/{}".format(epoch, n_epochs))
                 self.logger.info("lambda0: {}".format(lambda0))
                 self.logger.info("sigma0: {}".format(self.sigma0.item()))
+                self.logger.info("m0: {}".format(self.m0.item()))
                 self.logger.info("Log-likelihood: {}".format(nll.item()))
                 self.logger.info("RMSE train error: {}".format(train_RMSE.item()))
 
