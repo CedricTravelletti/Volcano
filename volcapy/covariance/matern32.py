@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from multiprocessing import Pool, RawArray
 
 # General torch settings and devices.
 torch.set_num_threads(8)
@@ -189,3 +190,87 @@ def compute_full_cov(lambda0, cells_coords, device, n_chunks=200,
         torch.cuda.empty_cache()
 
     return tot
+
+def compute_pushfwd_chunk(x, cells_coords, inv_lambda_2):
+    """ Compute one chunk of the covariance pushforward.
+
+    Returns
+    -------
+    A chunk of size x.shape[0], n_model of the covariance matrix.
+
+    """
+    # Put everything in Torch.
+    x = torch.from_numpy(x).double()
+    cells_coords = torch.from_numpy(cells_coords).double()
+    n_model, n_dims = cells_coords.shape
+
+    d = torch.sqrt(torch.pow(
+        x.unsqueeze(1).expand(x.shape[0], n_model, n_dims)
+        - cells_coords.unsqueeze(0).expand(x.shape[0], n_model, n_dims)
+        , 2).sum(2))
+
+    pushfwd_chunk = torch.mul(torch.ones(d.shape, dtype=torch.double) - inv_lambda_2 * d,
+                    torch.exp(inv_lambda_2 * d))
+    return pushfwd_chunk
+
+def compute_cov_cpu(lambda0, coords, n_procs):
+    """ Massively parallelized version (on CPU)
+
+    """
+    inv_lambda_2 = - np.sqrt(3) / lambda0
+
+    n_cells = coords.shape[0]
+    n_dim_coords = coords.shape[1]
+    cov_shape = (n_cells, n_cells)
+    coords_shape = (n_cells, n_dim_coords)
+
+    # ----------------------------
+    # Prepare the parallelization.
+    # ----------------------------
+    cov_shared_buffer = RawArray('d', n_cells * n_cells)
+    # Wrap as a numpy array so we can easily manipulates its data.
+    cov_np = np.frombuffer(cov_shared_buffer).reshape(cov_shape)
+    # Copy data to our shared array.
+    np.copyto(cov_np, np.zeros(cov_shape))
+
+    coords_shared_buffer = RawArray('d', n_cells * n_dim_coords)
+    # Wrap as a numpy array so we can easily manipulates its data.
+    coords_np = np.frombuffer(coords_shared_buffer).reshape(coords_shape)
+    # Copy data to our shared array.
+    np.copyto(coords_np, coords)
+
+    # Start the process pool and do the computation.
+    # Here we pass X and X_shape to the initializer of
+    # each worker.
+    # (Because X_shape is not a shared variable,
+    # it will be copied to each
+    # child process.)
+    with Pool(processes=n_procs, initializer=init_worker,
+            initargs=(cov_shared_buffer, cov_shape,
+                    coords_shared_buffer, coords_shape,
+                    inv_lambda_2)) as pool:
+        result = pool.map(_worker_func, range(coords_shape[0]))
+
+    return cov_np
+
+# A global dictionary storing the variables passed from the initializer.
+var_dict = {}
+def init_worker(cov, cov_shape, coords, coords_shape, inv_lambda_2):
+    var_dict['cov'] = cov
+    var_dict['cov_shape'] = cov_shape
+    var_dict['coords'] = coords
+    var_dict['coords_shape'] = coords_shape
+    var_dict['inv_lambda_2'] = inv_lambda_2
+
+def _worker_func(i):
+    cov_np = np.frombuffer(var_dict['cov']).reshape(var_dict['cov_shape'])
+    coords_np = np.frombuffer(var_dict['coords']).reshape(var_dict['coords_shape'])
+
+    # Still need to have two axes.
+    cell = coords_np[i, :][None]
+
+    # Compute one line of the pushfwd.
+    tmp = compute_pushfwd_chunk(cell, coords_np, var_dict['inv_lambda_2'])
+    cov_np[i, :] = tmp
+
+    return None
