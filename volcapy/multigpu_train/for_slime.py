@@ -1,5 +1,5 @@
-""" This script aims at providing a fully gpytorch-based implementation of
-training gaussian process models for inverse problems.
+""" Compute K_tilde^(-1) with conjugate gradients.
+Still need preconditioner.
 
 JUST FOR EASY USE WITH SLIME.
 
