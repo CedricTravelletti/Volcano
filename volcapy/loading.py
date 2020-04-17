@@ -17,7 +17,7 @@ def load_niklas(path):
 
     Returns
     -------
-    Dict[F, dsm, coords]
+    Dict[F, d, dsm, coords, data_coords]
 
     """
     dataset = h5py.File(path, 'r')
