@@ -29,7 +29,7 @@ def main():
         data_values_synth.npy:
             (Computed) value of the data measurements.
         density_synth.npy:
-            The matter density inside the synthetic volcano. Note tha this is on the regular grid, with zeros for cells outside the volcano.
+            The matter density inside the synthetic volcano. Note that this is on the regular grid, with zeros for cells outside the volcano.
 
     """
     # Generate gridded cube.

@@ -11,14 +11,6 @@ import os
 
 
 def main():
-    nx = 80
-    ny = 80
-    nz = 80
-    res_x = 50
-    res_y = 50
-    res_z = 50
-    
-    
     # Set up logging.
     import logging
     logging.basicConfig(level=logging.INFO)
@@ -36,7 +28,7 @@ def main():
     #      LOAD DATA
     # ----------------------------------------------------------------------------#
     # data_folder = "/home/cedric/PHD/Dev/Volcano/volcapy/synthetic/out/"
-    data_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/out"
+    data_folder = "/idiap/temp/ctravelletti/tflow/Volcano/volcapy/synthetic/synthetic_data"
     
     reg_cells_coords = np.load(os.path.join(data_folder, "coords_synth.npy"))
     volcano_inds = np.load(os.path.join(data_folder, "volcano_inds_synth.npy"))
@@ -46,7 +38,6 @@ def main():
     F = np.load(os.path.join(data_folder, "F_synth.npy"))
     
     n_data = data_values.shape[0]
-    
     
     d_obs = data_values.astype(np.float32)
     cells_coords = cells_coords.astype(np.float32)
